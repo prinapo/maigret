@@ -1,0 +1,39 @@
+{
+  "name": "com.prinapo.maigret",
+  "version": "0.0.1",
+  "description": "An app to save the maigreto collection status",
+  "productName": "Maigret Collector",
+  "author": "prinapo <giovanni.prinetti@gmail.com>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev",
+    "build": "quasar build"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.4",
+    "firebase": "^10.8.1",
+    "pina": "^0.20.2204228",
+    "pinia": "^2.1.7",
+    "quasar": "^2.6.0",
+    "vue": "^3.4.18",
+    "vue-router": "^4.0.0"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.0.0-beta.1",
+    "autoprefixer": "^10.4.2",
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "postcss": "^8.4.14",
+    "prettier": "^3.0.3"
+  },
+  "engines": {
+    "node": "^24 || ^22 || ^20 || ^18",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}

@@ -1,0 +1,42 @@
+// app global css in SCSS form
+.flex-container {
+  /* We first create a flex layout context */
+  display: flex;
+
+  /* Then we define the flow direction
+     and if we allow the items to wrap
+   * Remember this is the same as:
+   * flex-direction: row;
+   * flex-wrap: wrap;
+   */
+  flex-flow: row wrap;
+
+  /* Then we define how is distributed the remaining space */
+  justify-content: space-around;
+
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.flex-item {
+  background: rgb(247, 247, 247);
+  padding: 5px;
+  width: 600px;
+  height: 100%;
+  margin-top: 10px;
+  /* line-height: 150px;*/
+  color: black;
+  /*font-weight: bold;*/
+  text-align: left;
+}
+.label {
+  font-weight: bold;
+  color: rgb(65, 65, 65);
+  margin-right: 10px; /* Adjust this value as needed */
+  font-size: 1.2em;
+}
+.value {
+  border: 1px solid #ccc;
+  padding: 5px;
+  color: rgb(41, 41, 41);
+}
