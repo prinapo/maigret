@@ -100,17 +100,17 @@ onMounted(() => {
   selectedEditore.value = filtersStore.selectedEditore;
   showFranceseBooks.value = filtersStore.showFranceseBooks;
   isOpen.value = filtersStore.isOpen;
-  console.log("bibliografia onMount", bibliografia);
+  //console.log("bibliografia onMount", bibliografia);
   isInitialized.value = true; // Set initialization status to true after onMounted
 });
 
 const handleEditoreChange = (value) => {
-  console.log("Editore selected:", value);
+  //console.log("Editore selected:", value);
   filtersStore.updateSelectedEditore(value);
 };
 
 const handleFranceseChange = (value) => {
-  console.log("francese changed:", value);
+  //console.log("francese changed:", value);
   filtersStore.updateShowFranceseBooks(value);
 };
 
@@ -120,12 +120,12 @@ const toggleExpansion = () => {
 };
 
 const updateSearchQuery = (value) => {
-  console.log("Search query updated:", value);
+  //console.log("Search query updated:", value);
   filtersStore.updateSearchQuery(value);
 };
 
 const filteredBibliografia = computed(() => {
-  console.log("bibliografia in computed", bibliografia);
+  //console.log("bibliografia in computed", bibliografia);
   // Retrieve the filter values from the Pinia store
   if (!isInitialized.value) return [];
 
@@ -156,7 +156,7 @@ const filteredBibliografia = computed(() => {
   }
 
   if (!showFranceseBooksValue) {
-    console.log("frnacese", showFranceseBooksValue);
+    //console.log("frnacese", showFranceseBooksValue);
     return (filtered = filtered.filter((book) => book.lingua !== "Francese"));
   }
 
@@ -188,7 +188,7 @@ const editoriOptions = computed(() => {
 
   return options;
 });
-console.log("Editori options:", editoriOptions);
+//console.log("Editori options:", editoriOptions);
 
 //fine editori
 </script>
