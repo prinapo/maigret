@@ -31,3 +31,19 @@ export const useEditoriStore = defineStore("editori", {
     },
   },
 });
+
+export const useCollaneStore = defineStore("collane", {
+  state: () => ({
+    collane: [],
+  }),
+  actions: {
+    // Update editori state with new data
+    updateCollane(newCollane) {
+      this.collane = newCollane;
+    },
+    // Clear editori state
+    clearCollane() {
+      this.collane = [];
+    },
+  },
+});

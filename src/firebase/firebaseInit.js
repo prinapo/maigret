@@ -20,4 +20,7 @@ const db = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
 const auth = getAuth(firebaseApp);
 
-export { firebaseApp, db, storage, auth };
+const fireStoreUrl =
+  "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/images%2F";
+
+export { firebaseApp, db, storage, auth, fireStoreUrl };

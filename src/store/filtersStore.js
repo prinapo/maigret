@@ -6,6 +6,7 @@ export const useFiltersStore = defineStore({
   state: () => ({
     searchQuery: "",
     selectedEditore: "",
+    selectedCollana: "",
     showFranceseBooks: false,
     editoriOptions: [],
     isOpen: false, // New variable to track expansion status
@@ -18,6 +19,9 @@ export const useFiltersStore = defineStore({
     },
     updateSelectedEditore(newSelectedEditore) {
       this.selectedEditore = newSelectedEditore;
+    },
+    updateSelectedCollana(newSelectedCollana) {
+      this.selectedCollana = newSelectedCollana;
     },
     updateShowFranceseBooks(newShowFranceseBooks) {
       this.showFranceseBooks = newShowFranceseBooks;
@@ -34,6 +38,9 @@ export const useFiltersStore = defineStore({
       state.searchQuery = value;
     },
     setSelectedEditore(state, value) {
+      state.selectedEditore = value;
+    },
+    setSelectedCollana(state, value) {
       state.selectedEditore = value;
     },
     setShowFranceseBooks(state, value) {

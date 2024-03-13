@@ -35,6 +35,14 @@
             <q-icon name="account_circle" />
           </q-item-section>
         </q-item>
+        <q-item clickable to="/configuration">
+          <q-item-section>
+            <q-item-label>Configuration</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="build" />
+          </q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 

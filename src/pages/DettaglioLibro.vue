@@ -21,13 +21,13 @@
             </div>
             <q-img
               v-if="book.signedUrl"
-              :src="`${book.signedUrl}`"
+              :src="`${fireStoreUrl}${book.signedUrl}`"
               style="cursor: pointer"
             />
-
             <!-- Use placeholder URL if signedUrl is empty -->
             <q-img v-else :src="bookImage" style="cursor: pointer" />
           </q-carousel-slide>
+
           <!-- Back -->
           <q-carousel-slide :name="2">
             <div class="custom-caption">
@@ -35,7 +35,7 @@
             </div>
             <q-img
               v-if="book.signedUrlBck"
-              :src="`${book.signedUrlBck}`"
+              :src="`${fireStoreUrl}${book.signedUrlBck}`"
               style="cursor: pointer"
             />
             <!-- Use placeholder URL if signedUrlBck is empty -->
@@ -66,7 +66,7 @@
                 :bookId="route.params.id"
                 @uploaded="handleFileUploaded('', $event)"
                 :fileInputRef="fileInputRef"
-                label="Upload files"
+                label="Front Cover upload"
                 color="purple"
                 square
                 flat
@@ -80,7 +80,7 @@
                 :bookId="route.params.id"
                 @uploaded="handleFileUploaded('Bck', $event)"
                 :fileInputRef="fileInputRef"
-                label="Upload files"
+                label="Back Cover upload"
                 color="red"
                 square
                 flat
@@ -94,7 +94,7 @@
                 :bookId="route.params.id"
                 @uploaded="handleFileUploaded('Brd', $event)"
                 :fileInputRef="fileInputRef"
-                label="Upload files"
+                label="Border Upload"
                 color="bkue"
                 square
                 flat
@@ -106,46 +106,40 @@
         </q-expansion-item>
       </q-card-section>
     </q-card>
+
     <q-card inline class="card-container flex-item">
       <q-card-section vertical>
-        <!-- Loop through each detail -->
-        <q-list dense bordered padding class="rounded-borders">
-          <q-item dense v-for="(detail, index) in bookDetails" :key="index">
-            <q-item-section class="rounded-borders">
-              <!-- Show input field if editable -->
-              <template v-if="detail.editable">
-                <p>
-                  <span class="label">{{ detail.label }}</span>
-                  <q-input v-model="detail.value" class="value" />
-                </p>
-              </template>
-              <!-- Show label and editable field if not editable -->
-              <template v-else>
-                <div>
-                  <p>
-                    <span class="label"> {{ detail.label }}</span>
-
-                    <span class="vlaue">
-                      {{ detail.value }}
-                    </span>
-                  </p>
-                </div>
-              </template>
+        <!-- book detail list -->
+        <q-list>
+          <q-item v-for="(detail, index) in bookDetails" :key="index">
+            <q-item-section top v-if="detail.id !== 'editore'">
+              <q-input
+                outlined
+                v-model="detail.value"
+                class="value"
+                :label="detail.label"
+                :readonly="detail.editable"
+              />
             </q-item-section>
-            <q-item-section side v-if="isLoggedIn">
-              <div class="button-container q-gutter-md">
+
+            <q-item-section top v-else>
+              <q-select
+                outlined
+                v-model="selectedEditore"
+                :options="editori"
+                :label="detail.label"
+                @change="detail.value = selectedEditore"
+              />
+            </q-item-section>
+            <q-item-section top side v-if="!detail.editable">
+              <div class="text-grey-8 q-gutter-xs">
                 <q-btn
+                  class="gt-xs"
+                  size="12px"
                   flat
+                  dense
                   round
-                  :icon="detail.editable ? 'close' : 'edit'"
-                  @click="toggleEdit(detail)"
-                />
-                <!-- Add close button if editable -->
-                <q-btn
-                  flat
-                  round
-                  icon="save"
-                  v-if="detail.editable"
+                  icon="done"
                   @click="saveDetail(detail)"
                 />
               </div>
@@ -158,12 +152,28 @@
 </template>
 
 <script setup>
+onMounted(() => {
+  fetchBookDetails();
+  editori = editoriStore.editori;
+  console.log("editori in dettaaglio", editori);
+});
+
+let editori = [];
+
 import { ref, onMounted } from "vue";
 import { db } from "../firebase/firebaseInit";
 import { doc, getDoc, setDoc, updateDoc, FieldValue } from "firebase/firestore";
 import { useRoute } from "vue-router";
+import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
+import { useEditoriStore, useBibliografiaStore } from "src/store/database";
+import { useQuasar } from "quasar";
+
+const selectedEditore = ref("");
+const editoriStore = useEditoriStore();
+const quasar = useQuasar();
 
 import { useAuth } from "../composable/auth";
+
 const { isLoggedIn, checkAuthState } = useAuth();
 // Call checkAuthState to ensure isLoggedIn is up-to-date
 checkAuthState();
@@ -171,8 +181,6 @@ checkAuthState();
 const book = ref({});
 import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 
-const placeholderUrl =
-  "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
 const slide = ref(1); // Initialize slide reference
 const fileInputRef = ref(null);
 const imageVersion = ref(0);
@@ -193,9 +201,10 @@ const fetchBookDetails = async () => {
       // Populate bookDetails
       bookDetails.value = [
         { id: "titolo", label: "Title", value: book.value.titolo },
+        { id: "editore", label: "Editor", value: book.value.editore },
         { id: "signedUrl", label: "Front", value: book.value.signedUrl },
         { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
-        { id: "editore", label: "Editor", value: book.value.editore },
+
         { id: "raccolta", label: "Raccolta", value: book.value.raccolta },
         { id: "confermato", label: "Confermato", value: book.value.confermato },
         {
@@ -217,7 +226,7 @@ const fetchBookDetails = async () => {
         },
         {
           id: "numeroCollana",
-          label: "Collection Number",
+          label: "Numeor Collana",
           value: book.value.numeroCollana,
         },
         {
@@ -225,15 +234,13 @@ const fetchBookDetails = async () => {
           label: "Publication Year",
           value: book.value.annoPubblicazione,
         },
-        { id: "edizione", label: "Edition", value: book.value.edizione },
-        { id: "uniqueId", label: "Unique ID", value: book.value.uniqueId },
-        { id: "collana", label: "Collection", value: book.value.collana },
+        { id: "edizione", label: "Edizione", value: book.value.edizione },
+        { id: "collana", label: "Collana", value: book.value.collana },
         {
           id: "titoloOriginale",
-          label: "Original Title",
+          label: "Titolo Orginale",
           value: book.value.titoloOriginale,
         },
-        { id: "bookId", label: "Book ID", value: book.value.bookId },
         { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
       ];
       console.log("Book details:", book.value); // Log book details
@@ -256,7 +263,7 @@ const handleFileUploaded = async (extension, files) => {
 
     // Construct the file URL based on the provided parameters
     const detailId = `signedUrl${extension}`; // ID including the extension
-    const fileURL = `https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/images%2F${route.params.id}${extension}.${fileExtension}?alt=media`;
+    const fileURL = `${route.params.id}${extension}.${fileExtension}?alt=media`;
 
     // Call saveDetail function to save the file details
     const detail = {
@@ -279,6 +286,32 @@ const handleFileUploaded = async (extension, files) => {
         "",
         book.value.signedUrl,
       );
+      // Update data in local storage if it exists
+      const localBibliografiaData = localStorage.getItem("bibliografiaData");
+      if (localBibliografiaData) {
+        const bibliografiaData = JSON.parse(localBibliografiaData);
+        const index = bibliografiaData.findIndex(
+          (item) => item.id === route.params.id,
+        );
+        if (index !== -1) {
+          bibliografiaData[index][detailId] = fileURL;
+          localStorage.setItem(
+            "bibliografiaData",
+            JSON.stringify(bibliografiaData),
+          );
+        }
+      }
+
+      // Update data in Pinia store if it exists
+      const bibliografiaStore = useBibliografiaStore(); // Assuming this is how you access Pinia store
+      const bibliografia = bibliografiaStore.bibliografia;
+      const index = bibliografia.findIndex(
+        (item) => item.id === route.params.id,
+      );
+      if (index !== -1) {
+        bibliografia[index][detailId] = fileURL;
+        bibliografiaStore.updateBibliografia(bibliografia);
+      }
     } else {
       console.error("Detail 'signedUrl' not found in bookDetails.");
     }
@@ -299,6 +332,7 @@ const editDetail = (detail) => {
 };
 
 const saveDetail = async (detail) => {
+  console.log("detail", detail);
   const timestamp = new Date().valueOf();
 
   try {
@@ -312,6 +346,7 @@ const saveDetail = async (detail) => {
       },
       { merge: true },
     );
+    console.log("saved data ", detail.id, detail.value);
     await setDoc(
       docRef,
       {
@@ -319,6 +354,7 @@ const saveDetail = async (detail) => {
       },
       { merge: true },
     );
+
     detail.editable = false; // Set editable to false after saving
     console.log("Detail saved successfully!");
 
@@ -337,6 +373,10 @@ const saveDetail = async (detail) => {
 
         // Update the lastUpdate value in localStorage
         localStorage.setItem("lastUpdate", timestamp.toString());
+        quasar.notify({
+          message: `"${detail.id}" "${detail.value}" saved successfully!`,
+          color: "positive",
+        });
       } else {
         console.log("Timestamp already exists in updates array:", timestamp);
       }
@@ -345,10 +385,13 @@ const saveDetail = async (detail) => {
     }
   } catch (error) {
     console.error("Error saving detail:", error);
+    quasar.notify({
+      message: `Error saving detail "${detail.id}": ${error.message}`,
+      color: "negative",
+    });
   }
 };
 // Fetch book details on component mount
-onMounted(fetchBookDetails);
 </script>
 
 <style scoped>

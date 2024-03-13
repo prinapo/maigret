@@ -22,6 +22,11 @@ const routes = [
         path: "/home",
         redirect: "/",
       },
+      {
+        path: "/configuration",
+        name: "Configuration",
+        component: () => import("pages/ConfigurationPage.vue"),
+      },
     ],
   },
 

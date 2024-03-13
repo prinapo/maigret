@@ -1,6 +1,10 @@
 import { db } from "../firebase/firebaseInit";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { useBibliografiaStore, useEditoriStore } from "../store/database";
+import {
+  useBibliografiaStore,
+  useEditoriStore,
+  useCollaneStore,
+} from "../store/database";
 
 // Function to fetch and update Bibliografia data and localStorage
 export async function fetchAndUpdateBibliografia() {
@@ -9,7 +13,7 @@ export async function fetchAndUpdateBibliografia() {
   );
 
   const bibliografiaStore = useBibliografiaStore(); // Initialize the Pinia store
-
+  const collaneStore = useCollaneStore();
   // Read the last update time for Bibliografia from the "Updates" collection
   const bibliografiaRef = doc(db, "Updates", "bibliografiaTimes");
   const bibliografiaSnapshot = await getDoc(bibliografiaRef);
@@ -38,28 +42,42 @@ export async function fetchAndUpdateBibliografia() {
     const bibliografiaSnapshot = await getDocs(bibliografiaRef);
     const bibliografiaData = bibliografiaSnapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      titolo: doc.data().titolo,
+      editore: doc.data().editore,
+      collana: doc.data().collana,
+      signedUrl: doc.data().signedUrl,
+      uniqueId: doc.data()._id,
     }));
 
-    console.log("Bibliografia fetched:", bibliografiaData);
+    const uniqueCollanaValues = Array.from(
+      new Set(bibliografiaData.map((item) => item.collana)),
+    ).sort();
+
+    console.log("collane", uniqueCollanaValues);
+
+    //console.log("Bibliografia fetched:", bibliografiaData);
     bibliografiaStore.updateBibliografia(bibliografiaData); // Update Pinia store
+    collaneStore.updateCollane(uniqueCollanaValues);
 
     console.log("Updating local storage for Bibliografia...");
     localStorage.setItem(
       "bibliografiaLastUpdate",
       bibliografiaLastUpdateFirebase,
     );
-    localStorage.setItem("bibliografiaData", JSON.stringify(bibliografiaData));
+    localStorage.setItem("bibliografia", JSON.stringify(bibliografiaData));
+    localStorage.setItem("collane", JSON.stringify(uniqueCollanaValues));
   } else {
     console.log(
       "No updates found or local storage is up-to-date for Bibliografia. Using local storage data...",
     );
     // Retrieve data from local storage
-    const localBibliografiaData = localStorage.getItem("bibliografiaData");
+    const localBibliografiaData = localStorage.getItem("bibliografia");
+    const localCollane = localStorage.getItem("collane");
 
     if (localBibliografiaData) {
       // Update Pinia store with the locally stored data
       bibliografiaStore.updateBibliografia(JSON.parse(localBibliografiaData));
+      collaneStore.updateCollane(JSON.parse(localCollane));
     }
   }
 }
@@ -76,44 +94,45 @@ export async function fetchAndUpdateEditori() {
   const editoriRef = doc(db, "Updates", "editoriTimes");
   const editoriSnapshot = await getDoc(editoriRef);
   const editoriLastUpdateFirebase = editoriSnapshot.data().updates.slice(-1)[0];
-
-  console.log(
-    "Last update time fetched for Editori:",
-    editoriLastUpdateFirebase,
-  );
-
-  console.log("Reading local storage for Editori last update time...");
+  const localEditoriData = localStorage.getItem("editori");
   const localEditoriLastUpdate =
     parseInt(localStorage.getItem("editoriLastUpdate")) || 0;
-  console.log("Local Editori Variable:", localEditoriLastUpdate);
+
+  console.log("Local Storage Editori timestamp:", editoriLastUpdateFirebase);
+
+  console.log("Last Firebase Editori timestamp:", editoriLastUpdateFirebase);
+
+  console.log("Local Editori Variable:", localEditoriData);
 
   if (
     !localEditoriLastUpdate ||
+    !localEditoriData ||
     editoriLastUpdateFirebase > localEditoriLastUpdate
   ) {
     console.log(
       "First boot or updates are newer than local storage for Editori. Fetching Editori...",
     );
-    const editoriRef = collection(db, "Editori");
-    const editoriSnapshot = await getDocs(editoriRef);
-    const editoriData = editoriSnapshot.docs[0].data();
+    const editoriRef = doc(db, "Editori", "default");
+    const editoriSnapshot = await getDoc(editoriRef);
 
-    console.log("Editori fetched:", editoriData);
-    editoriStore.updateEditori(editoriData); // Update Pinia store
-
-    console.log("Updating local storage for Editori...");
-    localStorage.setItem("editoriLastUpdate", editoriLastUpdateFirebase);
-    localStorage.setItem("editoriData", JSON.stringify(editoriData));
+    if (editoriSnapshot.exists()) {
+      const editori = editoriSnapshot
+        .data()
+        .editore.map((item) => item.editore);
+      console.log("Firebase Editori", editori);
+      editoriStore.updateEditori(editori); // Update Pinia store
+      console.log("Updating local storage for Editori...");
+      localStorage.setItem("editoriLastUpdate", editoriLastUpdateFirebase);
+      localStorage.setItem("editori", JSON.stringify(editori));
+    } else {
+      console.error(
+        "Document 'default' does not exist in the 'Editori' collection.",
+      );
+    }
   } else {
+    editoriStore.updateEditori(JSON.parse(localEditoriData));
     console.log(
       "No updates found or local storage is up-to-date for Editori. Using local storage data...",
     );
-    // Retrieve data from local storage
-    const localEditoriData = localStorage.getItem("editoriData");
-
-    if (localEditoriData) {
-      // Update Pinia store with the locally stored data
-      editoriStore.updateEditori(JSON.parse(localEditoriData));
-    }
   }
 }
