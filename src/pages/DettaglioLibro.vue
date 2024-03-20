@@ -1,64 +1,61 @@
 <template>
-  <div class="flex-container">
-    <q-card class="flex-item">
-      <q-card-section>
-        <!-- Back button -->
-        <q-btn
-          class="back-button"
-          @click="$router.go(-1)"
-          label="Back"
-          color="primary"
-          dense
-        />
-      </q-card-section>
-      <q-card-section>
-        <!-- Q-Carousel for displaying images -->
-        <q-carousel animated v-model="slide" arrows navigation height="100%">
-          <!-- Front -->
-          <q-carousel-slide :name="1">
-            <div class="custom-caption">
-              <div class="text-subtitle1">Front</div>
-            </div>
-            <q-img
-              v-if="book.signedUrl"
-              :src="`${fireStoreUrl}${book.signedUrl}`"
-              style="cursor: pointer"
-            />
-            <!-- Use placeholder URL if signedUrl is empty -->
-            <q-img v-else :src="bookImage" style="cursor: pointer" />
-          </q-carousel-slide>
+  <div class="bg-primary" id="book details">
+    <div class="row">
+      <div class="col-md-4 col-lg-4 col-xs-12 col-sm-12">
+        <div class="q-pa-md text-center text-white text-weight-bolder text-h4">
+          copertine
+        </div>
+        <div class="bg-primary">
+          <div class="bg-primaryy">
+            <q-carousel
+              animated
+              v-model="slide"
+              arrows
+              navigation
+              height="100%"
+              class="bg-dark"
+            >
+              <!-- Front -->
+              <q-carousel-slide :name="1">
+                <div>
+                  <div class="text-h4 text-grey-11">Copertina</div>
+                </div>
+                <q-img
+                  v-if="book.signedUrl"
+                  :src="`${fireStoreUrl}${book.signedUrl}`"
+                  style="cursor: pointer"
+                />
+                <!-- Use placeholder URL if signedUrl is empty -->
+                <q-img v-else :src="bookImage" style="cursor: pointer" />
+              </q-carousel-slide>
 
-          <!-- Back -->
-          <q-carousel-slide :name="2">
-            <div class="custom-caption">
-              <div class="text-subtitle1">Back</div>
-            </div>
-            <q-img
-              v-if="book.signedUrlBck"
-              :src="`${fireStoreUrl}${book.signedUrlBck}`"
-              style="cursor: pointer"
-            />
-            <!-- Use placeholder URL if signedUrlBck is empty -->
-            <q-img v-else :src="bookImage" style="cursor: pointer" />
-          </q-carousel-slide>
-          <q-carousel-slide :name="2">
-            <div class="custom-caption">
-              <div class="text-subtitle1">Back</div>
-            </div>
-            <q-img
-              v-if="book.signedUrlBrd"
-              :src="`${book.signedUrlBrd}`"
-              style="cursor: pointer"
-            />
-            <!-- Use placeholder URL if signedUrlBck is empty -->
-            <q-img v-else :src="bookImage" style="cursor: pointer" />
-          </q-carousel-slide>
-        </q-carousel>
-      </q-card-section>
-      <q-card-section>
-        <q-expansion-item>
-          <div class="q-pa-md">
-            <div class="q-gutter-sm row items-start">
+              <!-- Back -->
+              <q-carousel-slide :name="2">
+                <div>
+                  <div class="text-h4 text-grey-11">Retro di copertina</div>
+                </div>
+                <q-img
+                  v-if="book.signedUrlBck"
+                  :src="`${fireStoreUrl}${book.signedUrlBck}`"
+                  style="cursor: pointer"
+                />
+                <!-- Use placeholder URL if signedUrlBck is empty -->
+                <q-img v-else :src="bookImage" style="cursor: pointer" />
+              </q-carousel-slide>
+              <q-carousel-slide :name="3">
+                <div>
+                  <div class="text-h4 text-grey-11">Costa</div>
+                </div>
+                <q-img
+                  v-if="book.signedUrlBrd"
+                  :src="`${book.signedUrlBrd}`"
+                  style="cursor: pointer"
+                />
+                <!-- Use placeholder URL if signedUrlBck is empty -->
+                <q-img v-else :src="bookImage" style="cursor: pointer" />
+              </q-carousel-slide>
+            </q-carousel>
+            <q-expansion-item>
               <FirebaseUploader
                 :blocking="true"
                 extention=""
@@ -101,53 +98,60 @@
                 bordered
                 style="max-width: 300px"
               />
-            </div>
+            </q-expansion-item>
           </div>
-        </q-expansion-item>
-      </q-card-section>
-    </q-card>
-
-    <q-card inline class="card-container flex-item">
-      <q-card-section vertical>
-        <!-- book detail list -->
-        <q-list>
-          <q-item v-for="(detail, index) in bookDetails" :key="index">
-            <q-item-section top v-if="detail.id !== 'editore'">
-              <q-input
-                outlined
-                v-model="detail.value"
-                class="value"
-                :label="detail.label"
-                :readonly="detail.editable"
-              />
-            </q-item-section>
-
-            <q-item-section top v-else>
-              <q-select
-                outlined
-                v-model="selectedEditore"
-                :options="editori"
-                :label="detail.label"
-                @change="detail.value = selectedEditore"
-              />
-            </q-item-section>
-            <q-item-section top side v-if="!detail.editable">
-              <div class="text-grey-8 q-gutter-xs">
-                <q-btn
-                  class="gt-xs"
-                  size="12px"
-                  flat
-                  dense
-                  round
-                  icon="done"
-                  @click="saveDetail(detail)"
+        </div>
+      </div>
+      <div class="col-md-8 col-lg-8 col-xs-12 col-sm-12 q-px-md q-pt-sm">
+        <div class="text-h4 text-center text-white q-py-xs q-my-xs">
+          dettagli
+        </div>
+        <q-card-section id="text" class="overflow: auto">
+          <!-- book detail list -->
+          <q-list>
+            <q-item v-for="(detail, index) in bookDetails" :key="index">
+              <q-item-section top v-if="detail.id !== 'editore'">
+                <q-input
+                  outlined
+                  v-model="detail.value"
+                  :label="detail.label"
+                  :readonly="detail.editable"
+                  class="text-h6 text-grey-11"
+                  dark
+                  color="accent"
                 />
-              </div>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-    </q-card>
+              </q-item-section>
+
+              <q-item-section top v-else>
+                <q-select
+                  color="accent"
+                  outlined
+                  v-model="detail.value"
+                  :options="editori"
+                  :label="detail.label"
+                  @change="detail.value = selectedEditore"
+                  dark=""
+                />
+              </q-item-section>
+              <q-item-section top side v-if="!detail.editable">
+                <div class="text-grey-8 q-gutter-xs">
+                  <q-btn
+                    class="gt-xs"
+                    size="12px"
+                    flat
+                    dense
+                    round
+                    icon="save"
+                    @click="saveDetail(detail)"
+                    color="secondary"
+                  />
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -200,30 +204,26 @@ const fetchBookDetails = async () => {
       };
       // Populate bookDetails
       bookDetails.value = [
-        { id: "titolo", label: "Title", value: book.value.titolo },
-        { id: "editore", label: "Editor", value: book.value.editore },
-        { id: "signedUrl", label: "Front", value: book.value.signedUrl },
-        { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
+        { id: "titolo", label: "Titolo", value: book.value.titolo },
+        { id: "editore", label: "Editore", value: book.value.editore },
+        //        { id: "signedUrl", label: "Front", value: book.value.signedUrl },
+        //        { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
 
-        { id: "raccolta", label: "Raccolta", value: book.value.raccolta },
-        { id: "confermato", label: "Confermato", value: book.value.confermato },
-        {
-          id: "ed_2Anno",
-          label: "Second Edition Year",
-          value: book.value.ed_2Anno,
-        },
-        {
-          id: "ed_1Posseduta",
-          label: "First Edition Possessed",
-          value: book.value.ed_1Posseduta,
-        },
-        { id: "lingua", label: "Language", value: book.value.lingua },
-        { id: "posseduto", label: "Possessed", value: book.value.posseduto },
-        {
-          id: "ed_1Anno",
-          label: "First Edition Year",
-          value: book.value.ed_1Anno,
-        },
+        //{ id: "raccolta", label: "Raccolta", value: book.value.raccolta },
+        //{ id: "confermato", label: "Confermato", value: book.value.confermato },
+        //       {       id: "ed_2Anno",   label: "Second Edition Year",       value: book.value.ed_2Anno, },
+        // {
+        //   id: "ed_1Posseduta",
+        //   label: "First Edition Possessed",
+        //   value: book.value.ed_1Posseduta,
+        // },
+        { id: "lingua", label: "Lingua", value: book.value.lingua },
+        { id: "posseduto", label: "Posseduto", value: book.value.posseduto },
+        // {
+        //   id: "ed_1Anno",
+        //   label: "First Edition Year",
+        //   value: book.value.ed_1Anno,
+        // },
         {
           id: "numeroCollana",
           label: "Numeor Collana",
@@ -234,14 +234,19 @@ const fetchBookDetails = async () => {
           label: "Publication Year",
           value: book.value.annoPubblicazione,
         },
-        { id: "edizione", label: "Edizione", value: book.value.edizione },
+        //{ id: "edizione", label: "Edizione", value: book.value.edizione },
         { id: "collana", label: "Collana", value: book.value.collana },
+        {
+          id: "numeroCollana",
+          label: "Numeor Collana",
+          value: book.value.numeroCollana,
+        },
         {
           id: "titoloOriginale",
           label: "Titolo Orginale",
           value: book.value.titoloOriginale,
         },
-        { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
+        // { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
       ];
       console.log("Book details:", book.value); // Log book details
       console.log("Book details:", bookDetails.value); // Log bookDetails
@@ -394,6 +399,4 @@ const saveDetail = async (detail) => {
 // Fetch book details on component mount
 </script>
 
-<style scoped>
-@import url("../css/DettaglioLibro.css");
-</style>
+<style scoped></style>

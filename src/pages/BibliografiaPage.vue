@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="cards">
+  <div class="q-gutter-sm q-mb-md">
+    <q-page-sticky position="top-left">
       <q-expansion-item
         label="Filters"
         v-model="isOpen"
@@ -42,43 +42,47 @@
           @update:model-value="handleFranceseChange"
         />
       </q-expansion-item>
-    </div>
-    <div class="cards">
-      <q-virtual-scroll
-        style="max-height: 90vh"
-        :items="filteredBibliografia"
-        separator
-      >
-        <!-- Card content -->
-        <template v-slot="{ item }">
-          <q-item clickable v-ripple @click="openDettaglioLibro(item.id)">
-            <!-- Open modal on click -->
-            <q-item-section>
-              <!-- Use QImg component -->
-              <!-- q-img for lazy loading the image -->
-              <q-img
-                :src="
-                  item && item.signedUrl
-                    ? fireStoreUrl + item.signedUrl
-                    : bookImage
-                "
-                width="120px"
-                fit="scale-down"
-              />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label lines="1">{{ item.titolo }}</q-item-label>
-              <q-item-label caption>{{ item.editore }}</q-item-label>
-              <q-item-label caption>{{ item.collana }}</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-icon name="info" />
-            </q-item-section>
-          </q-item>
-        </template>
-      </q-virtual-scroll>
-    </div>
+    </q-page-sticky>
   </div>
+  <q-page-sticky position="top-center">
+    <div class="q-pa-md">
+      <div class="flex flex-center column">
+        <q-virtual-scroll
+          style="max-height: 90vh"
+          :items="filteredBibliografia"
+          separator
+        >
+          <!-- Card content -->
+          <template v-slot="{ item }">
+            <q-item clickable v-ripple @click="openDettaglioLibro(item.id)">
+              <!-- Open modal on click -->
+              <q-item-section>
+                <!-- Use QImg component -->
+                <!-- q-img for lazy loading the image -->
+                <q-img
+                  :src="
+                    item && item.signedUrl
+                      ? fireStoreUrl + item.signedUrl
+                      : bookImage
+                  "
+                  width="120px"
+                  fit="scale-down"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label lines="1">{{ item.titolo }}</q-item-label>
+                <q-item-label caption>{{ item.editore }}</q-item-label>
+                <q-item-label caption>{{ item.collana }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="info" />
+              </q-item-section>
+            </q-item>
+          </template>
+        </q-virtual-scroll>
+      </div>
+    </div>
+  </q-page-sticky>
 </template>
 
 <script setup>
