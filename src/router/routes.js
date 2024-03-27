@@ -27,6 +27,16 @@ const routes = [
         name: "Configuration",
         component: () => import("pages/ConfigurationPage.vue"),
       },
+      {
+        path: "/newbook",
+        name: "NewBook",
+        component: () => import("pages/NewBookPage.vue"),
+      },
+      {
+        path: "/error",
+        name: "ErrorPage",
+        component: () => import("pages/ErrorPage.vue"),
+      },
     ],
   },
 

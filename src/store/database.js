@@ -13,6 +13,16 @@ export const useBibliografiaStore = defineStore("bibliografia", {
     clearBibliografia() {
       this.bibliografia = [];
     },
+    // Add a new book to bibliografia
+    addBook(book) {
+      this.bibliografia.push(book);
+    },
+    // Remove a book from bibliografia by ID
+    removeBook(bookId) {
+      this.bibliografia = this.bibliografia.filter(
+        (book) => book.id !== bookId,
+      );
+    },
   },
 });
 

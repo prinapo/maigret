@@ -97,6 +97,7 @@ export default configure((/* ctx */) => {
           info: "#e0fbfc",
           warning: "#F2C037",
         },
+        loading: {},
       },
       cssAddon: true,
       // iconSet: 'material-icons', // Quasar icon set
@@ -110,7 +111,7 @@ export default configure((/* ctx */) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ["Notify"],
+      plugins: ["Notify", "Loading"],
     },
 
     // animations: 'all', // --- includes all animations

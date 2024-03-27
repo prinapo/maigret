@@ -16,7 +16,7 @@
               class="bg-dark"
             >
               <!-- Front -->
-              <q-carousel-slide :name="1">
+              <q-carousel-slide :name="1" style="max-width: 600px">
                 <div>
                   <div class="text-h4 text-grey-11">Copertina</div>
                 </div>
@@ -30,7 +30,7 @@
               </q-carousel-slide>
 
               <!-- Back -->
-              <q-carousel-slide :name="2">
+              <q-carousel-slide :name="2" style="max-width: 600px">
                 <div>
                   <div class="text-h4 text-grey-11">Retro di copertina</div>
                 </div>
@@ -42,7 +42,7 @@
                 <!-- Use placeholder URL if signedUrlBck is empty -->
                 <q-img v-else :src="bookImage" style="cursor: pointer" />
               </q-carousel-slide>
-              <q-carousel-slide :name="3">
+              <q-carousel-slide :name="3" style="max-width: 600px">
                 <div>
                   <div class="text-h4 text-grey-11">Costa</div>
                 </div>
@@ -106,50 +106,77 @@
         <div class="text-h4 text-center text-white q-py-xs q-my-xs">
           dettagli
         </div>
-        <q-card-section id="text" class="overflow: auto">
-          <!-- book detail list -->
-          <q-list>
-            <q-item v-for="(detail, index) in bookDetails" :key="index">
-              <q-item-section top v-if="detail.id !== 'editore'">
-                <q-input
-                  outlined
-                  v-model="detail.value"
-                  :label="detail.label"
-                  :readonly="detail.editable"
-                  class="text-h6 text-grey-11"
-                  dark
-                  color="accent"
-                />
-              </q-item-section>
-
-              <q-item-section top v-else>
-                <q-select
-                  color="accent"
-                  outlined
-                  v-model="detail.value"
-                  :options="editori"
-                  :label="detail.label"
-                  @change="detail.value = selectedEditore"
-                  dark=""
-                />
-              </q-item-section>
-              <q-item-section top side v-if="!detail.editable">
-                <div class="text-grey-8 q-gutter-xs">
-                  <q-btn
-                    class="gt-xs"
-                    size="12px"
-                    flat
-                    dense
-                    round
-                    icon="save"
-                    @click="saveDetail(detail)"
-                    color="secondary"
+        <div>
+          <q-card-section id="text" class="overflow: auto">
+            <!-- book detail list -->
+            <q-list>
+              <q-item v-for="(detail, index) in bookDetails" :key="index">
+                <q-item-section top v-if="detail.id !== 'editore'">
+                  <q-input
+                    outlined
+                    v-model="detail.value"
+                    :label="detail.label"
+                    :readonly="detail.editable"
+                    class="text-h6 text-grey-11"
+                    dark
+                    color="accent"
                   />
-                </div>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card-section>
+                </q-item-section>
+
+                <q-item-section top v-else>
+                  <q-select
+                    color="accent"
+                    outlined
+                    v-model="detail.value"
+                    :options="editori"
+                    :label="detail.label"
+                    @change="detail.value = selectedEditore"
+                    dark=""
+                  />
+                </q-item-section>
+                <q-item-section top side v-if="!detail.editable">
+                  <div>
+                    <q-btn
+                      size="12px"
+                      flat
+                      dense
+                      round
+                      icon="save"
+                      @click="saveDetail(detail)"
+                      color="secondary"
+                    />
+                  </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-card-section>
+        </div>
+        <div class="q-pa-md q-gutter-sm text-center mt-4">
+          <q-btn label="Elimina" color="negative" @click="confirm = true" />
+
+          <q-dialog v-model="confirm" persistent>
+            <q-card>
+              <q-card-section class="q-pa-md">
+                <p>Sei sicuro di voler eliminare questo libro?</p>
+              </q-card-section>
+
+              <q-card-actions align="right">
+                <q-btn
+                  flat
+                  label="Annulla"
+                  color="primary"
+                  @click="confirm = false"
+                />
+                <q-btn
+                  flat
+                  label="Conferma"
+                  color="negative"
+                  @click="deleteBook"
+                />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+        </div>
       </div>
     </div>
   </div>
@@ -166,8 +193,8 @@ let editori = [];
 
 import { ref, onMounted } from "vue";
 import { db } from "../firebase/firebaseInit";
-import { doc, getDoc, setDoc, updateDoc, FieldValue } from "firebase/firestore";
-import { useRoute } from "vue-router";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { useRoute, useRouter } from "vue-router";
 import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
 import { useEditoriStore, useBibliografiaStore } from "src/store/database";
 import { useQuasar } from "quasar";
@@ -175,7 +202,7 @@ import { useQuasar } from "quasar";
 const selectedEditore = ref("");
 const editoriStore = useEditoriStore();
 const quasar = useQuasar();
-
+const router = useRouter();
 import { useAuth } from "../composable/auth";
 
 const { isLoggedIn, checkAuthState } = useAuth();
@@ -191,6 +218,46 @@ const imageVersion = ref(0);
 // Access route parameters
 const route = useRoute();
 const updatesBibliografiaTimesRef = doc(db, "Updates", "bibliografiaTimes");
+const confirm = ref(false);
+
+const deleteBook = async () => {
+  try {
+    const bookId = router.currentRoute.value.params.id;
+    const bibliografiaRef = doc(db, "Bibliografia", bookId);
+    const bibliografiaData = (await getDoc(bibliografiaRef)).data();
+
+    // Move the book to BibliografiaTrash
+    await setDoc(doc(db, "BibliografiaTrash", bookId), bibliografiaData);
+
+    // Delete the book from Bibliografia collection
+    await deleteDoc(bibliografiaRef);
+
+    // Remove the book from local storage if exists
+    const localBibliografiaData = localStorage.getItem("bibliografiaData");
+    if (localBibliografiaData) {
+      const updatedBibliografiaData = JSON.parse(localBibliografiaData).filter(
+        (item) => item.id !== bookId,
+      );
+      localStorage.setItem(
+        "bibliografia",
+        JSON.stringify(updatedBibliografiaData),
+      );
+    }
+
+    // Remove the book from Pinia store if exists
+    const bibliografiaStore = useBibliografiaStore();
+    bibliografiaStore.removeBook(bookId); // Assuming a method like removeBook exists in your Pinia store
+
+    console.log("Book moved to BibliografiaTrash successfully!");
+
+    // Close the confirmation dialog
+    confirm.value = false;
+
+    router.push({ path: "/" });
+  } catch (error) {
+    console.error("Error moving book to BibliografiaTrash:", error);
+  }
+};
 
 // Fetch book details based on ID
 const fetchBookDetails = async () => {
@@ -204,8 +271,14 @@ const fetchBookDetails = async () => {
       };
       // Populate bookDetails
       bookDetails.value = [
-        { id: "titolo", label: "Titolo", value: book.value.titolo },
         { id: "editore", label: "Editore", value: book.value.editore },
+        { id: "titolo", label: "Titolo", value: book.value.titolo },
+        { id: "collana", label: "Collana", value: book.value.collana },
+        {
+          id: "numeroCollana",
+          label: "Numeor Collana",
+          value: book.value.numeroCollana,
+        },
         //        { id: "signedUrl", label: "Front", value: book.value.signedUrl },
         //        { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
 
@@ -224,23 +297,14 @@ const fetchBookDetails = async () => {
         //   label: "First Edition Year",
         //   value: book.value.ed_1Anno,
         // },
-        {
-          id: "numeroCollana",
-          label: "Numeor Collana",
-          value: book.value.numeroCollana,
-        },
+
         {
           id: "annoPubblicazione",
-          label: "Publication Year",
+          label: "Publicato",
           value: book.value.annoPubblicazione,
         },
         //{ id: "edizione", label: "Edizione", value: book.value.edizione },
-        { id: "collana", label: "Collana", value: book.value.collana },
-        {
-          id: "numeroCollana",
-          label: "Numeor Collana",
-          value: book.value.numeroCollana,
-        },
+
         {
           id: "titoloOriginale",
           label: "Titolo Orginale",
@@ -251,6 +315,8 @@ const fetchBookDetails = async () => {
       console.log("Book details:", book.value); // Log book details
       console.log("Book details:", bookDetails.value); // Log bookDetails
     } else {
+      router.push({ name: "ErrorPage" }); // Redirect to the error route if document does not exist
+
       console.log("No such document!");
     }
   } catch (error) {

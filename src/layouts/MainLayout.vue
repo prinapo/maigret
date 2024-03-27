@@ -6,7 +6,7 @@
 
         <q-toolbar-title>
           <q-avatar>
-            <img src="/src/assets/MaigretIcon.svg" />
+            <img src="/public/images/MaigretIcon.svg" />
           </q-avatar>
           Maigret Collectors
         </q-toolbar-title>
@@ -35,12 +35,25 @@
             <q-icon name="account_circle" />
           </q-item-section>
         </q-item>
+
+        <q-separator />
+
         <q-item clickable to="/configuration">
           <q-item-section>
             <q-item-label>Configuration</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="build" />
+          </q-item-section>
+        </q-item>
+
+        <q-separator />
+        <q-item clickable to="/newbook">
+          <q-item-section>
+            <q-item-label>New Book</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="new" />
           </q-item-section>
         </q-item>
       </q-list>

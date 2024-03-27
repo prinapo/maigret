@@ -1,88 +1,85 @@
 <template>
-  <div class="q-gutter-sm q-mb-md">
-    <q-page-sticky position="top-left">
-      <q-expansion-item
-        label="Filters"
-        v-model="isOpen"
-        @update:model-value="toggleExpansion"
-      >
-        <!-- Filter by Title -->
-        <q-input
-          v-model="searchQuery"
-          outlined
-          label="Filter by Title"
-          dense
-          @update:model-value="updateSearchQuery"
-          clearable
-        ></q-input>
-        <!-- Filter by Editore -->
-        <q-select
-          v-model="selectedEditore"
-          outlined
-          label="Filter by Editore"
-          dense
-          :options="editori"
-          @update:model-value="handleEditoreChange"
-          clearable
-        ></q-select>
-        <!-- Filter by collane -->
-        <q-select
-          v-model="selectedCollana"
-          outlined
-          label="Filter by collana"
-          dense
-          :options="collane"
-          @update:model-value="handleCollanaChange"
-          clearable
-        ></q-select>
-        <!-- Tick selection to show/hide books with language "Francese" -->
-        <q-checkbox
-          v-model="showFranceseBooks"
-          label="Show Francese Books"
-          @update:model-value="handleFranceseChange"
-        />
-      </q-expansion-item>
-    </q-page-sticky>
+  <div class="q-gutter-sm q-mb-md" style="color: secondary">
+    <q-expansion-item
+      label="Filters"
+      v-model="isOpen"
+      @update:model-value="toggleExpansion"
+    >
+      <!-- Filter by Title -->
+      <q-input
+        v-model="searchQuery"
+        outlined
+        label="Filter by Title"
+        dense
+        @update:model-value="updateSearchQuery"
+        clearable
+      ></q-input>
+      <!-- Filter by Editore -->
+      <q-select
+        v-model="selectedEditore"
+        outlined
+        label="Filter by Editore"
+        dense
+        :options="editori"
+        @update:model-value="handleEditoreChange"
+        clearable
+      ></q-select>
+      <!-- Filter by collane -->
+      <q-select
+        v-model="selectedCollana"
+        outlined
+        label="Filter by collana"
+        dense
+        :options="collane"
+        @update:model-value="handleCollanaChange"
+        clearable
+      ></q-select>
+      <!-- Tick selection to show/hide books with language "Francese" -->
+      <q-checkbox
+        v-model="showFranceseBooks"
+        label="Show Francese Books"
+        @update:model-value="handleFranceseChange"
+      />
+    </q-expansion-item>
   </div>
-  <q-page-sticky position="top-center">
-    <div class="q-pa-md">
-      <div class="flex flex-center column">
-        <q-virtual-scroll
-          style="max-height: 90vh"
-          :items="filteredBibliografia"
-          separator
-        >
-          <!-- Card content -->
-          <template v-slot="{ item }">
-            <q-item clickable v-ripple @click="openDettaglioLibro(item.id)">
-              <!-- Open modal on click -->
-              <q-item-section>
-                <!-- Use QImg component -->
-                <!-- q-img for lazy loading the image -->
-                <q-img
-                  :src="
-                    item && item.signedUrl
-                      ? fireStoreUrl + item.signedUrl
-                      : bookImage
-                  "
-                  width="120px"
-                  fit="scale-down"
-                />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label lines="1">{{ item.titolo }}</q-item-label>
-                <q-item-label caption>{{ item.editore }}</q-item-label>
-                <q-item-label caption>{{ item.collana }}</q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-icon name="info" />
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-virtual-scroll>
-      </div>
+  <div class="q-pa-md">
+    <div class="flex flex-center">
+      <q-virtual-scroll
+        style="max-height: 90vh"
+        :items="filteredBibliografia"
+        separator
+        :virtual-scroll-item-size="200"
+      >
+        <!-- Card content -->
+        <template v-slot="{ item }">
+          <q-item clickable v-ripple @click="openDettaglioLibro(item.id)">
+            <!-- Open modal on click -->
+            <q-item-section>
+              <!-- Use QImg component -->
+              <!-- q-img for lazy loading the image -->
+              <q-img
+                :src="
+                  item && item.signedUrl
+                    ? fireStoreUrl + item.signedUrl
+                    : bookImage
+                "
+                width="120px"
+                fit="scale-down"
+              />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label lines="1">{{ item.titolo }}</q-item-label>
+              <q-item-label caption>{{ item.editore }}</q-item-label>
+              <q-item-label caption>{{ item.collana }}</q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-icon name="info" />
+            </q-item-section>
+          </q-item>
+        </template>
+      </q-virtual-scroll>
     </div>
-  </q-page-sticky>
+  </div>
 </template>
 
 <script setup>
@@ -218,34 +215,4 @@ const clearFilters = () => {
 };
 </script>
 
-<style scoped>
-/* Add custom styles here if needed */
-html {
-  font-size: 22px;
-}
-body {
-  padding: 1rem;
-}
-
-.card {
-  background-color: dodgerblue;
-  color: white;
-  padding: 1rem;
-  height: 12rem;
-}
-.cards {
-  max-width: 800px;
-  margin: 0 auto;
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-.load-more-btn {
-  margin-top: 20px; /* Adjust the margin value as needed */
-}
-.button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px; /* Adjust the margin value as needed */
-}
-</style>
+<style scoped></style>
