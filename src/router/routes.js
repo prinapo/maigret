@@ -37,6 +37,11 @@ const routes = [
         name: "ErrorPage",
         component: () => import("pages/ErrorPage.vue"),
       },
+      {
+        path: "/registration",
+        name: "registration",
+        component: () => import("pages/RegistrationPage.vue"),
+      },
     ],
   },
 

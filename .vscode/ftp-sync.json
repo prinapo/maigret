@@ -1,0 +1,27 @@
+{
+  "remotePath": "./",
+  "host": "ftp.sostienilsostegno.com",
+  "username": "admin@maigret.crostata.org",
+  "password": "61PrnGnnMgr!!",
+  "port": 21,
+  "secure": false,
+  "protocol": "ftp",
+  "uploadOnSave": false,
+  "passive": false,
+  "debug": false,
+  "privateKeyPath": null,
+  "passphrase": null,
+  "agent": null,
+  "allow": [],
+  "ignore": [
+    "\\.vscode",
+    "\\.git",
+    "\\.DS_Store"
+  ],
+  "generatedFiles": {
+    "extensionsToInclude": [
+      ""
+    ],
+    "path": ""
+  }
+}

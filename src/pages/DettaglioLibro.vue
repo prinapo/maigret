@@ -55,7 +55,7 @@
                 <q-img v-else :src="bookImage" style="cursor: pointer" />
               </q-carousel-slide>
             </q-carousel>
-            <q-expansion-item>
+            <q-expansion-item v-if="isLoggedIn">
               <FirebaseUploader
                 :blocking="true"
                 extention=""
@@ -116,7 +116,7 @@
                     outlined
                     v-model="detail.value"
                     :label="detail.label"
-                    :readonly="detail.editable"
+                    :readonly="!isLoggedIn"
                     class="text-h6 text-grey-11"
                     dark
                     color="accent"
@@ -132,9 +132,10 @@
                     :label="detail.label"
                     @change="detail.value = selectedEditore"
                     dark=""
+                    :readonly="!isLoggedIn"
                   />
                 </q-item-section>
-                <q-item-section top side v-if="!detail.editable">
+                <q-item-section top side v-if="isLoggedIn">
                   <div>
                     <q-btn
                       size="12px"
@@ -151,10 +152,153 @@
             </q-list>
           </q-card-section>
         </div>
-        <div class="q-pa-md q-gutter-sm text-center mt-4">
-          <q-btn label="Elimina" color="negative" @click="confirm = true" />
+        <div>
+          <div>Edizioni</div>
 
-          <q-dialog v-model="confirm" persistent>
+          <div class="q-gutter-md row items-start justify-start">
+            <q-card
+              v-for="(edizione, index) in edizioni"
+              :key="index"
+              class="q-mb-md"
+              style="max-width: 200px"
+            >
+              <q-card-section class="overflow-auto">
+                <div class="row q-gutter-md items-center">
+                  <div class="col">
+                    <q-input
+                      outlined
+                      v-model="edizione.numero"
+                      label="Edizione"
+                      color="accent"
+                      style="max-width: 100px"
+                    />
+                  </div>
+                  <div class="col-auto">
+                    <q-btn
+                      flat
+                      icon="save"
+                      color="blue-4"
+                      @click="
+                        saveEdizioneDetail(
+                          'numero',
+                          index,
+                          edizione.numero,
+                          index,
+                        )
+                      "
+                    />
+                  </div>
+                </div>
+
+                <div class="row q-gutter-md items-center">
+                  <div class="col">
+                    <q-input
+                      outlined
+                      v-model.number="edizione.anno"
+                      label="Anno"
+                      color="accent"
+                      class="col"
+                      type="number"
+                      style="max-width: 100px"
+                    />
+                  </div>
+                  <div class="col-auto">
+                    <q-btn
+                      flat
+                      icon="save"
+                      color="blue-4"
+                      @click="saveEdizioneDetail('anno', index, edizione.anno)"
+                    />
+                  </div>
+                </div>
+
+                <div class="row q-gutter-md items-center">
+                  <div class="col">
+                    <q-toggle
+                      v-model="edizione.posseduto"
+                      label="Posseduto"
+                      color="green"
+                      @update:model-value="
+                        savePossessoEdizione(edizione.uuid, edizione.posseduto)
+                      "
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+              <q-card-section class="row items-center q-gutter-md justify-end">
+                <div>
+                  <q-btn
+                    fab
+                    icon="add"
+                    color="purple-4"
+                    @click="confirmAddEdizione = true"
+                  />
+                  <q-dialog v-model="confirmAddEdizione" persistent>
+                    <q-card>
+                      <q-card-section class="q-pa-md">
+                        <p>Sei sicuro di voler aggiungere una edizione?</p>
+                      </q-card-section>
+
+                      <q-card-actions align="right">
+                        <q-btn
+                          flat
+                          label="Annulla"
+                          color="primary"
+                          @click="confirmAddEdizione = false"
+                        />
+                        <q-btn
+                          flat
+                          label="Conferma"
+                          color="negative"
+                          @click="addEdizione"
+                        />
+                      </q-card-actions>
+                    </q-card>
+                  </q-dialog>
+                </div>
+                <div>
+                  <q-btn
+                    fab
+                    icon="delete"
+                    color="purple-4"
+                    @click="confirmRemoveEdizione = true"
+                  />
+                  <q-dialog v-model="confirmRemoveEdizione" persistent>
+                    <q-card>
+                      <q-card-section class="q-pa-md">
+                        <p>Sei sicuro di voler rimuovere questa edizione?</p>
+                      </q-card-section>
+
+                      <q-card-actions align="right">
+                        <q-btn
+                          flat
+                          label="Annulla"
+                          color="primary"
+                          @click="confirmRemoveEdizione = false"
+                        />
+                        <q-btn
+                          flat
+                          label="Conferma"
+                          color="negative"
+                          @click="removeEdizione(index)"
+                        />
+                      </q-card-actions>
+                    </q-card>
+                  </q-dialog>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <div class="q-pa-md q-gutter-sm text-center mt-4" v-if="isLoggedIn">
+          <q-btn
+            label="Elimina il libro"
+            color="negative"
+            @click="confirmDeleteBook = true"
+          />
+
+          <q-dialog v-model="confirmDeleteBook" persistent>
             <q-card>
               <q-card-section class="q-pa-md">
                 <p>Sei sicuro di voler eliminare questo libro?</p>
@@ -165,7 +309,7 @@
                   flat
                   label="Annulla"
                   color="primary"
-                  @click="confirm = false"
+                  @click="confirmDeleteBook = false"
                 />
                 <q-btn
                   flat
@@ -185,8 +329,11 @@
 <script setup>
 onMounted(() => {
   fetchBookDetails();
+  checkAuthState();
+
   editori = editoriStore.editori;
-  console.log("editori in dettaaglio", editori);
+  console.log("user id", userID);
+  console.log("is logged in", isLoggedIn);
 });
 
 let editori = [];
@@ -198,19 +345,18 @@ import { useRoute, useRouter } from "vue-router";
 import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
 import { useEditoriStore, useBibliografiaStore } from "src/store/database";
 import { useQuasar } from "quasar";
-
+import { updateTimestamp } from "../utils/global";
+import { useAuth } from "../composable/auth";
+import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 const selectedEditore = ref("");
 const editoriStore = useEditoriStore();
 const quasar = useQuasar();
 const router = useRouter();
-import { useAuth } from "../composable/auth";
-
-const { isLoggedIn, checkAuthState } = useAuth();
+const { userID, isLoggedIn, checkAuthState } = useAuth();
 // Call checkAuthState to ensure isLoggedIn is up-to-date
 checkAuthState();
 // Define book and placeholder URL
 const book = ref({});
-import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 
 const slide = ref(1); // Initialize slide reference
 const fileInputRef = ref(null);
@@ -218,7 +364,14 @@ const imageVersion = ref(0);
 // Access route parameters
 const route = useRoute();
 const updatesBibliografiaTimesRef = doc(db, "Updates", "bibliografiaTimes");
-const confirm = ref(false);
+const confirmAddEdizione = ref(false);
+const confirmRemoveEdizione = ref(false);
+const confirmDeleteBook = ref(false);
+
+const bookDetails = ref([]);
+const edizioni = ref([]);
+// dichiaro la variabile che fa riferimento al libro in modifica globalmente per usarla in piu funzioni
+const docRef = doc(db, "Bibliografia", route.params.id);
 
 const deleteBook = async () => {
   try {
@@ -270,6 +423,8 @@ const fetchBookDetails = async () => {
         ...docSnap.data(),
       };
       // Populate bookDetails
+      const edizioniData = docSnap.data().edizioni;
+      console.log("edizioniData", edizioniData);
       bookDetails.value = [
         { id: "editore", label: "Editore", value: book.value.editore },
         { id: "titolo", label: "Titolo", value: book.value.titolo },
@@ -279,32 +434,14 @@ const fetchBookDetails = async () => {
           label: "Numeor Collana",
           value: book.value.numeroCollana,
         },
-        //        { id: "signedUrl", label: "Front", value: book.value.signedUrl },
-        //        { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
-
-        //{ id: "raccolta", label: "Raccolta", value: book.value.raccolta },
-        //{ id: "confermato", label: "Confermato", value: book.value.confermato },
-        //       {       id: "ed_2Anno",   label: "Second Edition Year",       value: book.value.ed_2Anno, },
-        // {
-        //   id: "ed_1Posseduta",
-        //   label: "First Edition Possessed",
-        //   value: book.value.ed_1Posseduta,
-        // },
         { id: "lingua", label: "Lingua", value: book.value.lingua },
         { id: "posseduto", label: "Posseduto", value: book.value.posseduto },
-        // {
-        //   id: "ed_1Anno",
-        //   label: "First Edition Year",
-        //   value: book.value.ed_1Anno,
-        // },
 
         {
           id: "annoPubblicazione",
           label: "Publicato",
           value: book.value.annoPubblicazione,
         },
-        //{ id: "edizione", label: "Edizione", value: book.value.edizione },
-
         {
           id: "titoloOriginale",
           label: "Titolo Orginale",
@@ -312,8 +449,13 @@ const fetchBookDetails = async () => {
         },
         // { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
       ];
-      console.log("Book details:", book.value); // Log book details
-      console.log("Book details:", bookDetails.value); // Log bookDetails
+      if (!edizioniData || edizioniData.length === 0) {
+        await addEdizione();
+      } else {
+        edizioni.value = edizioniData;
+        console.log("edizioni value already exist", edizioni.value);
+        // Populate edizioni array
+      }
     } else {
       router.push({ name: "ErrorPage" }); // Redirect to the error route if document does not exist
 
@@ -349,14 +491,7 @@ const handleFileUploaded = async (extension, files) => {
     );
     if (updatedDetailIndex !== -1) {
       bookDetails.value[updatedDetailIndex].value = fileURL;
-      console.log(
-        "Book details updated:",
-        detailId,
-        " ",
-        bookDetails.value[updatedDetailIndex].value,
-        "",
-        book.value.signedUrl,
-      );
+
       // Update data in local storage if it exists
       const localBibliografiaData = localStorage.getItem("bibliografiaData");
       if (localBibliografiaData) {
@@ -394,7 +529,6 @@ const toggleEdit = (detail) => {
   detail.editable = !detail.editable;
 };
 // Define book details
-const bookDetails = ref([]);
 
 // Define method to handle edit action for a detail
 const editDetail = (detail) => {
@@ -403,13 +537,13 @@ const editDetail = (detail) => {
 };
 
 const saveDetail = async (detail) => {
-  console.log("detail", detail);
+  // creo il nuovo timestamp
   const timestamp = new Date().valueOf();
-
   try {
+    //creo il ref al libro corrente le info del signolo libro
     const docRef = doc(db, "Bibliografia", route.params.id);
 
-    // Use "set with merge" operation to update the document
+    // Uso "setDoc per fare un merge tra i dati che carico e i dati presenti nele documento online
     await setDoc(
       docRef,
       {
@@ -417,7 +551,7 @@ const saveDetail = async (detail) => {
       },
       { merge: true },
     );
-    console.log("saved data ", detail.id, detail.value);
+    // aggiorno il timestamp nel libro corrente
     await setDoc(
       docRef,
       {
@@ -429,31 +563,9 @@ const saveDetail = async (detail) => {
     detail.editable = false; // Set editable to false after saving
     console.log("Detail saved successfully!");
 
-    // Add timestamp to the updates array in the bibliographyTimes document
-    const docSnap = await getDoc(updatesBibliografiaTimesRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const updates = data.updates || []; // Get the current array or initialize an empty array if it doesn't exist
-
-      // Check if the new timestamp already exists in the array
-      if (!updates.includes(timestamp)) {
-        // If the timestamp doesn't exist, update the document with the new array
-        updates.push(timestamp);
-        await updateDoc(updatesBibliografiaTimesRef, { updates });
-        console.log("Timestamp added to updates array:", timestamp);
-
-        // Update the lastUpdate value in localStorage
-        localStorage.setItem("lastUpdate", timestamp.toString());
-        quasar.notify({
-          message: `"${detail.id}" "${detail.value}" saved successfully!`,
-          color: "positive",
-        });
-      } else {
-        console.log("Timestamp already exists in updates array:", timestamp);
-      }
-    } else {
-      console.log("Document does not exist.");
-    }
+    // chiamo la funxione per aggiornare il timestamp localmente
+    // Update timestamp
+    await updateTimestamp(timestamp);
   } catch (error) {
     console.error("Error saving detail:", error);
     quasar.notify({
@@ -463,6 +575,169 @@ const saveDetail = async (detail) => {
   }
 };
 // Fetch book details on component mount
+const saveEdizioneDetail = async (name, index, value) => {
+  try {
+    const timestamp = new Date().valueOf();
+    const docRef = doc(db, "Bibliografia", route.params.id);
+
+    // Check if the index is valid
+    const edizioniSnapshot = await getDoc(docRef);
+    const edizioniData = edizioniSnapshot.data();
+    const existingEdizioni = edizioniData.edizioni || [];
+
+    // Create a new array with the updated value
+    const updatedEdizioni = existingEdizioni.map((item, i) => {
+      if (i === index) {
+        // If it's the target index, update the specified field
+        return {
+          ...item,
+          [name]: value,
+        };
+      } else {
+        // Otherwise, return the item as is
+        return item;
+      }
+    });
+
+    // Update the specified item in the 'edizioni' array
+    await updateDoc(docRef, { edizioni: updatedEdizioni });
+
+    // Update the timestamp in the parent document
+    await setDoc(
+      docRef,
+      {
+        timestamp: timestamp,
+      },
+      { merge: true },
+    );
+
+    console.log(`Detail "${name}" at index ${index} saved successfully!`);
+
+    // Call the function to update the timestamp locally
+    await updateTimestamp(timestamp);
+  } catch (error) {
+    console.error("Error saving edizione detail:", error);
+    quasar.notify({
+      message: `Error saving edizione detail: ${error.message}`,
+      color: "negative",
+    });
+  }
+};
+
+const savePossessoEdizione = async (edizione, value) => {
+  console.log("userID:", userID);
+  console.log("isloggedin", isLoggedIn);
+  console.log("edizione:", edizione);
+  try {
+    // Access the actual value of userID
+    const userIdValue = userID.value;
+
+    // Create the Firestore document reference using the user ID
+    const docRef = doc(db, "Users", userIdValue);
+    const updatedFields = {
+      [edizione]: value, // Dynamically set the field name and its value
+    };
+    await updateDoc(docRef, updatedFields);
+
+    console.log(`Updated Firebase field ${edizione} with value:`, value);
+  } catch (error) {
+    console.error("Error saving possession edition:", error);
+  }
+};
+
+// Function to generate UUID
+const generateUUID = () => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+// Function to add a new edizione
+const addEdizione = async () => {
+  try {
+    const docRef = doc(db, "Bibliografia", route.params.id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      let existingEdizioni = docSnap.data().edizioni || [];
+
+      console.log("edizioni", edizioni.value);
+      const defaultEdizione = {
+        anno: 1900,
+        backCoverUrl: "dummy",
+        borderCoverUrl: "dummy",
+        frontCoverUrl: "dummy",
+        numero: 1,
+        posseduto: false,
+        uuid: generateUUID(),
+      };
+      // Convert existingEdizioni to an array if it's an object
+      if (
+        typeof existingEdizioni === "object" &&
+        !Array.isArray(existingEdizioni)
+      ) {
+        existingEdizioni = Object.values(existingEdizioni);
+      }
+
+      // Ensure existingEdizioni is an array
+      if (!Array.isArray(existingEdizioni)) {
+        existingEdizioni = [];
+      }
+      // Update edizioni array
+      //existingEdizioni.push(defaultEdizione);
+
+      // Update Firebase document
+      await updateDoc(docRef, {
+        edizioni: [...existingEdizioni, defaultEdizione],
+      });
+
+      // Update the local edizioni value
+      edizioni.value = [...existingEdizioni, defaultEdizione];
+      //aggiiorno il timestamp locale e su firebase
+      const timestamp = new Date().valueOf();
+      await updateTimestamp(timestamp);
+
+      console.log("New edizione added successfully:", defaultEdizione);
+    } else {
+      console.log("No such document!");
+    }
+  } catch (error) {
+    console.error("Error adding new edizione:", error);
+  }
+  confirmAddEdizione.value = false;
+};
+const removeEdizione = async (index) => {
+  try {
+    // Check if the index is valid
+    if (index < 0 || index >= edizioni.value.length) {
+      console.error("Invalid index:", index);
+      return;
+    }
+
+    // Remove the edizione at the specified index
+    edizioni.value.splice(index, 1)[0];
+
+    // mi carico i dati correnti
+    const docSnapshot = await getDoc(docRef);
+    const existingData = docSnapshot.data();
+    // Update only the edizioni field, leaving other fields unchanged
+    await setDoc(docRef, {
+      ...existingData, // Spread existing data to keep other fields unchanged
+      edizioni: edizioni.value, // Replace the edizioni field with the new value
+    });
+
+    // Update the timestamp locally and on Firebase
+    const timestamp = new Date().valueOf();
+    await updateTimestamp(timestamp);
+  } catch (error) {
+    console.error("Error removing edizione:", error);
+  }
+  confirmRemoveEdizione.value = false;
+};
+
+// Call the function to check and create Edizioni array
 </script>
 
 <style scoped></style>

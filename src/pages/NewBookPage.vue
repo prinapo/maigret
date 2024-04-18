@@ -9,7 +9,7 @@
         <div class="text-h4 text-center text-white q-py-xs q-my-xs">
           New Book
         </div>
-        <q-card-section id="text" class="overflow: auto">
+        <q-card-section id="text" class="overflow: auto" v-if="isLoggedIn">
           <!-- Book Details Form -->
           <q-list>
             <!-- Iterate through book details -->
@@ -30,7 +30,7 @@
         </q-card-section>
       </div>
     </div>
-    <div class="text-center mt-4">
+    <div class="text-center mt-4" v-if="isLoggedIn">
       <q-btn color="primary" label="Save Book" @click="saveBook" />
     </div>
   </div>
@@ -46,6 +46,12 @@ import { useEditoriStore, useBibliografiaStore } from "src/store/database";
 import { useQuasar } from "quasar";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "vue-router";
+
+import { useAuth } from "../composable/auth";
+
+const { isLoggedIn, checkAuthState } = useAuth();
+// Call checkAuthState to ensure isLoggedIn is up-to-date
+checkAuthState();
 
 const router = useRouter();
 

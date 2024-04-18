@@ -9,6 +9,7 @@ export const useBibliografiaStore = defineStore("bibliografia", {
     updateBibliografia(newBibliografia) {
       this.bibliografia = newBibliografia;
     },
+
     // Clear bibliografia state
     clearBibliografia() {
       this.bibliografia = [];
@@ -21,6 +22,14 @@ export const useBibliografiaStore = defineStore("bibliografia", {
     removeBook(bookId) {
       this.bibliografia = this.bibliografia.filter(
         (book) => book.id !== bookId,
+      );
+    },
+    updateEdizioni(newEdizioni) {
+      this.edizioni = newEdizioni;
+    },
+    removeEdizione(uuid) {
+      this.edizioni = this.edizioni.filter(
+        (edizione) => edizione.uuid !== uuid,
       );
     },
   },

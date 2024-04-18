@@ -11,9 +11,13 @@ export async function fetchAndUpdateCollane() {
   const collaneStore = useCollaneStore(); // Initialize the Pinia store
 
   // Read the last update time for collane from the "Updates" collection
+  // Read the last update time for Bibliografia from the "Updates" collectio
+
   const collaneRef = doc(db, "Updates", "collaneTimes");
   const collaneSnapshot = await getDoc(collaneRef);
-  const collaneLastUpdateFirebase = collaneSnapshot.data().updates.slice(-1)[0];
+  const collaneData = collaneSnapshot.data();
+  const collaneLastUpdateFirebase = collaneData.collaneTimestamp;
+
   const localCollaneData = localStorage.getItem("collane");
   const localCollaneLastUpdate =
     parseInt(localStorage.getItem("collaneLastUpdate")) || 0;

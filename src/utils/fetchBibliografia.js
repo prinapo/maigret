@@ -16,9 +16,8 @@ export async function fetchAndUpdateBibliografia() {
     // Read the last update time for Bibliografia from the "Updates" collection
     const bibliografiaRef = doc(db, "Updates", "bibliografiaTimes");
     const bibliografiaSnapshot = await getDoc(bibliografiaRef);
-    const bibliografiaLastUpdateFirebase = bibliografiaSnapshot
-      .data()
-      .updates.slice(-1)[0];
+    const bibliografiaData = bibliografiaSnapshot.data();
+    const bibliografiaLastUpdateFirebase = bibliografiaData.biblioTimestamp;
 
     console.log(
       "Last update time fetched for Bibliografia:",
@@ -74,6 +73,5 @@ export async function fetchAndUpdateBibliografia() {
   } finally {
     loading.value = false; // Set loading to false after fetch operation completes
   }
-
   return { loading };
 }

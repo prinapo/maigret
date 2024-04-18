@@ -17,7 +17,10 @@ export async function fetchAndUpdateEditori() {
   // Read the last update time for Editori from the "Updates" collection
   const editoriRef = doc(db, "Updates", "editoriTimes");
   const editoriSnapshot = await getDoc(editoriRef);
-  const editoriLastUpdateFirebase = editoriSnapshot.data().updates.slice(-1)[0];
+
+  const editoriData = editoriSnapshot.data();
+  const editoriLastUpdateFirebase = editoriData.editoriTimestamp;
+
   const localEditoriData = localStorage.getItem("editori");
   const localEditoriLastUpdate =
     parseInt(localStorage.getItem("editoriLastUpdate")) || 0;
