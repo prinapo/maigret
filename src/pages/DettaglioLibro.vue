@@ -160,6 +160,7 @@
               v-for="(edizione, index) in edizioni"
               :key="index"
               class="q-mb-md"
+              :class="edizione.posseduto ? 'bg-green-3' : 'bg-grey-2'"
               style="max-width: 200px"
             >
               <q-card-section class="overflow-auto">
@@ -360,10 +361,8 @@ const book = ref({});
 
 const slide = ref(1); // Initialize slide reference
 const fileInputRef = ref(null);
-const imageVersion = ref(0);
 // Access route parameters
 const route = useRoute();
-const updatesBibliografiaTimesRef = doc(db, "Updates", "bibliografiaTimes");
 const confirmAddEdizione = ref(false);
 const confirmRemoveEdizione = ref(false);
 const confirmDeleteBook = ref(false);
@@ -417,8 +416,9 @@ const fetchBookDetails = async () => {
   try {
     const docRef = doc(db, "Bibliografia", route.params.id);
     const docSnap = await getDoc(docRef);
+
     if (docSnap.exists()) {
-      book.value = {
+      const fetchedBook = {
         id: docSnap.id,
         ...docSnap.data(),
       };
@@ -426,39 +426,69 @@ const fetchBookDetails = async () => {
       const edizioniData = docSnap.data().edizioni;
       console.log("edizioniData", edizioniData);
       bookDetails.value = [
-        { id: "editore", label: "Editore", value: book.value.editore },
-        { id: "titolo", label: "Titolo", value: book.value.titolo },
-        { id: "collana", label: "Collana", value: book.value.collana },
+        { id: "editore", label: "Editore", value: fetchedBook.editore },
+        { id: "titolo", label: "Titolo", value: fetchedBook.titolo },
+        { id: "collana", label: "Collana", value: fetchedBook.collana },
         {
           id: "numeroCollana",
-          label: "Numeor Collana",
-          value: book.value.numeroCollana,
+          label: "Numero Collana",
+          value: fetchedBook.numeroCollana,
         },
-        { id: "lingua", label: "Lingua", value: book.value.lingua },
-        { id: "posseduto", label: "Posseduto", value: book.value.posseduto },
-
+        { id: "lingua", label: "Lingua", value: fetchedBook.lingua },
         {
           id: "annoPubblicazione",
-          label: "Publicato",
-          value: book.value.annoPubblicazione,
+          label: "Pubblicato",
+          value: fetchedBook.annoPubblicazione,
         },
         {
           id: "titoloOriginale",
-          label: "Titolo Orginale",
-          value: book.value.titoloOriginale,
+          label: "Titolo Originale",
+          value: fetchedBook.titoloOriginale,
         },
-        // { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
       ];
+      const userIdValue = userID.value;
+      const userDocRef = doc(db, "Users", userIdValue);
+      const userDocSnap = await getDoc(userDocRef);
+      const userData = userDocSnap.data();
+      const userBook = userData.books.find(
+        (item) => item.bookUuid === route.params.id,
+      );
+      const possedutoValue = userBook ? userBook.posseduto : false;
+
+      // Add posseduto entry to bookDetails with id "posseduto" and label "Posseduto"
+      // and value as userData[route.params.id]
+      bookDetails.value.push({
+        id: "posseduto",
+        label: "Posseduto",
+        value: possedutoValue,
+      });
+
+      console.log("Book details:", bookDetails.value);
+
       if (!edizioniData || edizioniData.length === 0) {
         await addEdizione();
       } else {
-        edizioni.value = edizioniData;
-        console.log("edizioni value already exist", edizioni.value);
-        // Populate edizioni array
+        // Iterate through edizioniData array
+        const updatedEdizioni = edizioniData.map((edizione) => {
+          // Check if userData is defined and if the edizione.uuid exists in userData.edizioni
+          if (userData && userData.edizioni) {
+            const userDataEdizione = userData.edizioni.find(
+              (item) => item.edizioneUuid === edizione.uuid,
+            );
+            if (userDataEdizione) {
+              // If the edizione.uuid exists in userData.edizioni, update the posseduto value
+              return { ...edizione, posseduto: userDataEdizione.posseduto };
+            }
+          }
+          // If userData or the edizione.uuid doesn't exist in userData.edizioni, return the original edizione
+          return edizione;
+        });
+
+        edizioni.value = updatedEdizioni;
+        console.log("Updated edizioni:", edizioni.value);
       }
     } else {
       router.push({ name: "ErrorPage" }); // Redirect to the error route if document does not exist
-
       console.log("No such document!");
     }
   } catch (error) {
@@ -631,14 +661,86 @@ const savePossessoEdizione = async (edizione, value) => {
   try {
     // Access the actual value of userID
     const userIdValue = userID.value;
+    const userDocRef = doc(db, "Users", userIdValue);
+    const userDocSnap = await getDoc(userDocRef);
 
-    // Create the Firestore document reference using the user ID
-    const docRef = doc(db, "Users", userIdValue);
-    const updatedFields = {
-      [edizione]: value, // Dynamically set the field name and its value
-    };
-    await updateDoc(docRef, updatedFields);
+    if (userDocSnap.exists()) {
+      // Get the user data
+      const userData = userDocSnap.data();
 
+      if (Array.isArray(userData.edizioni)) {
+        // Check if the edizione already exists in the array
+        const existingEdizioneIndex = userData.edizioni.findIndex(
+          (item) => item.edizioneUuid === edizione,
+        );
+
+        if (existingEdizioneIndex !== -1) {
+          // If the edizione exist, update posseduto
+          userData.edizioni[existingEdizioneIndex].posseduto = value;
+          // Update the user document in Firestore to only update the edizioni array
+        } else {
+          // If the edizione already exists, update the posseduto value if it's different from the new value
+          userData.edizioni.push({ edizioneUuid: edizione, posseduto: value });
+        }
+        await updateDoc(userDocRef, {
+          edizioni: userData.edizioni,
+        });
+      } else {
+        // If userData.edizioni is not an array or is null, create a new array with the entry
+        await updateDoc(userDocRef, {
+          edizioni: [{ edizioneUuid: edizione, posseduto: value }],
+        });
+      }
+      // Get the editions array
+      const editions = edizioni.value || [];
+      // Check if any edition in editions has posseduto = true
+      const oneEditionPossessed = editions.some((edition) => edition.posseduto);
+      console.log("possessed", oneEditionPossessed);
+      console.log("bookDetails.value.posseduto", bookDetails.value);
+      const bookDetailsArray = bookDetails.value || [];
+
+      // Find the object with id "posseduto"
+      if (bookDetailsArray.length > 0) {
+        const possedutoObj = bookDetailsArray.find(
+          (obj) => obj.id === "posseduto",
+        );
+        const index = bookDetailsArray.findIndex(
+          (obj) => obj.id === "posseduto",
+        );
+
+        if (possedutoObj && possedutoObj.value !== oneEditionPossessed) {
+          // Update local bookDetail
+          bookDetailsArray[index].value = oneEditionPossessed;
+
+          if (!userData.books) {
+            userData.books = [];
+          }
+          // Check if the book already exists in the array
+          const existingBookIndex = userData.books.findIndex(
+            (item) => item.edizioneUuid === route.params.id,
+          );
+
+          if (existingBookIndex !== -1) {
+            // If the edizione exist, update posseduto
+            userData.books[existingBookIndex].posseduto = value;
+            // Update the user document in Firestore to only update the edizioni array
+            await updateDoc(userDocRef, {
+              books: userData.books,
+            });
+            console.log("Posseduto value updated successfully.");
+          } else {
+            // If the edizione do not  exists, update the posseduto value if it's different from the new value
+            userData.books.push({
+              edizioneUuid: route.params.id,
+              posseduto: value,
+            });
+            await updateDoc(userDocRef, {
+              books: userData.books,
+            });
+          }
+        }
+      }
+    }
     console.log(`Updated Firebase field ${edizione} with value:`, value);
   } catch (error) {
     console.error("Error saving possession edition:", error);

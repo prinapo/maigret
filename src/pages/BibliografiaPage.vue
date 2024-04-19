@@ -52,7 +52,12 @@
       >
         <!-- Card content -->
         <template v-slot="{ item }">
-          <q-item clickable v-ripple @click="openDettaglioLibro(item.id)">
+          <q-item
+            clickable
+            v-ripple
+            @click="openDettaglioLibro(item.id)"
+            :class="item.possessed ? 'bg-green-3' : 'bg-grey-2'"
+          >
             <!-- Open modal on click -->
             <q-item-section>
               <!-- Use QImg component -->
@@ -71,6 +76,7 @@
               <q-item-label lines="1">{{ item.titolo }}</q-item-label>
               <q-item-label caption>{{ item.editore }}</q-item-label>
               <q-item-label caption>{{ item.collana }}</q-item-label>
+              <q-item-label caption>{{ item.possessed }}</q-item-label>
             </q-item-section>
             <q-item-section side>
               <q-icon name="info" />
@@ -93,6 +99,7 @@ import { ref, computed, onMounted } from "vue";
 import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
 import { useRouter } from "vue-router";
+import { useAuth } from "../composable/auth";
 
 const router = useRouter();
 let bibliografia = [];
@@ -110,6 +117,7 @@ const selectedCollana = ref("");
 const showFranceseBooks = ref(false);
 const isInitialized = ref(false);
 const isOpen = ref(false);
+const { userID, isLoggedIn, checkAuthState } = useAuth();
 
 onMounted(() => {
   bibliografia = bibliografiaStore.bibliografia;
@@ -117,6 +125,7 @@ onMounted(() => {
   collane = collaneStore.collane;
   console.log("editori in Bibliografia", editori);
   console.log("collane in Bibliografia", collane);
+  checkAuthState();
 
   searchQuery.value = filtersStore.searchQuery;
   selectedEditore.value = filtersStore.selectedEditore;

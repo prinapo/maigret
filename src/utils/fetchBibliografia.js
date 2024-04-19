@@ -2,6 +2,10 @@ import { db } from "../firebase/firebaseInit";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useBibliografiaStore } from "../store/database";
 import { ref } from "vue";
+import { useAuth } from "../composable/auth";
+const { userID, isLoggedIn, checkAuthState } = useAuth();
+// Call checkAuthState to ensure isLoggedIn is up-to-date
+checkAuthState();
 
 // Function to fetch and update Bibliografia data and localStorage
 export async function fetchAndUpdateBibliografia() {
@@ -46,6 +50,21 @@ export async function fetchAndUpdateBibliografia() {
         signedUrl: doc.data().signedUrl,
         uniqueId: doc.data()._id,
       }));
+      // fetch the user data
+      const userIdValue = userID.value;
+      const userDocRef = doc(db, "Users", userIdValue);
+      const userDocSnap = await getDoc(userDocRef);
+      const userData = userDocSnap.data();
+      // Iterate through both bibliografiaData and userData.books arrays
+      bibliografiaData.forEach((entry) => {
+        userData.books.forEach((book) => {
+          // Check if the uniqueId exists in the user's books array
+          if (book.edizioneUuid === entry.id) {
+            // Copy the value of the possessed variable to entry.possessed
+            entry.possessed = book.posseduto;
+          }
+        });
+      });
 
       //console.log("Bibliografia fetched:", bibliografiaData);
       bibliografiaStore.updateBibliografia(bibliografiaData); // Update Pinia store
