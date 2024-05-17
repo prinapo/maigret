@@ -42,6 +42,11 @@ const routes = [
         name: "registration",
         component: () => import("pages/RegistrationPage.vue"),
       },
+      {
+        path: "/tables",
+        name: "tables",
+        component: () => import("pages/TablesEditPage.vue"),
+      },
     ],
   },
 

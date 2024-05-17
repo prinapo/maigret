@@ -46,7 +46,14 @@
             <q-icon name="build" />
           </q-item-section>
         </q-item>
-
+        <q-item clickable to="/tables">
+          <q-item-section>
+            <q-item-label>Data Tables</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="table" />
+          </q-item-section>
+        </q-item>
         <q-separator />
         <q-item clickable to="/newbook">
           <q-item-section>

@@ -160,6 +160,13 @@ const login = async () => {
 
     // Check if the user is logged in and their email is verified
     if (user && user.emailVerified) {
+      const storedUserId = localStorage.getItem("userId");
+      if (storedUserId && storedUserId !== user.uid) {
+        // Clear all local storage variables if the logged-in user is different
+        localStorage.clear();
+      }
+      // Save the user ID in local storage
+      localStorage.setItem("userId", user.uid);
       alert("Logged in", "To logout, go back to the login page");
 
       // Redirect to the desired page after successful login
@@ -179,6 +186,7 @@ const login = async () => {
 
 const logout = async () => {
   try {
+    localStorage.setItem("userId", userID.value);
     await signOut(auth);
     isLoggedIn.value = false;
   } catch (error) {

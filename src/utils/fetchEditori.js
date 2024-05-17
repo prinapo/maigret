@@ -43,9 +43,7 @@ export async function fetchAndUpdateEditori() {
     const editoriSnapshot = await getDoc(editoriRef);
 
     if (editoriSnapshot.exists()) {
-      const editori = editoriSnapshot
-        .data()
-        .editore.map((item) => item.editore);
+      const editori = editoriSnapshot.data();
       console.log("Firebase Editori", editori);
       editoriStore.updateEditori(editori); // Update Pinia store
       console.log("Updating local storage for Editori...");

@@ -1,48 +1,95 @@
 <template>
-  <div class="q-gutter-sm q-mb-md" style="color: secondary">
-    <q-expansion-item
-      label="Filters"
-      v-model="isOpen"
-      @update:model-value="toggleExpansion"
-    >
-      <!-- Filter by Title -->
-      <q-input
-        v-model="searchQuery"
-        outlined
-        label="Filter by Title"
-        dense
-        @update:model-value="updateSearchQuery"
-        clearable
-      ></q-input>
-      <!-- Filter by Editore -->
-      <q-select
-        v-model="selectedEditore"
-        outlined
-        label="Filter by Editore"
-        dense
-        :options="editori"
-        @update:model-value="handleEditoreChange"
-        clearable
-      ></q-select>
-      <!-- Filter by collane -->
-      <q-select
-        v-model="selectedCollana"
-        outlined
-        label="Filter by collana"
-        dense
-        :options="collane"
-        @update:model-value="handleCollanaChange"
-        clearable
-      ></q-select>
-      <!-- Tick selection to show/hide books with language "Francese" -->
-      <q-checkbox
-        v-model="showFranceseBooks"
-        label="Show Francese Books"
-        @update:model-value="handleFranceseChange"
-      />
-    </q-expansion-item>
+  <div>
+    <div class="q-gutter-sm q-mb-md" style="color: secondary">
+      <q-expansion-item
+        label="Filters"
+        v-model="isOpen"
+        @update:model-value="toggleExpansion"
+      >
+        <!-- Filter by Title -->
+        <q-input
+          v-model="searchQuery"
+          outlined
+          label="Filter by Title"
+          dense
+          @update:model-value="updateSearchQuery"
+          clearable
+        ></q-input>
+        <!-- Filter by Editore -->
+        <q-select
+          v-model="selectedEditore"
+          outlined
+          label="Filter by Editore"
+          dense
+          :options="editori"
+          @update:model-value="handleEditoreChange"
+          clearable
+        ></q-select>
+        <!-- Filter by collane -->
+        <q-select
+          v-model="selectedCollana"
+          outlined
+          label="Filter by collana"
+          dense
+          :options="collane"
+          option-value="id"
+          option-label="collana"
+          @update:model-value="handleCollanaChange"
+          clearable
+        ></q-select>
+        <!-- Tick selection to show/hide books with language "Francese" -->
+        <q-checkbox
+          v-model="showFranceseBooks"
+          label="Show Francese Books"
+          @update:model-value="handleFranceseChange"
+        />
+      </q-expansion-item>
+    </div>
+    <div v-if="isDesktop">
+      <div class="q-pa-md" style="height: 100vh">
+        <!-- Use q-virtual-scroll to efficiently render large lists -->
+        <q-virtual-scroll
+          :items="rowsOfBooks"
+          :item-size="600"
+          style="height: 100%"
+        >
+          <template v-slot="{ item }">
+            <!-- Render each row of books -->
+            <div class="row items-start q-mt-md q-px-md q-col-gutter-md">
+              <template v-for="book in item" :key="book.id">
+                <q-card
+                  flat
+                  bordered
+                  class="column q-mr-xl q-ml-xl"
+                  style="width: 250px; height: 400px"
+                  @click="openDettaglioLibro(book.id)"
+                  :class="book.possessed ? 'bg-green-3' : 'bg-grey-2'"
+                >
+                  <q-img
+                    class="col"
+                    :src="
+                      fireStoreUrl + book.imageUrl + '?alt=media' || bookImage
+                    "
+                    style="width: 200px; height: 280px"
+                    fit="contain"
+                  />
+                  <q-card-section>
+                    <div>{{ book.titolo }}</div>
+                    <div>{{ book.editoreName }}</div>
+                    <div>{{ book.collanaName }}</div>
+                    <div>{{ book.possessed }}</div>
+                    <div>{{ book.imageUrl }}</div>
+                  </q-card-section>
+                </q-card>
+              </template>
+            </div>
+          </template>
+        </q-virtual-scroll>
+      </div>
+    </div>
   </div>
-  <div class="q-pa-md">
+
+  <div class="q-pa-md" v-if="!isDesktop">
     <div class="flex flex-center">
       <q-virtual-scroll
         style="max-height: 90vh"
@@ -75,7 +122,7 @@
             <q-item-section>
               <q-item-label lines="1">{{ item.titolo }}</q-item-label>
               <q-item-label caption>{{ item.editore }}</q-item-label>
-              <q-item-label caption>{{ item.collana }}</q-item-label>
+              <q-item-label caption>{{ item.collanaName }}</q-item-label>
               <q-item-label caption>{{ item.possessed }}</q-item-label>
             </q-item-section>
             <q-item-section side>
@@ -95,11 +142,16 @@ import {
   useCollaneStore,
 } from "src/store/database";
 import { useFiltersStore } from "../store/filtersStore";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watchEffect } from "vue";
 import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
 import { useRouter } from "vue-router";
 import { useAuth } from "../composable/auth";
+import { Platform } from "quasar";
+import { useQuasar } from "quasar";
+
+const isDesktop = ref(Platform.is.desktop);
+console.log("Platform information:", Platform);
 
 const router = useRouter();
 let bibliografia = [];
@@ -122,9 +174,11 @@ const { userID, isLoggedIn, checkAuthState } = useAuth();
 onMounted(() => {
   bibliografia = bibliografiaStore.bibliografia;
   editori = editoriStore.editori;
-  collane = collaneStore.collane;
+  collane = collaneStore.collane.collana;
   console.log("editori in Bibliografia", editori);
   console.log("collane in Bibliografia", collane);
+  console.log("Bibliografia in Bibilografia", bibliografia);
+
   checkAuthState();
 
   searchQuery.value = filtersStore.searchQuery;
@@ -136,7 +190,6 @@ onMounted(() => {
   isInitialized.value = true;
   // Set initialization status to true after onMounted
 });
-
 const openDettaglioLibro = (id) => {
   router.push({ name: "DettaglioLibro", params: { id } });
 };
@@ -147,7 +200,7 @@ const handleEditoreChange = (value) => {
 };
 
 const handleCollanaChange = (value) => {
-  //console.log("Collana selected:", value);
+  console.log("Collana selected:", value);
   filtersStore.updateSelectedCollana(value);
 };
 
@@ -176,6 +229,8 @@ const filteredBibliografia = computed(() => {
   const selectedCollanaValue = filtersStore.selectedCollana;
   const showFranceseBooksValue = filtersStore.showFranceseBooks;
 
+  console.log("Selected collana:", selectedCollanaValue);
+
   //console.log("searchQueryValue", searchQueryValue);
   //console.log("searchQueryValue.lowercase", searchQueryValue?.toLowerCase());
 
@@ -184,7 +239,7 @@ const filteredBibliografia = computed(() => {
 
   if (searchQueryValue) {
     filtered = filtered.filter((book) => {
-      //console.log("Book Object:", book);
+      console.log("Filtering by search query:", searchQueryValue);
       return (
         book.titolo &&
         book.titolo.toLowerCase().includes(searchQueryValue.toLowerCase())
@@ -199,10 +254,12 @@ const filteredBibliografia = computed(() => {
     ));
   }
   if (selectedCollanaValue) {
-    //console.log("filter collana", selectedCollanaValue);
-    return (filtered = filtered.filter(
-      (book) => book.collana === selectedCollanaValue,
-    ));
+    // Extract the collana name from the selectedCollana object
+    const selectedCollanaId = selectedCollanaValue.id;
+    console.log("Selected collana:", selectedCollanaId);
+
+    // Filter the books based on the collana name
+    filtered = filtered.filter((book) => book.collana === selectedCollanaId);
   }
   if (!showFranceseBooksValue) {
     //console.log("frnacese", showFranceseBooksValue);
@@ -222,6 +279,38 @@ const clearFilters = () => {
   searchQuery.value = "";
   selectedEditore.value = "";
 };
+// Function to group books into rows with specified number of columns
+
+const $q = useQuasar();
+const calculateColumnsAndGroupBooks = (books) => {
+  const screenWidth = $q.screen.width;
+  let columns;
+  if (screenWidth < 770) {
+    columns = 1;
+  } else if (screenWidth < 1122) {
+    columns = 2;
+  } else if (screenWidth < 1470) {
+    columns = 3;
+  } else if (screenWidth < 1600) {
+    columns = 4;
+  } else {
+    columns = 5;
+  }
+
+  console.log("Number of columns:", columns);
+
+  const rows = [];
+  for (let i = 0; i < books.length; i += columns) {
+    rows.push(books.slice(i, i + columns));
+  }
+
+  return rows;
+};
+
+// Usage:
+const rowsOfBooks = computed(() =>
+  calculateColumnsAndGroupBooks(filteredBibliografia.value),
+);
 </script>
 
 <style scoped></style>

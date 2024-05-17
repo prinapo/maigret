@@ -3,15 +3,8 @@ import FirebaseUploader from "../firebase/FirebaseUploader"; // Adjust the path 
 import { createPinia } from "pinia";
 import { fetchAndUpdateBibliografia } from "../utils/fetchBibliografia"; // Import the fetchDataAndUpdateLocalStorage function
 import { fetchAndUpdateEditori } from "../utils/fetchEditori"; // Import the fetchDataAndUpdateLocalStorage function
-import { fetchAndUpdateCollane } from "src/utils/fetchCollane";
-import {
-  Loading,
-
-  // optional!, for example below
-  // with custom spinner
-  QSpinnerGears,
-} from "quasar";
-Loading.show();
+import { fetchAndUpdateCollane } from "../utils/fetchCollane";
+import { fetchAndUpdateCovers } from "../utils/fetchCovers";
 
 export default boot(async ({ app }) => {
   // Initialize Pinia
@@ -24,24 +17,20 @@ export default boot(async ({ app }) => {
   app.use(pinia);
 
   // Fetch data and update local storage
-  try {
-    await fetchAndUpdateBibliografia();
-  } catch (error) {
-    console.error(
-      "Error fetching Bibliografia and updating local storage:",
-      error,
-    );
-  }
-  Loading.hide();
 
   try {
+    console.log("Fetching Editori and updating local storage...");
     await fetchAndUpdateEditori();
-  } catch (error) {
-    console.error("Error fetching Editori and updating local storage:", error);
-  }
-  try {
+
+    console.log("Fetching Collane and updating local storage...");
     await fetchAndUpdateCollane();
+
+    console.log("Fetching Covers and updating local storage...");
+    await fetchAndUpdateCovers();
+
+    console.log("Fetching Bibliografia and updating local storage...");
+    await fetchAndUpdateBibliografia();
   } catch (error) {
-    console.error("Error fetching Collane and updating local storage:", error);
+    console.error("Error during data fetching and updating:", error);
   }
 });

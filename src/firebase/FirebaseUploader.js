@@ -28,7 +28,6 @@ export default createUploaderComponent({
       type: String,
       default: "/",
     },
-
     //addedd by giovanni
     bookId: {
       type: String,
@@ -38,8 +37,15 @@ export default createUploaderComponent({
       type: String,
       default: null,
     },
+    imageUuid: {
+      type: String,
+      default: null,
+    },
+    imageIndex: {
+      type: Number,
+      default: null,
+    },
   },
-
   emits: [
     "uploaded",
     // ...your custom events name list
@@ -60,7 +66,7 @@ export default createUploaderComponent({
         if (uploadProgressList.value.length) {
           uploadInProgress.value = uploadProgressList.value.reduce(
             (prev, curr) => prev || curr,
-            false
+            false,
           );
 
           // Uploads complete - emit uploaded event with file details
@@ -68,19 +74,12 @@ export default createUploaderComponent({
             uploadedFiles &&
             uploadedFiles.value.length >= uploadProgressList.value.length
           ) {
-            // Extract filename extensions from uploaded files
-            const filesWithExtensions = uploadedFiles.value.map((file) => {
-              const fileName = file.originalFile.name;
-              const fileExtension = getFileExtension(fileName);
-              return { ...file, fileExtension };
-            });
-
-            // Emit the "uploaded" event with files and their extensions
-            emit("uploaded", filesWithExtensions);
+            console.log("emitting uploaded event", uploadedFiles.value[0]);
+            emit("uploaded", uploadedFiles.value[0]);
           }
         }
       },
-      { deep: true }
+      { deep: true },
     );
 
     // [ REQUIRED! ]
@@ -102,13 +101,6 @@ export default createUploaderComponent({
       });
     }
 
-    // [ GIOVANNI! ]
-    // set the extension of the file
-
-    function getFileExtension(filename) {
-      return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
-    }
-
     // [ REQUIRED! ]
     // Start the uploading process
     function upload() {
@@ -121,37 +113,28 @@ export default createUploaderComponent({
         if (helpers.uploadedFiles.value.includes(fileToUpload)) return;
 
         //? 👇 This can be whatever you want ~ can use UUID to generate unique file names
-        // ORIGINAL const fileName = `${Date.now()}-${fileToUpload.name}`;
-        //Giovanni
-        const fileName = `${props.bookId}${props.extention}.${getFileExtension(
-          fileToUpload.name
-        )}`;
-        console.log(fileName);
-        console.log(props.bookId);
-        console.log(props.extention);
+        console.log("proposed name ", props.imageUuid);
+        console.log("current name", fileToUpload.name);
+        //       const fileName = `${Date.now()}-${fileToUpload.name}`;
+        const fileExtension = fileToUpload.name.split(".").pop();
+        const fileName = `${props.imageUuid.split(".")[0]}.${fileExtension}`;
 
         const storageRef = firebaseRef(
           storage,
-          `${props.directory}/${fileName}`
+          `${props.directory}/${fileName}`,
         );
-        // console.log(storageRef);
 
         const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
 
         uploadTaskList.value = [...uploadTaskList.value, uploadTask];
-        console.log(`Upload started for file: ${fileToUpload.name}`);
 
         uploadTask.on(
           "state_changed",
           (snapshot) => {
-            console.log(
-              `Upload progress for ${fileToUpload.name}: ${snapshot.bytesTransferred} bytes transferred`
-            );
-
             helpers.updateFileStatus(
               fileToUpload,
               "uploading",
-              snapshot.bytesTransferred
+              snapshot.bytesTransferred,
             );
 
             uploadProgressList.value[i] = snapshot.state === "running";
@@ -159,12 +142,12 @@ export default createUploaderComponent({
           (err) => {
             console.error(
               "Something went wrong while trying to upload the file.",
-              err
+              err,
             );
             helpers.updateFileStatus(
               fileToUpload,
               "failed",
-              uploadTask.snapshot.bytesTransferred
+              uploadTask.snapshot.bytesTransferred,
             );
 
             uploadProgressList.value[i] = false;
@@ -183,7 +166,7 @@ export default createUploaderComponent({
             helpers.updateFileStatus(
               fileToUpload,
               "uploaded",
-              bytesTransferred
+              bytesTransferred,
             );
 
             helpers.uploadedFiles.value = [
@@ -194,8 +177,7 @@ export default createUploaderComponent({
             helpers.uploadedSize.value += bytesTransferred;
 
             uploadProgressList.value[i] = false;
-            console.log(`Upload completed for file: ${fileToUpload.name}`);
-          }
+          },
         );
       });
     }
