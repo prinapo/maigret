@@ -11,57 +11,54 @@
           style="width: 250px; height: 400px"
           id="card"
         >
-          <q-card-section id="card section 1">
-            <div class="row q-gutter-sm">
-              <q-select
-                color="main"
-                v-model="selectedOptions[outerIndex]"
-                :options="coversOptions"
-                :label="image.label"
-                :readonly="!isAdmin"
-                :hide-dropdown-icon="!isAdmin"
-                :borderless="!isAdmin"
-                dense
-                @update:model-value="
-                  handleCoverModelValueUpdate(outerIndex, $event)
-                "
-              />
-              <q-item-section
-                id="save and upload button"
-                top
-                side
-                v-if="isAdmin"
-              >
-                <div class="row q-gutter-xs" v-if="isAdmin">
-                  <q-btn
-                    size="12px"
-                    flat
-                    dense
-                    round
-                    icon="save"
-                    @click="
-                      saveImageDetail(
-                        'imageName',
-                        bookId,
-                        image.id,
-                        selectedOptions[outerIndex].value,
-                        outerIndex,
-                      )
-                    "
-                    color="secondary"
-                  />
-                  <q-btn
-                    size="12px"
-                    flat
-                    dense
-                    round
-                    icon="upload"
-                    @click="openUploadImage(outerIndex)"
-                    color="secondary"
-                  />
-                </div>
+          <q-card-section id="Select and upload image">
+            <q-item class="row items-center q-gutter-sm no-wrap q-pa-none">
+              <q-item-section class="col">
+                <q-select
+                  color="main"
+                  v-model="selectedImageOptions[outerIndex]"
+                  :options="coversOptions"
+                  :label="image.label"
+                  :readonly="!isAdmin"
+                  :hide-dropdown-icon="!isAdmin"
+                  :borderless="!isAdmin"
+                  dense
+                  class="full-width"
+                />
               </q-item-section>
-            </div>
+              <q-item-section id="save  button" class="col-auto" v-if="isAdmin">
+                <q-btn
+                  size="12px"
+                  flat
+                  dense
+                  round
+                  icon="save"
+                  @click="
+                    saveImageDetail(
+                      'imageName',
+                      bookId,
+                      selectedImageOptions[outerIndex].value,
+                      outerIndex,
+                    )
+                  "
+                  color="secondary"
+                  class="q-pa-none"
+                />
+              </q-item-section>
+              <q-item-section id="save  button" class="col-auto" v-if="isAdmin">
+                <q-btn
+                  side
+                  size="12px"
+                  flat
+                  dense
+                  round
+                  icon="upload"
+                  @click="openUploadImage(outerIndex)"
+                  color="secondary"
+                  class="q-pa-none"
+                />
+              </q-item-section>
+            </q-item>
           </q-card-section>
 
           <q-card-section id="image section">
@@ -111,7 +108,7 @@
                       flat
                       label="Conferma"
                       color="negative"
-                      @click="addImage()"
+                      @click="addImage('')"
                     />
                   </q-card-actions>
                 </q-card>
@@ -131,7 +128,6 @@
                 <q-card>
                   <q-card-section class="q-pa-md">
                     <p>Sei sicuro di voler rimuovere questa immagine?</p>
-                    {{ imageToRemoveIndex }}
                   </q-card-section>
 
                   <q-card-actions align="right">
@@ -167,13 +163,13 @@
             extention=""
             directory="images"
             :bookId="route.params.id"
-            :imageUuid="images[uploadImageIndex].id"
+            :imageUuid="images[uploadImageIndex].name"
             :imageIndex="uploadImageIndex"
             @uploaded="
-              handleFileUploaded(
+              handleFileUploadedLocal(
                 bookId,
                 $event.originalFile.name,
-                images[uploadImageIndex].id,
+                images[uploadImageIndex].name,
                 uploadImageIndex,
               )
             "
@@ -290,8 +286,8 @@
 
           <div class="q-gutter-md row items-start justify-start">
             <q-card
-              v-for="(edizione, index) in edizioni"
-              :key="index"
+              v-for="(edizione, edizioneIndex) in edizioni"
+              :key="edizioneIndex"
               class="q-mb-md"
               :class="edizione.posseduto ? 'bg-green-3' : 'bg-grey-2'"
               style="max-width: 200px"
@@ -315,7 +311,7 @@
                       @click="
                         saveEdizioneDetail(
                           'numero',
-                          index,
+                          edizioneIndex,
                           edizione.numero,
                           bookId,
                         )
@@ -343,7 +339,12 @@
                       icon="save"
                       color="blue-4"
                       @click="
-                        saveEdizioneDetail('anno', index, edizione.anno, bookId)
+                        saveEdizioneDetail(
+                          'anno',
+                          edizioneIndex,
+                          edizione.anno,
+                          bookId,
+                        )
                       "
                       v-if="isAdmin"
                     />
@@ -351,7 +352,6 @@
                 </div>
                 <div>
                   <!-- Your content here -->
-                  admn and colelctor {{ isAdmin }} {{ isCollector }}
                 </div>
                 <div
                   class="row q-gutter-md items-center"
@@ -432,7 +432,7 @@
                           flat
                           label="Conferma"
                           color="negative"
-                          @click="removeEdizione(index)"
+                          @click="removeEdizione(edizioneIndex)"
                         />
                       </q-card-actions>
                     </q-card>
@@ -517,10 +517,12 @@ const covers = ref([]);
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
 const coverStrore = useCoversStore();
-const selectedOptions = ref([]);
+const bibliografiaStore = useBibliografiaStore();
+const selectedImageOptions = ref([]);
+const selectedEditoreOptions = ref([]);
+const selectedCollanaOptions = ref([]);
 const coversOptions = ref([]);
 const imageToRemoveIndex = ref(null);
-const selectedImageTypeId = ref(null);
 
 /**
  * Fetches the details of a book and its editions when the component is mounted.
@@ -554,23 +556,23 @@ onMounted(async () => {
   edizioni.value = fetchedEdizioni;
   images.value = fetchedImages;
   coversOptions.value = coverStrore.covers.cover;
-
+  //gestisco il fatto che non tutti i libri hanno una copertina
+  //prima controllo che esista nel libro il campo immagine e se non essite lo creo
+  //con un immagie con "id prima di copertina"
+  //e con name che viene generato con shortuiid dento addImage
   if (!images.value || images.value.length === 0) {
-    await addImage(); // Call the addImage function to add a default image
+    const idValue = "qNvdwFMLNt2Uz7JjqTjacu";
+    await addImage(idValue); // Call the addImage function to add a default image
   }
-  images.value.forEach((image) => {
-    console.log("CoverOptios.value.value", coversOptions.value[0].value);
-    console.log("image.id", image.id);
-    console.log("image.name", image.name);
-
-    const matchingOption = coversOptions.value.find(
-      (option) => option.value === image.id,
-    );
-    console.log("matchingOption", matchingOption);
-    selectedOptions.value.push(matchingOption || null);
-    console.log("selectedOptions.value", selectedOptions.value);
-  });
-  //console.log("image", images.value);
+  // a questo punto images o ha un solo elemento appena creato o larray originale
+  // controllo che il campo "name" di "images" non sia vuoto, se lo è lo sostituisco
+  //con un valore generato
+  await checkAndUpdateImages(images.value, bookId);
+  //
+  console.log("images", images.value);
+  console.log("COVEROPTIONS", coversOptions.value);
+  await createSelectedImagesOptions(images.value, coversOptions);
+  console.log("SELECTEDImagesoPTIONS", selectedImageOptions.value);
 
   editori.value = editoriStore.editori.editore;
   collane.value = collaneStore.collane.collana;
@@ -588,27 +590,158 @@ const confirmRemoveEdizione = ref(false);
 const confirmDeleteBook = ref(false);
 const confirmAddCover = ref(false);
 const confirmRemoveImage = ref(false);
+const newBookImages = ref([]);
 const images = ref([]);
 let fetchedBook = [];
 let isAdmin = false;
 let isCollector = false;
 // tool for long press detection
+const handleFileUploadedLocal = async (
+  bookId,
+  originalFileName,
+  targetName,
+  index,
+) => {
+  console.log("images berfore valling namdle", images.value);
 
+  images.value = await handleFileUploaded(
+    bookId,
+    originalFileName,
+    targetName,
+    index,
+  );
+  showUploaderPopup.value = false;
+  console.log("images after valling namdle", images.value);
+};
+
+const createSelectedImagesOptions = async (images, coversOptions) => {
+  for (const image of images) {
+    const matchingOption = coversOptions.value.find(
+      (option) => option.value === image.id,
+    );
+    console.log("matchingOption", matchingOption);
+    selectedImageOptions.value.push(matchingOption || null);
+  }
+
+  console.log("selectedImageOptions", selectedImageOptions);
+  return selectedImageOptions;
+};
+const checkAndUpdateImages = async (images, bookId) => {
+  let changesMade = false;
+
+  for (const [index, image] of images.entries()) {
+    // Check if the value of name is empty or null
+    if (!image.name) {
+      //if the name is not present replace the name with shortuid
+      //and say that a change has been made
+      const shortUuid = shortUuidGenerator.new();
+      image.name = shortUuid;
+      changesMade = true;
+    }
+  }
+  // check if a change has been made and update
+  // biblografia localStorage and Firebase
+  if (changesMade) {
+    //
+    //
+    try {
+      const timestamp = new Date().valueOf();
+      const bookRef = doc(db, "Bibliografia", bookId);
+      const dataSnapshot = await getDoc(bookRef);
+      const data = dataSnapshot.data();
+      console.log("Update image array n firbebase ", images);
+
+      // Update the specified item in the 'edizioni' array
+      // use setDoc since I do not know if images exist or not
+      await setDoc(bookRef, { images: images }, { merge: true });
+
+      // Update the timestamp in the parent document
+      // use setDoc to be sure that if timestamp does not exist does not
+      // send bak an error
+      await setDoc(
+        bookRef,
+        {
+          timestamp: timestamp,
+        },
+        { merge: true },
+      );
+      // before updating bibliograsfia I need to find hte index of the book in the array
+      const bibliografiaStore = useBibliografiaStore();
+      const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
+        (book) => book.id === bookId,
+      );
+      // if index is not negative the index exist so I can upgrade
+      if (bookIndexInBibliografia !== -1) {
+        console.log(
+          "Book found in bibliografiaStore:",
+          bibliografiaStore.bibliografia[bookIndexInBibliografia],
+        );
+        bibliografiaStore.bibliografia[bookIndexInBibliografia].images = images;
+        // now I update the whole local storage to avoid error
+        localStorage.setItem(
+          "bibliografia",
+          JSON.stringify(bibliografiaStore.bibliografia),
+        );
+        console.log("bibliografia", bibliografiaStore.bibliografia);
+      }
+
+      // Call the function to update the timestamp locally
+      // to communicate teh last change on firebase
+      await updateTimestamp(timestamp);
+    } catch (error) {
+      console.error("Error saving detail:", error);
+    }
+  }
+};
 const handleCoverModelValueUpdate = (outerIndex, newValue) => {
   console.log("handleModelValueUpdate", outerIndex, newValue);
-  selectedImageTypeId.value = newValue;
+  selectedImageTypeId.value = newValue.value;
   // You can add additional logic here if needed
 };
 const removeEdizione = async (index) => {
+  console.log("removeEdizione at index", index);
   try {
     if (index < 0 || index >= edizioni.value.length) {
       return;
     }
     edizioni.value.splice(index, 1);
     const bookRef = doc(db, "Bibliografia", bookId);
-    await updateDoc(bookRef, {
-      edizioni: edizioni.value, // Replace the edizioni field with the new value
-    });
+    const bookSnapshot = await getDoc(bookRef);
+    const data = bookSnapshot.data();
+    await setDoc(bookRef, { edizioni: edizioni.value }, { merge: true });
+    // before updating bibliograsfia I need to find hte index of the book in the array
+    const bibliografiaStore = useBibliografiaStore();
+    const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
+      (book) => book.id === bookId,
+    );
+    // if index is not negative the index exist so I can upgrade
+    if (bookIndexInBibliografia !== -1) {
+      console.log(
+        "Book found in bibliografiaStore:",
+        bibliografiaStore.bibliografia[bookIndexInBibliografia],
+      );
+      bibliografiaStore.bibliografia[bookIndexInBibliografia].edizioni =
+        edizioni.value;
+      // now I update the whole local storage to avoid error
+      localStorage.setItem(
+        "bibliografia",
+        JSON.stringify(bibliografiaStore.bibliografia),
+      );
+      console.log("bibliografia", bibliografiaStore.bibliografia);
+    }
+    // Update the timestamp in the parent document
+    // use setDoc to be sure that if timestamp does not exist does not
+    // send bak an error
+    const timestamp = new Date().valueOf();
+
+    await setDoc(
+      bookRef,
+      {
+        timestamp: timestamp,
+      },
+      { merge: true },
+    );
+    await updateTimestamp(timestamp);
   } catch (error) {
     console.error("Error removing edizione ", error);
   }
@@ -631,7 +764,7 @@ const removeImage = async (index) => {
   }
   confirmRemoveImage.value = false;
 };
-const addImage = async () => {
+const addImage = async (idValue) => {
   console.log("add edizione called");
   try {
     const bookRef = doc(db, "Bibliografia", bookId);
@@ -641,14 +774,15 @@ const addImage = async () => {
     if (bookDocSnap.exists()) {
       let existingImages = bookDocSnap.data().images || [];
       const defaultImage = {
-        id: shortUuid,
-        name: "",
+        id: idValue, //riferimento al tipo di immagine
+        name: shortUuid, //nome del file che per adesso è fake
       };
 
       await updateDoc(bookRef, {
         images: [...existingImages, defaultImage],
       });
       images.value = [...existingImages, defaultImage];
+      console.log("image after adding", images.value);
       const timestamp = new Date().valueOf();
       await updateTimestamp(timestamp);
     } else {
@@ -701,8 +835,41 @@ const addEdizione = async () => {
         edizioni: [...existingEdizioni, defaultEdizione],
       });
       edizioni.value = [...existingEdizioni, defaultEdizione];
+
+      //devo aggiornare pinia e local storage
+      // before updating bibliograsfia I need to find hte index of the book in the array
+      const bibliografiaStore = useBibliografiaStore();
+      const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
+        (book) => book.id === bookId,
+      );
+      // if index is not negative the index exist so I can upgrade
+      if (bookIndexInBibliografia !== -1) {
+        console.log(
+          "Book found in bibliografiaStore:",
+          bibliografiaStore.bibliografia[bookIndexInBibliografia],
+        );
+        bibliografiaStore.bibliografia[bookIndexInBibliografia].edizioni =
+          edizioni;
+        // now I update the whole local storage to avoid error
+        localStorage.setItem(
+          "bibliografia",
+          JSON.stringify(bibliografiaStore.bibliografia),
+        );
+        console.log("bibliografia", bibliografiaStore.bibliografia);
+      }
+
+      //
       const timestamp = new Date().valueOf();
+
+      await setDoc(
+        bookRef,
+        {
+          timestamp: timestamp,
+        },
+        { merge: true },
+      );
       await updateTimestamp(timestamp);
+      //
     } else {
       console.log("No such document!");
     }
@@ -713,6 +880,11 @@ const addEdizione = async () => {
 };
 const openUploadImage = (index) => {
   uploadImageIndex.value = index;
+  console.log(
+    "images[uploadImageIndex].id",
+    images.value[uploadImageIndex.value],
+  );
+
   showUploaderPopup.value = true; // Show the uploader popup when an image is clicked
 };
 const collaneOptions = computed(() => {
@@ -730,20 +902,20 @@ const editoriOptions = computed(() => {
 const currentCollana = computed(() => {
   //console.log("bookDetails ", bookDetails.value);
   //console.log("fetched collana", bookDetails.value.collana);
-  const selectedOption = collaneOptions.value.find(
+  const selectedCollanaOptions = collaneOptions.value.find(
     (option) => option.value === fetchedBook.collana,
   );
-  const result = selectedOption ? selectedOption.label : null;
+  const result = selectedCollanaOptions ? selectedCollanaOptions.label : null;
 
   console.log("current collana:", result);
   return result;
 });
 const currentEditore = computed(() => {
   //console.log("fetched editore", fetchedBook.editore);
-  const selectedOption = editoriOptions.value.find(
+  const selectedEditoreOption = editoriOptions.value.find(
     (option) => option.value === fetchedBook.editore,
   );
-  const result = selectedOption ? selectedOption.label : null;
+  const result = selectedEditoreOption ? selectedEditoreOption.label : null;
 
   console.log("current editore:", result);
   return result;

@@ -73,6 +73,7 @@ const saveBook = async () => {
 
     // Update local storage
     const localData = JSON.parse(localStorage.getItem("bibliografia")) || [];
+    console.log("docrefid", docRef.id);
     localData.push({
       id: docRef.id,
       titolo: titolo.value,

@@ -21,14 +21,6 @@ import {
 const bibliografiaStore = useBibliografiaStore();
 const collaneStore = useCollaneStore();
 const editoriStore = useEditoriStore();
-const uploadImageIndex = ref(null);
-const showUploaderPopup = ref(false);
-const openUploadImage = (index) => {
-  uploadImageIndex.value = index;
-  showUploaderPopup.value = true; // Show the uploader popup when an image is clicked
-};
-
-const edizioni = ref([]);
 
 // dichiaro la variabile che fa riferimento al libro in modifica globalmente per usarla in piu funzioni
 
@@ -119,14 +111,12 @@ export const saveDetail = async (bookId, itemId, value) => {
   }
 };
 
-export const saveImageDetail = async (name, bookId, imageId, value, index) => {
+export const saveImageDetail = async (name, bookId, value, index) => {
   console.log(
-    "NAME",
+    "Nname",
     name,
     "bookId ",
     bookId,
-    "ImageId ",
-    imageId,
     "Value ",
     value,
     "Index",
@@ -142,8 +132,8 @@ export const saveImageDetail = async (name, bookId, imageId, value, index) => {
 
     if (index >= 0 && index < imagesArray.length) {
       // Update the imageName property of the object at the specified index
-      console.log("image array", imagesArray[index].name);
-      imagesArray[index].name = value; // Use the correct property name 'imageName'
+      console.log("image array", imagesArray[index].id);
+      imagesArray[index].id = value; // Use the correct property name 'imageName'
     } else {
       // Handle the case where the index is out of bounds
       console.error("Index is out of bounds:", index);
@@ -404,36 +394,71 @@ export const handleFileUploaded = async (
     "index ",
     index,
   );
+  try {
+    // read and update the book on firebase
 
-  // devo aggiornare firebase e cambiare il valore delle immagini
+    const bookRef = doc(db, "Bibliografia", bookId);
+    const dataSnapshot = await getDoc(bookRef);
+    const BookData = dataSnapshot.data();
+    BookData.images[index].name = targetFileName;
 
-  const bookRef = doc(db, "Bibliografia", bookId);
-  const bookDetails = (await getDoc(bookRef)).data();
-  console.log("bookDetails before", bookDetails);
-  bookDetails.images[index].name = targetFileName;
-  console.log("bookDetails after", bookDetails);
+    console.log("bookDetails ", BookData); // Ensure 'data' is correctly logged after initialization
 
-  await updateDoc(bookRef, {
-    images: bookDetails.images,
-  });
+    await updateDoc(bookRef, {
+      images: BookData.images,
+    });
 
-  // update PINIA store and local storage
-  const bibliografiaStore = useBibliografiaStore();
-  const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
-    (book) => book.id === bookId,
-  );
-  if (bookIndexInBibliografia !== -1) {
-    // Book found in bibliografiaStore, you can access it using bibliografiaStore.bibliografia[bookIndexInBibliografia]
-    console.log(
-      "Book found in bibliografiaStore:",
-      bibliografiaStore.bibliografia[bookIndexInBibliografia],
+    const bibliografiaStore = useBibliografiaStore();
+    const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
+      (book) => book.id === bookId,
     );
-    bibliografiaStore.bibliografia[bookIndexInBibliografia].images[index].name =
-      targetFileName;
-    localStorage.setItem(
-      "bibliografia",
-      JSON.stringify(bibliografiaStore.bibliografia),
-    );
-    console.log("bibliografia", bibliografiaStore.bibliografia);
+
+    if (bookIndexInBibliografia !== -1) {
+      console.log(
+        "Book found in bibliografiaStore with this images:",
+        bibliografiaStore.bibliografia[bookIndexInBibliografia].images,
+      );
+
+      bibliografiaStore.bibliografia[bookIndexInBibliografia].images[
+        index
+      ].name = targetFileName;
+      localStorage.setItem(
+        "bibliografia",
+        JSON.stringify(bibliografiaStore.bibliografia),
+      );
+
+      const book = bibliografiaStore.bibliografia[bookIndexInBibliografia];
+      // guardo se essite una prim copertina e lo metto nel campi imageurl per poterla vedere
+      // Check if the book has an 'images' array and if it contains an entry with id=qNvdwFMLNt2Uz7JjqTjacu
+      if (book.images && Array.isArray(book.images)) {
+        const imageEntry = book.images.find(
+          (image) => image.id === "qNvdwFMLNt2Uz7JjqTjacu",
+        );
+        if (imageEntry) {
+          console.log("Image entry cover found:", imageEntry);
+          book.imageUrl = imageEntry.name;
+        } else if (book.images.length > 0) {
+          console.log("Image entry 0 found:", book.images[0]);
+          // If the entry exists, copy the value of the 'name' field to bibliografiaData.imageUrl
+          book.imageUrl = book.images[0].name;
+        } else {
+          // If the entry does not exist, remove bibliografiaData.imageUrl if it exists
+          book.imageUrl = null;
+        }
+      } else {
+        // Handle the case where 'images' array is missing or not an array
+        book.imageUrl = null;
+      }
+      bibliografiaStore.bibliografia[bookIndexInBibliografia].imageUrl =
+        book.imageUrl;
+    }
+    console.log("BookData.images", BookData.images);
+    return BookData.images;
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    // Handle the error here
   }
+  // update PINIA store and local storage fin the index of the book
+
+  // once the fields are updated I need to update also imageurl in bibliografia
 };

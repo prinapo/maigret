@@ -123,6 +123,7 @@ export default {
       toggleLeftDrawer,
       goToLogin,
       logout,
+      isListView: true,
     };
   },
 };

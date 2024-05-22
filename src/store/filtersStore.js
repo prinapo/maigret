@@ -7,6 +7,7 @@ export const useFiltersStore = defineStore({
     searchQuery: "",
     selectedEditore: "",
     selectedCollana: "",
+    isListView: false,
     showFranceseBooks: false,
     editoriOptions: [],
     isOpen: false, // New variable to track expansion status
@@ -30,6 +31,10 @@ export const useFiltersStore = defineStore({
       this.isOpen = !this.isOpen;
       localStorage.setItem("isExpansionOpen", this.isOpen ? "true" : "false");
     },
+    updateListView(newIsListView) {
+      this.isListView = newIsListView;
+      localStorage.setItem("isListView", this.isListView ? "true" : "false");
+    },
 
     // Define other actions as needed
   },
@@ -49,6 +54,10 @@ export const useFiltersStore = defineStore({
     toggleIsOpen(state) {
       state.isOpen = !state.isOpen;
       localStorage.setItem("isExpansionOpen", state.isOpen ? "true" : "false");
+    },
+    setListView(state, value) {
+      state.isListView = value;
+      localStorage.setItem("isListView", state.isListView ? "true" : "false");
     },
   },
 });

@@ -42,12 +42,12 @@ export const fetchBookDetails = async (userIdValue, loggedIn, bookId) => {
   // console.log("user", userIdValue);
   const bookRef = doc(db, "Bibliografia", bookId);
   const bookDocSnap = await getDoc(bookRef);
+  const bookData = bookDocSnap.data();
 
   // controllo che tipi di utente è per capire i suoi diritti
   // non sono sicuro che centri con questo
 
   try {
-    console.log("bookDocSnap", bookDocSnap);
     if (bookDocSnap.exists()) {
       fetchedBook = {
         id: bookDocSnap.id,
@@ -141,6 +141,7 @@ export const fetchBookDetails = async (userIdValue, loggedIn, bookId) => {
         const userDocRef = doc(db, "Users", userIdValue);
         const userDocSnap = await getDoc(userDocRef);
         const userData = userDocSnap.data();
+        edizioni.value = bookData.edizioni;
 
         //controllo che esista almeno un campo edizione altrimenti lo devo creare
         if (!edizioni.value || edizioni.value.length === 0) {
@@ -186,7 +187,6 @@ export const fetchBookDetails = async (userIdValue, loggedIn, bookId) => {
             value: true,
           });
 
-          edizioni.value = bookDocSnap.data().edizioni;
           //console.log("edizioni.value", edizioni.value);
           // Il campo edizioni esiste
           // Iterate through edizioni.value array
