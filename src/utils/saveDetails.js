@@ -18,6 +18,8 @@ import {
   useEditoriStore,
 } from "src/store/database";
 
+import { Notify } from "quasar";
+
 const bibliografiaStore = useBibliografiaStore();
 const collaneStore = useCollaneStore();
 const editoriStore = useEditoriStore();
@@ -26,10 +28,11 @@ const editoriStore = useEditoriStore();
 
 export const saveDetail = async (bookId, itemId, value) => {
   // creo il nuovo timestamp
-  console.log("book id and value ", bookId, itemId, value);
   const timestamp = new Date().valueOf();
   const bookRef = doc(db, "Bibliografia", bookId);
-
+  console.log(bookId);
+  console.log(itemId);
+  console.log(value);
   try {
     //creo il ref al libro corrente le info del signolo libro
 
@@ -50,13 +53,10 @@ export const saveDetail = async (bookId, itemId, value) => {
       { merge: true },
     );
 
-    console.log("Detail saved successfully!");
-
     // chiamo la funxione per aggiornare il timestamp localmente
     // Update timestamp
     await updateTimestamp(timestamp);
 
-    bibliografiaStore.updateBookDetail(bookId, itemId, value);
     //se collana o editore devo cercare il valore e aggiungerlo
 
     if (itemId === "collana") {
@@ -93,52 +93,44 @@ export const saveDetail = async (bookId, itemId, value) => {
           matchingEditore.editore,
         );
       }
+    } else {
+      bibliografiaStore.updateBookDetail(bookId, itemId, value);
     }
-    // faccio per gli editori la stessa cos che ho fatto per le collane
 
     const bibliografiaData = bibliografiaStore.bibliografia;
     localStorage.setItem("bibliografia", JSON.stringify(bibliografiaData));
 
-    //
-    //
-    //
-    // qui manca l'aggiornamento dei campi in bibliografia in PINIA
-    // e in local storage, se no sono disallineati
-    //
-    //
+    Notify.create({
+      message: `Detail ${itemId} Saved`,
+      type: "positive",
+      color: "green",
+    });
   } catch (error) {
+    Notify.create({
+      message: `Detail  ${itemId} Not Saved`,
+      type: "negative",
+      color: "red",
+    });
+
     console.error("Error saving detail:", error);
   }
 };
 
 export const saveImageDetail = async (name, bookId, value, index) => {
-  console.log(
-    "Nname",
-    name,
-    "bookId ",
-    bookId,
-    "Value ",
-    value,
-    "Index",
-    index,
-  );
   try {
     const timestamp = new Date().valueOf();
     const bookRef = doc(db, "Bibliografia", bookId);
     const dataSnapshot = await getDoc(bookRef);
     const data = dataSnapshot.data();
     const imagesArray = data.images || [];
-    console.log("existingImages ", imagesArray);
 
     if (index >= 0 && index < imagesArray.length) {
       // Update the imageName property of the object at the specified index
-      console.log("image array", imagesArray[index].id);
       imagesArray[index].id = value; // Use the correct property name 'imageName'
     } else {
       // Handle the case where the index is out of bounds
       console.error("Index is out of bounds:", index);
     }
-    console.log("imagesaarray ", imagesArray);
     // Update the specified item in the 'edizioni' array
     await updateDoc(bookRef, { images: imagesArray });
 
@@ -157,10 +149,7 @@ export const saveImageDetail = async (name, bookId, value, index) => {
     );
     if (bookIndexInBibliografia !== -1) {
       // Book found in bibliografiaStore, you can access it using bibliografiaStore.bibliografia[bookIndexInBibliografia]
-      console.log(
-        "Book found in bibliografiaStore:",
-        bibliografiaStore.bibliografia[bookIndexInBibliografia],
-      );
+
       bibliografiaStore.bibliografia[bookIndexInBibliografia].images =
         imagesArray;
 
@@ -168,13 +157,22 @@ export const saveImageDetail = async (name, bookId, value, index) => {
         "bibliografia",
         JSON.stringify(bibliografiaStore.bibliografia),
       );
-      console.log("bibliografia", bibliografiaStore.bibliografia);
     }
 
     // Call the function to update the timestamp locally
     await updateTimestamp(timestamp);
+    Notify.create({
+      message: "Detail Saved",
+      type: "positive",
+      color: "green",
+    });
   } catch (error) {
     console.error("Error saving detail:", error);
+    Notify.create({
+      message: "Detail Not Saved",
+      type: "negative",
+      color: "red",
+    });
   }
 };
 
@@ -213,11 +211,19 @@ export const saveEdizioneDetail = async (name, index, value, bookId) => {
       { merge: true },
     );
 
-    console.log(`Detail "${name}" at index ${index} saved successfully!`);
-
     // Call the function to update the timestamp locally
     await updateTimestamp(timestamp);
+    Notify.create({
+      message: `Edizionie Saved  ${updatedEdizioni}`,
+      type: "positive",
+      color: "green",
+    });
   } catch (error) {
+    Notify.create({
+      message: `Edizioni Not Saved ${updatedEdizioni}`,
+      type: "negative",
+      color: "red",
+    });
     console.error("Error saving edizione detail:", error);
   }
 };
@@ -225,45 +231,34 @@ export const saveEdizioneDetail = async (name, index, value, bookId) => {
 export const savePossessoEdizione = async (edizione, value, userID, bookId) => {
   try {
     // Access the actual value of userID
-    console.log("UserIDValue", userID);
 
     const userDocRef = doc(db, "Users", userID);
-    console.log("userDocRef:", userDocRef);
     const userDocSnap = await getDoc(userDocRef);
-    console.log("userDocSnap:", userDocSnap);
     if (userDocSnap.exists()) {
       // Get the user data
       const userData = userDocSnap.data();
 
       if (Array.isArray(userData.edizioni)) {
         // Check if the edizione already exists in the array
-        console.log("userData.edizioni", userData.edizioni);
         const existingEdizioneIndex = userData.edizioni.findIndex(
           (item) => item.edizioneUuid === edizione,
         );
-        console.log("existingEdizioneIndex", existingEdizioneIndex);
         if (existingEdizioneIndex !== -1) {
           // If the edizione exist, update posseduto
           userData.edizioni[existingEdizioneIndex].posseduto = value;
-          console.log("updated userData.edizioni", userData.edizioni);
 
           // Update the user document in Firestore to only update the edizioni array
         } else {
           // If the edizione already exists, update the posseduto value if it's different from the new value
           userData.edizioni.push({ edizioneUuid: edizione, posseduto: value });
         }
-        console.log(
-          "userData.edizioni exist update the field edizioni",
-          userData.edizioni,
-        );
+
         await updateDoc(userDocRef, {
           edizioni: userData.edizioni,
         });
       } else {
         // If userData.edizioni is not an array or is null, create a new array with the entry
-        console.log(
-          "userData.edizioni is not an array or is null crate from scratch",
-        );
+
         userData.edizioni = [{ edizioneUuid: edizione, posseduto: value }];
         await updateDoc(userDocRef, {
           edizioni: userData.edizioni,
@@ -271,12 +266,9 @@ export const savePossessoEdizione = async (edizione, value, userID, bookId) => {
       }
 
       // Check if any edition in editions has posseduto = true
-      console.log("edizioni", userData.edizioni);
-
       const oneEditionPossessed = userData.edizioni.some(
         (edition) => edition.posseduto,
       );
-      console.log("possessed", oneEditionPossessed);
       //end of signle edition updated on friebase
       //start the whole book updated on firebase only no need to ahve it locally
       // se una edizion è posseduta devo mettere a true il valore possdeuto del libro
@@ -293,8 +285,6 @@ export const savePossessoEdizione = async (edizione, value, userID, bookId) => {
         // If the book exist, update posseduto
         userData.books[existingBookIndex].posseduto = oneEditionPossessed;
         // Update the user document in Firestore to only update the edizioni array
-
-        console.log("Posseduto value updated successfully.");
       } else {
         // If the book do not  exists, update the posseduto value if it's different from the new value
         userData.books.push({
@@ -313,10 +303,6 @@ export const savePossessoEdizione = async (edizione, value, userID, bookId) => {
 
       if (bookIndexInBibliografia !== -1) {
         // Book found in bibliografiaStore, you can access it using bibliografiaStore.bibliografia[bookIndexInBibliografia]
-        console.log(
-          "Book found in bibliografiaStore:",
-          bibliografiaStore.bibliografia[bookIndexInBibliografia],
-        );
         const bookToUpdate =
           bibliografiaStore.bibliografia[bookIndexInBibliografia];
 
@@ -330,8 +316,17 @@ export const savePossessoEdizione = async (edizione, value, userID, bookId) => {
         console.log("Book not found in bibliografiaStore");
       }
     }
-    console.log(`Updated Firebase field ${edizione} with value:`, value);
+    Notify.create({
+      message: `Posseduto Saved`,
+      type: "positive",
+      color: "green",
+    });
   } catch (error) {
+    Notify.create({
+      message: `Posseduto Not Saved`,
+      type: "negative",
+      color: "red",
+    });
     console.error("Error saving possession edition:", error);
   }
 };
@@ -367,11 +362,19 @@ export const deleteBook = async (bookId) => {
     const bibliografiaStore = useBibliografiaStore();
     bibliografiaStore.removeBook(id); // Assuming a method like removeBook exists in your Pinia store
 
-    console.log("Book moved to BibliografiaTrash successfully!");
-
     // Close the confirmation dialog
     confirm.value = false;
+    Notify.create({
+      message: `Book Deleted`,
+      type: "positive",
+      color: "green",
+    });
   } catch (error) {
+    Notify.create({
+      message: `Book not deleted`,
+      type: "negative",
+      color: "red",
+    });
     console.error("Error moving book to BibliografiaTrash:", error);
   }
 };
@@ -385,15 +388,6 @@ export const handleFileUploaded = async (
   const fileExtension = OriginalFileName.split(".").pop();
   const targetFileName = `${filename.split(".")[0]}.${fileExtension}`;
 
-  console.log(
-    "handleFileUploaded",
-    "bookid",
-    bookId,
-    filename,
-    targetFileName,
-    "index ",
-    index,
-  );
   try {
     // read and update the book on firebase
 
@@ -401,8 +395,6 @@ export const handleFileUploaded = async (
     const dataSnapshot = await getDoc(bookRef);
     const BookData = dataSnapshot.data();
     BookData.images[index].name = targetFileName;
-
-    console.log("bookDetails ", BookData); // Ensure 'data' is correctly logged after initialization
 
     await updateDoc(bookRef, {
       images: BookData.images,
@@ -414,11 +406,6 @@ export const handleFileUploaded = async (
     );
 
     if (bookIndexInBibliografia !== -1) {
-      console.log(
-        "Book found in bibliografiaStore with this images:",
-        bibliografiaStore.bibliografia[bookIndexInBibliografia].images,
-      );
-
       bibliografiaStore.bibliografia[bookIndexInBibliografia].images[
         index
       ].name = targetFileName;
@@ -435,10 +422,8 @@ export const handleFileUploaded = async (
           (image) => image.id === "qNvdwFMLNt2Uz7JjqTjacu",
         );
         if (imageEntry) {
-          console.log("Image entry cover found:", imageEntry);
           book.imageUrl = imageEntry.name;
         } else if (book.images.length > 0) {
-          console.log("Image entry 0 found:", book.images[0]);
           // If the entry exists, copy the value of the 'name' field to bibliografiaData.imageUrl
           book.imageUrl = book.images[0].name;
         } else {
@@ -452,9 +437,18 @@ export const handleFileUploaded = async (
       bibliografiaStore.bibliografia[bookIndexInBibliografia].imageUrl =
         book.imageUrl;
     }
-    console.log("BookData.images", BookData.images);
+    Notify.create({
+      message: `Image Saved`,
+      type: "positive",
+      color: "green",
+    });
     return BookData.images;
   } catch (error) {
+    Notify.create({
+      message: `Image Not Saved`,
+      type: "negative",
+      color: "red",
+    });
     console.error("Error fetching document:", error);
     // Handle the error here
   }

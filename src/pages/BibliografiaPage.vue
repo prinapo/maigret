@@ -100,9 +100,7 @@
                   <q-card-section>
                     <div>{{ book.titolo }}</div>
                     <div>{{ book.editoreName }}</div>
-                    <div>{{ book.collanaName }}</div>
-                    <div>{{ book.possessed }}</div>
-                    <div>{{ book.imageUrl }}</div>
+                    <div>{{ book.collanaName }} {{ book.numeroCollana }}</div>
                   </q-card-section>
                 </q-card>
               </template>
@@ -210,7 +208,7 @@ const openDettaglioLibro = (id) => {
 };
 
 const handleEditoreChange = (value) => {
-  console.log("selected editore", value);
+  //console.log("selected editore", value);
   filtersStore.updateSelectedEditore(value);
 };
 

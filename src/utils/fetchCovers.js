@@ -4,8 +4,6 @@ import { useCoversStore } from "../store/database";
 
 // Function to fetch and update Covers data and localStorage
 export async function fetchAndUpdateCovers() {
-  console.log("Fetching last update time Covers from Updates collection...");
-
   const coversStore = useCoversStore(); // Initialize the Pinia store
 
   // Read the last update time for Covers from the "Updates" collection
@@ -17,10 +15,6 @@ export async function fetchAndUpdateCovers() {
   const localCoversData = localStorage.getItem("covers");
   const localCoversLastUpdate =
     parseInt(localStorage.getItem("coversLastUpdate")) || 0;
-
-  console.log("Local Storage Covers timestamp:", localCoversLastUpdate);
-  console.log("Last Firebase Covers timestamp:", coversLastUpdateFirebase);
-  console.log("Local Covers Variable:", localCoversData);
 
   if (
     !localCoversLastUpdate ||
@@ -35,9 +29,7 @@ export async function fetchAndUpdateCovers() {
 
     if (coversSnapshot.exists()) {
       const covers = coversSnapshot.data();
-      console.log("Firebase Covers", covers);
       coversStore.updateCovers(covers); // Update Pinia store
-      console.log("Updating local storage for Covers...");
       localStorage.setItem("coversLastUpdate", coversLastUpdateFirebase);
       localStorage.setItem("covers", JSON.stringify(covers));
     } else {

@@ -74,7 +74,7 @@ export default createUploaderComponent({
             uploadedFiles &&
             uploadedFiles.value.length >= uploadProgressList.value.length
           ) {
-            console.log("emitting uploaded event", uploadedFiles.value[0]);
+            //console.log("emitting uploaded event", uploadedFiles.value[0]);
             emit("uploaded", uploadedFiles.value[0]);
           }
         }
@@ -113,8 +113,8 @@ export default createUploaderComponent({
         if (helpers.uploadedFiles.value.includes(fileToUpload)) return;
 
         //? 👇 This can be whatever you want ~ can use UUID to generate unique file names
-        console.log("proposed name ", props.imageUuid);
-        console.log("current name", fileToUpload.name);
+        //console.log("proposed name ", props.imageUuid);
+        //console.log("current name", fileToUpload.name);
         //       const fileName = `${Date.now()}-${fileToUpload.name}`;
         const fileExtension = fileToUpload.name.split(".").pop();
         const fileName = `${props.imageUuid.split(".")[0]}.${fileExtension}`;

@@ -37,13 +37,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { db } from "../firebase/firebaseInit";
-import { doc, getDoc, setDoc, updateDoc, FieldValue } from "firebase/firestore";
-import { useRoute } from "vue-router";
-import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
-import { useEditoriStore, useBibliografiaStore } from "src/store/database";
-import { useQuasar } from "quasar";
+
+import { useBibliografiaStore } from "src/store/database";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "vue-router";
 
@@ -90,7 +87,7 @@ const saveBook = async () => {
     });
 
     // Provide feedback to the user
-    alert("Book saved successfully!");
+    //alert("Book saved successfully!");
     console.log("Book saved with ID: ", docRef.id);
     // Optionally, you can reset the form or show a success message
     // ResetForm();

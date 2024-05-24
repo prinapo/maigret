@@ -16,7 +16,6 @@ export const useFiltersStore = defineStore({
   actions: {
     updateSearchQuery(newSearchQuery) {
       this.searchQuery = newSearchQuery;
-      console.log("updated search query:", newSearchQuery);
     },
     updateSelectedEditore(newSelectedEditore) {
       this.selectedEditore = newSelectedEditore;

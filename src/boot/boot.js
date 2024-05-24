@@ -19,16 +19,16 @@ export default boot(async ({ app }) => {
   // Fetch data and update local storage
 
   try {
-    console.log("Fetching Editori and updating local storage...");
+    //console.log("Fetching Editori and updating local storage...");
     await fetchAndUpdateEditori();
 
-    console.log("Fetching Collane and updating local storage...");
+    //console.log("Fetching Collane and updating local storage...");
     await fetchAndUpdateCollane();
 
-    console.log("Fetching Covers and updating local storage...");
+    //console.log("Fetching Covers and updating local storage...");
     await fetchAndUpdateCovers();
 
-    console.log("Fetching Bibliografia and updating local storage...");
+    //console.log("Fetching Bibliografia and updating local storage...");
     await fetchAndUpdateBibliografia();
   } catch (error) {
     console.error("Error during data fetching and updating:", error);

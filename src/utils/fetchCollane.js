@@ -4,10 +4,6 @@ import { useCollaneStore } from "../store/database";
 
 // Function to fetch and update collane data and localStorage
 export async function fetchAndUpdateCollane() {
-  console.log(
-    "Fetching last update time for Collane from Updates collection...",
-  );
-
   const collaneStore = useCollaneStore(); // Initialize the Pinia store
 
   // Read the last update time for collane from the "Updates" collection
@@ -22,10 +18,6 @@ export async function fetchAndUpdateCollane() {
   const localCollaneLastUpdate =
     parseInt(localStorage.getItem("collaneLastUpdate")) || 0;
 
-  console.log("Local Storage collane timestamp:", collaneLastUpdateFirebase);
-  console.log("Last Firebase collnae timestamp:", collaneLastUpdateFirebase);
-  console.log("Local Collane Variable:", localCollaneData);
-
   if (
     !localCollaneLastUpdate ||
     !localCollaneData ||
@@ -39,9 +31,7 @@ export async function fetchAndUpdateCollane() {
 
     if (collaneSnapshot.exists()) {
       const collane = collaneSnapshot.data();
-      console.log("Firebase collane", collane);
       collaneStore.updateCollane(collane); // Update Pinia store
-      console.log("Updating local storage for collane...");
       localStorage.setItem("collaneLastUpdate", collaneLastUpdateFirebase);
       localStorage.setItem("collane", JSON.stringify(collane));
     } else {
@@ -51,8 +41,5 @@ export async function fetchAndUpdateCollane() {
     }
   } else {
     collaneStore.updateCollane(JSON.parse(localCollaneData));
-    console.log(
-      "No updates found or local storage is up-to-date for collane. Using local storage data...",
-    );
   }
 }
