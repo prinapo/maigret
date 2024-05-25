@@ -4,6 +4,27 @@
       id="images"
       class="row items-start q-mt-md q-px-md q-col-gutter-md bg-primary"
     >
+      <q-card
+        v-if="showFullSizeCard"
+        style="
+          max-width: 600px;
+          width: 100%;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 9999;
+        "
+      >
+        <q-img
+          class="col"
+          :src="fullSizeImage"
+          style="width: 90%; height: auto"
+          fit="contain"
+          basic
+          @click="handleCloseClick"
+        />
+      </q-card>
       <div class="row q-gutter-md" id="card container">
         <q-card
           v-for="(image, outerIndex) in images"
@@ -47,10 +68,36 @@
               style="max-width: 250px; max-height: 300px"
               fit="contain"
               @error="handleImageError"
-              @dblclick="isAdmin ? () => openUploadImage(outerIndex) : null"
+              @dblclick="handleDoubleClick(outerIndex)"
+              @touchend="handleTouchEnd(outerIndex, image.name, $event)"
+              @click="handleClick"
             />
           </q-card-section>
-
+          <q-card-section v-if="showUploaderPopup">
+            <FirebaseUploader
+              v-if="uploadImageIndex !== null"
+              :blocking="true"
+              extention=""
+              directory="images"
+              :bookId="route.params.id"
+              :imageUuid="images[uploadImageIndex].name"
+              :imageIndex="uploadImageIndex"
+              @uploaded="
+                handleFileUploadedLocal(
+                  bookId,
+                  $event.originalFile.name,
+                  images[uploadImageIndex].name,
+                  uploadImageIndex,
+                )
+              "
+              :fileInputRef="fileInputRef"
+              label="Cambia immagine"
+              color="blue"
+              flat
+              bordered
+              style="width: 100%"
+            />
+          </q-card-section>
           <q-card-section
             id="Aggiunta-rimozione-Copertina"
             class="row items-center q-gutter-md justify-end q-mt-auto"
@@ -123,34 +170,6 @@
           </q-card-section>
         </q-card>
       </div>
-
-      <q-dialog v-model="showUploaderPopup">
-        <div class="q-pa-md">
-          <FirebaseUploader
-            v-if="uploadImageIndex !== null"
-            :blocking="true"
-            extention=""
-            directory="images"
-            :bookId="route.params.id"
-            :imageUuid="images[uploadImageIndex].name"
-            :imageIndex="uploadImageIndex"
-            @uploaded="
-              handleFileUploadedLocal(
-                bookId,
-                $event.originalFile.name,
-                images[uploadImageIndex].name,
-                uploadImageIndex,
-              )
-            "
-            :fileInputRef="fileInputRef"
-            label="Cambia immagine"
-            color="blue"
-            flat
-            bordered
-            style="max-width: 300px"
-          />
-        </div>
-      </q-dialog>
     </div>
     <div
       id="details"
@@ -417,7 +436,7 @@
 
 <script setup>
 import { db, fireStoreUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useAuth } from "../composable/auth";
 import { fetchBookDetails } from "../utils/FetchDetails";
 
@@ -547,11 +566,69 @@ const confirmDeleteBook = ref(false);
 const confirmAddCover = ref(false);
 const confirmRemoveImage = ref(false);
 const detailOriginalValue = ref();
+const lastTap = ref(0);
+const showFullSizeCard = ref(false);
+const fullSizeImage = ref(null);
 
 const images = ref([]);
 let isAdmin = false;
 let isCollector = false;
 // tool for long press detection
+
+const handleCloseClick = () => {
+  showFullSizeCard.value = false;
+};
+const handleClick = () => {
+  console.log("clicked");
+  if (showUploaderPopup.value === true) {
+    showUploaderPopup.value = false;
+    console.log("changed the showuploadervalue t", showUploaderPopup.value);
+  } else {
+    showFullSizeCard.value = true;
+  }
+};
+
+const handleDoubleClick = (index) => {
+  console.log("handle doubel click");
+  if (isAdmin) {
+    uploadImageIndex.value = index;
+    showUploaderPopup.value = true;
+    showFullSizeCard.value = false;
+    console.log(
+      "set showUploaderPopup to true in handleduobleclick on double click",
+    );
+  }
+};
+const handleTouchEnd = (index, imageName) => {
+  console.log("touchend");
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTap.value;
+  console.log(currentTime, lastTap.value);
+  console.log("taplenght", tapLength);
+  if (tapLength < 600 && tapLength > 0) {
+    if (isAdmin) {
+      uploadImageIndex.value = index;
+      showUploaderPopup.value = true;
+      console.log("set showUploaderPopup to true on double tap");
+    }
+  } else {
+    console.log("is single click");
+    if (showUploaderPopup.value === true) {
+      showUploaderPopup.value = false;
+    } else {
+      console.log("imagename", imageName);
+      fullSizeImage.value = getImageSource(imageName);
+
+      console.log("fullsizeimage", fullSizeImage.value);
+      showFullSizeCard.value = true;
+    }
+  }
+  lastTap.value = currentTime;
+};
+
+watch(showUploaderPopup, (newVal, oldVal) => {
+  console.log("showUploaderPopup changed from", oldVal, "to", newVal);
+});
 
 const handleInputBlur = (bookId, detailId, detailValue) => {
   if (detailOriginalValue.value !== detailValue) {
@@ -583,6 +660,7 @@ const handleFileUploadedLocal = async (
   targetName,
   index,
 ) => {
+  console.log("called handlefileupload");
   images.value = await handleFileUploaded(
     bookId,
     originalFileName,
@@ -590,6 +668,7 @@ const handleFileUploadedLocal = async (
     index,
   );
   showUploaderPopup.value = false;
+  console.log("set showUploaderPopup to false after file upload");
 };
 
 const createSelectedImagesOptions = async (images, coversOptions) => {
@@ -825,11 +904,6 @@ const addEdizione = async () => {
     confirmAddEdizione.value = false;
     console.error("Error adding new edizione:", error);
   }
-};
-const openUploadImage = (index) => {
-  uploadImageIndex.value = index;
-
-  showUploaderPopup.value = true; // Show the uploader popup when an image is clicked
 };
 </script>
 

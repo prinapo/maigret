@@ -30,6 +30,8 @@
               :disable="loading"
               label="Add row"
               @click="addRow"
+              dense
+              unelevated
             />
             <q-space />
           </template>
@@ -63,6 +65,8 @@
           :disable="loading"
           label="Save Copertine"
           @click="saveData"
+          dense
+          unelevated
         />
         <q-space />
       </div>
@@ -90,6 +94,8 @@
               :disable="loading"
               label="Add row"
               @click="addEditoriRow"
+              dense
+              unelevated
             />
             <q-space />
           </template>
@@ -103,6 +109,8 @@
                   title="aggiorna l'editore"
                   buttons
                   v-slot="scope"
+                  dense
+                  unelevated
                 >
                   <q-input
                     v-model="scope.value"
@@ -123,6 +131,8 @@
           :disable="loading"
           label="Save Editori"
           @click="saveEditoriData"
+          dense
+          unelevated
         />
         <q-space />
       </div>
@@ -150,6 +160,8 @@
               :disable="loading"
               label="Add row"
               @click="addCollaneRow"
+              dense
+              unelevated
             />
             <q-space />
           </template>
@@ -163,6 +175,8 @@
                   title="aggiorna la collana"
                   buttons
                   v-slot="scope"
+                  dense
+                  unelevated
                 >
                   <q-input
                     v-model="scope.value"
@@ -182,6 +196,8 @@
           :disable="loading"
           label="Save Collane"
           @click="saveCollaneData"
+          dense
+          unelevated
         />
         <q-space />
       </div>

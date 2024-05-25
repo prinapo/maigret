@@ -19,6 +19,10 @@ export default boot(async ({ app }) => {
   // Fetch data and update local storage
 
   try {
+    // Initialize Capacitor
+
+    // Hide the splash screen when Capacitor is ready
+
     //console.log("Fetching Editori and updating local storage...");
     await fetchAndUpdateEditori();
 

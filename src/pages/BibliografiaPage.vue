@@ -4,7 +4,7 @@
       <q-card-section>
         <div class="row items-center">
           <!-- Filters Section -->
-          <div class="col">
+          <div class="col" style="max-width: 600px">
             <q-expansion-item
               label="Filters"
               v-model="isOpen"
@@ -18,6 +18,7 @@
                 dense
                 @update:model-value="updateSearchQuery"
                 clearable
+                style="height: 48px"
               ></q-input>
               <!-- Filter by Editore -->
               <q-select
@@ -279,14 +280,16 @@ const calculateColumnsAndGroupBooks = (books) => {
   const screenWidth = $q.screen.width;
   let columns;
 
-  if (screenWidth < 770) {
+  if (screenWidth < 750) {
     columns = 1;
-  } else if (screenWidth < 1122) {
+  } else if (screenWidth < 1100) {
     columns = 2;
-  } else if (screenWidth < 1470) {
+  } else if (screenWidth < 1450) {
     columns = 3;
-  } else {
+  } else if (screenWidth < 1800) {
     columns = 4;
+  } else {
+    columns = 5;
   }
 
   const groupedBooks = [];

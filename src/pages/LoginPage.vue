@@ -40,6 +40,11 @@
                 v-model="password"
                 type="password"
                 label="Password"
+                :append-icon="
+                  isPasswordVisible ? 'visibility' : 'visibility_off'
+                "
+                :append-icon-cb="() => (isPasswordVisible = !isPasswordVisible)"
+                :input-type="isPasswordVisible ? 'text' : 'password'"
               >
                 <template v-slot:prepend>
                   <q-icon name="lock" />
