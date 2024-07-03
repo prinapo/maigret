@@ -30,16 +30,19 @@
               :disable="loading"
               label="Add row"
               @click="addRow"
-              dense
               unelevated
+              v-if="isAdmin"
+              style="min-height: 48dp"
             />
             <q-space />
           </template>
           <template v-slot:body="props">
             <q-tr :props="props">
-              <q-td key="uuid" :props="props">{{ props.row.uuid }}</q-td>
+              <q-td key="uuid" :props="props" v-if="isAdmin">{{
+                props.row.value
+              }}</q-td>
               <q-td key="tipo" :props="props">
-                {{ props.row.tipo }}
+                {{ props.row.label }}
                 <q-popup-edit
                   v-model="props.row.tipo"
                   title="aggiorna il tipo"
@@ -52,6 +55,7 @@
                     autofocus
                     counter
                     @keyup.enter="scope.set"
+                    style="min-height: 48dp"
                   />
                 </q-popup-edit>
               </q-td>
@@ -65,8 +69,9 @@
           :disable="loading"
           label="Save Copertine"
           @click="saveData"
-          dense
           unelevated
+          v-if="isAdmin"
+          style="min-height: 48dp"
         />
         <q-space />
       </div>
@@ -94,14 +99,17 @@
               :disable="loading"
               label="Add row"
               @click="addEditoriRow"
-              dense
               unelevated
+              v-if="isAdmin"
+              style="min-height: 48dp"
             />
             <q-space />
           </template>
           <template v-slot:body="props">
             <q-tr :props="props">
-              <q-td key="id" :props="props">{{ props.row.id }}</q-td>
+              <q-td key="id" :props="props" v-if="isAdmin">{{
+                props.row.id
+              }}</q-td>
               <q-td key="editore" :props="props">
                 {{ props.row.editore }}
                 <q-popup-edit
@@ -118,6 +126,7 @@
                     autofocus
                     counter
                     @keyup.enter="scope.set"
+                    style="min-height: 48dp"
                   />
                 </q-popup-edit>
               </q-td>
@@ -131,8 +140,9 @@
           :disable="loading"
           label="Save Editori"
           @click="saveEditoriData"
-          dense
           unelevated
+          style="min-height: 48dp"
+          v-if="isAdmin"
         />
         <q-space />
       </div>
@@ -160,14 +170,17 @@
               :disable="loading"
               label="Add row"
               @click="addCollaneRow"
-              dense
               unelevated
+              style="min-height: 48dp"
+              v-if="isAdmin"
             />
             <q-space />
           </template>
           <template v-slot:body="props">
             <q-tr :props="props">
-              <q-td key="id" :props="props">{{ props.row.id }}</q-td>
+              <q-td key="id" :props="props" v-if="isAdmin">{{
+                props.row.id
+              }}</q-td>
               <q-td key="collana" :props="props">
                 {{ props.row.collana }}
                 <q-popup-edit
@@ -184,6 +197,7 @@
                     autofocus
                     counter
                     @keyup.enter="scope.set"
+                    style="min-height: 48dp"
                   />
                 </q-popup-edit>
               </q-td>
@@ -196,8 +210,9 @@
           :disable="loading"
           label="Save Collane"
           @click="saveCollaneData"
-          dense
           unelevated
+          style="min-height: 48dp"
+          v-if="isAdmin"
         />
         <q-space />
       </div>
@@ -220,8 +235,15 @@ import {
   updateCoversTimestamp,
   updateCollaneTimestamp,
 } from "../utils/global";
+import { useAuth } from "../composable/auth";
+
 export default {
   setup() {
+    const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } =
+      useAuth();
+
+    checkAuthState();
+
     const columns = [
       {
         name: "uuid",
@@ -434,6 +456,7 @@ export default {
       expandedCovers: ref(false),
       expandedEditori: ref(false),
       expandedCollane: ref(false),
+      isAdmin,
     };
   },
   methods: {

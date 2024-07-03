@@ -1,11 +1,5 @@
 {
-  "name": "com.prinapo.maigret",
-  "version": "0.0.1",
-  "description": "An app to save the maigreto collection status",
-  "productName": "Maigret Collector",
-  "author": "prinapo <giovanni.prinetti@gmail.com>",
   "type": "module",
-  "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
@@ -14,8 +8,12 @@
     "build": "quasar build"
   },
   "dependencies": {
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
     "@quasar/extras": "^1.16.4",
+    "@vercel/fun": "^1.1.1",
+    "@vercel/node": "^3.0.1",
     "firebase": "^10.8.1",
     "pina": "^0.20.2204228",
     "pinia": "^2.1.7",
@@ -27,6 +25,7 @@
     "vue-router": "^4.0.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
     "@quasar/app-vite": "^2.0.0-beta.1",
     "autoprefixer": "^10.4.2",
     "eslint": "^8.11.0",

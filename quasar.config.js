@@ -98,6 +98,13 @@ export default configure((/* ctx */) => {
           warning: "#F2C037",
         },
         loading: {},
+        capacitor: {
+          // Quasar handles app exit on mobile phone back button.
+
+          // On the other hand, the following completely
+          // disables Quasar's back button management.
+          backButton: false,
+        },
       },
       cssAddon: true,
       // iconSet: 'material-icons', // Quasar icon set
@@ -177,7 +184,27 @@ export default configure((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-capacitor-apps/configuring-capacitor
     capacitor: {
-      hideSplashscreen: true,
+      hideSplashscreen: false,
+      appName: "maigret_collector",
+      version: "17",
+      description:
+        "Catalogo completo dei libri di Simenon con il commissario Maigret",
+      author: "prinapo <giovanni.prinetti@gmail.com>",
+      appId: "com.prinapo.maigret",
+      //webDir: "www",
+      //iosStatusBarPadding: true, // add the dynamic island safe area for iOS
+      plugins: {
+        SplashScreen: {
+          launchShowDuration: 6000, // Show splash screen for 3 seconds
+          launchAutoHide: true, // Automatically hide after duration
+          backgroundColor: "#000000", // Background color of the splash screen
+          androidScaleType: "CENTER_CROP",
+          iosScaleType: "CENTER_CROP",
+          showSpinner: false, // Whether to show a spinner or not
+          splashFullScreen: true,
+          splashImmersive: true,
+        },
+      },
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-electron-apps/configuring-electron

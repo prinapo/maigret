@@ -23,6 +23,7 @@
                 v-model="email"
                 type="email"
                 label="Email"
+                style="min-height: 48dp"
               >
                 <template v-slot:prepend>
                   <q-icon name="email" />
@@ -35,6 +36,7 @@
                 v-model="password"
                 type="password"
                 label="Password"
+                style="min-height: 48dp"
               >
                 <template v-slot:prepend>
                   <q-icon name="lock" />
@@ -50,6 +52,7 @@
               class="full-width text-white"
               label="Get Started"
               @click="registerUser"
+              style="min-height: 48dp"
             />
           </q-card-actions>
           <q-card-section class="text-center q-pa-sm">

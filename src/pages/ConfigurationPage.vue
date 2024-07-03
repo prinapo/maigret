@@ -1,137 +1,141 @@
 <template>
   <div class="container">
-    <!-- Button to trigger resync -->
-    <div class="text-center mt-6">
-      <q-btn label="Confirm" color="primary" @click="confirm = true" />
-    </div>
+    <div id="admin commands" v-if="isAdmin">
+      <!-- Button to trigger resync -->
+      <div class="text-center mt-6">
+        <q-btn label="Confirm" color="primary" @click="confirm = true" />
+      </div>
 
-    <!-- Popup dialog -->
-    <q-dialog v-model="confirm" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="alert" color="primary" text-color="white" />
-          <span class="q-ml-sm">Stai per risoncronizzare tutti i dati.</span>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn
-            flat
-            label="Risincronizza tutti i dati"
-            color="negative"
-            @click="resyncData"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+      <!-- Popup dialog -->
+      <q-dialog v-model="confirm" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="alert" color="primary" text-color="white" />
+            <span class="q-ml-sm">Stai per risoncronizzare tutti i dati.</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn
+              flat
+              label="Risincronizza tutti i dati"
+              color="negative"
+              @click="resyncData"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
 
-    <!-- Button to trigger upgrade Collane -->
-    <div class="text-center mt-6">
-      <q-btn
-        label="UpgradeCollane"
-        color="primary"
-        @click="confirmUpgradeCollane = true"
-      />
-    </div>
+      <!-- Button to trigger upgrade Collane -->
+      <div class="text-center mt-6">
+        <q-btn
+          label="UpgradeCollane"
+          color="primary"
+          @click="confirmUpgradeCollane = true"
+        />
+      </div>
 
-    <!-- Popup dialog -->
-    <q-dialog v-model="confirmUpgradeCollane" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="alert" color="primary" text-color="white" />
-          <span class="q-ml-sm">Stai per aggiornare tutte le collane</span>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn
-            flat
-            label="Aggiorna le collane"
-            color="negative"
-            @click="upgradeCollaneData"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-    <!-- Button to trigger upgrade Editori -->
-    <div class="text-center mt-6">
-      <q-btn
-        label="UpgradeEditori"
-        color="primary"
-        @click="confirmUpgradeEditori = true"
-      />
+      <!-- Popup dialog -->
+      <q-dialog v-model="confirmUpgradeCollane" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="alert" color="primary" text-color="white" />
+            <span class="q-ml-sm">Stai per aggiornare tutte le collane</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn
+              flat
+              label="Aggiorna le collane"
+              color="negative"
+              @click="upgradeCollaneData"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <!-- Button to trigger upgrade Editori -->
+      <div class="text-center mt-6">
+        <q-btn
+          label="UpgradeEditori"
+          color="primary"
+          @click="confirmUpgradeEditori = true"
+        />
+      </div>
+      <!-- Button to trigger upgrade Images -->
+      <div class="text-center mt-6">
+        <q-btn
+          label="UpgradeImages"
+          color="primary"
+          @click="confirmUpgradeImage = true"
+        />
+      </div>
+      <!-- Button to trigger upgrade covers databse-->
+      <div class="text-center mt-6">
+        <q-btn
+          label="UpgradeCovers"
+          color="primary"
+          @click="confirmUpgradeCovers = true"
+        />
+      </div>
+      <!-- Popup dialog -->
+      <q-dialog v-model="confirmUpgradeCovers" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="alert" color="primary" text-color="white" />
+            <span class="q-ml-sm">Stai per aggiornare tutti le covers</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn
+              flat
+              label="Aggiorna le covers"
+              color="negative"
+              @click="upgradeCoversData"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <q-dialog v-model="confirmUpgradeEditori" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="alert" color="primary" text-color="white" />
+            <span class="q-ml-sm">Stai per aggiornare tutti gli editori</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn
+              flat
+              label="Aggiorna gli editori"
+              color="negative"
+              @click="upgradeEditoriData"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <q-dialog v-model="confirmUpgradeImage" persistent>
+        <q-card>
+          <q-card-section class="row items-center">
+            <q-avatar icon="alert" color="primary" text-color="white" />
+            <span class="q-ml-sm">Stai per aggiornare tutte le immagini</span>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancel" color="primary" v-close-popup />
+            <q-btn
+              flat
+              label="Aggiorna le immagini"
+              color="negative"
+              @click="upgradeImage"
+              style="min-height: 48dp"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
-    <!-- Button to trigger upgrade Images -->
-    <div class="text-center mt-6">
-      <q-btn
-        label="UpgradeImages"
-        color="primary"
-        @click="confirmUpgradeImage = true"
-      />
-    </div>
-    <!-- Button to trigger upgrade covers databse-->
-    <div class="text-center mt-6">
-      <q-btn
-        label="UpgradeCovers"
-        color="primary"
-        @click="confirmUpgradeCovers = true"
-      />
-    </div>
-    <!-- Popup dialog -->
-    <q-dialog v-model="confirmUpgradeCovers" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="alert" color="primary" text-color="white" />
-          <span class="q-ml-sm">Stai per aggiornare tutti le covers</span>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn
-            flat
-            label="Aggiorna le covers"
-            color="negative"
-            @click="upgradeCoversData"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="confirmUpgradeEditori" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="alert" color="primary" text-color="white" />
-          <span class="q-ml-sm">Stai per aggiornare tutti gli editori</span>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn
-            flat
-            label="Aggiorna gli editori"
-            color="negative"
-            @click="upgradeEditoriData"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="confirmUpgradeImage" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="alert" color="primary" text-color="white" />
-          <span class="q-ml-sm">Stai per aggiornare tutte le immagini</span>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn
-            flat
-            label="Aggiorna le immagini"
-            color="negative"
-            @click="upgradeImage"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </div>
 </template>
 
 <script>
-import { ref } from "vue";
+import { useAuth } from "../composable/auth";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router"; // Import useRouter from vue-router
 import { fetchAndUpdateBibliografia } from "../utils/fetchBibliografia";
 import { fetchAndUpdateEditori } from "../utils/fetchEditori"; // Import the fetchDataAndUpdateLocalStorage function
@@ -150,6 +154,13 @@ import {
 
 export default {
   setup() {
+    const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } =
+      useAuth();
+    onMounted(async () => {
+      // Ensure authentication state is checked
+      //console.log("check auth state");
+      await checkAuthState();
+    });
     const confirm = ref(false); // Define confirm as a reactive variable
     const router = useRouter();
     const confirmUpgradeCollane = ref(false); // Define cas a reactive variable
@@ -445,6 +456,7 @@ export default {
       upgradeEditoriData,
       upgradeImage,
       upgradeCoversData,
+      isAdmin,
     };
   },
 };

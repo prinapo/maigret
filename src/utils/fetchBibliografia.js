@@ -7,6 +7,7 @@ import {
 } from "../store/database";
 import { ref } from "vue";
 import { useAuth } from "../composable/auth";
+import { fireStoreUrl } from "../firebase/firebaseInit";
 const { userId, checkAuthState } = useAuth();
 // Call checkAuthState to ensure isLoggedIn is up-to-date
 checkAuthState();
@@ -158,20 +159,20 @@ export async function fetchAndUpdateBibliografia() {
             (image) => image.id === "qNvdwFMLNt2Uz7JjqTjacu",
           );
           if (imageEntry) {
-            book.imageUrl = imageEntry.name;
-          } else if (book.images.length > 0) {
+            book.imageUrl = `${fireStoreUrl}${imageEntry.name}?alt=media`;
+          } else if (book.images.length > 0 && book.images[0].name) {
             // If the entry exists, copy the value of the 'name' field to bibliografiaData.imageUrl
-            book.imageUrl = book.images[0].name;
+            book.imageUrl = `${fireStoreUrl}${book.images[0].name}?alt=media`;
           } else {
             // If the entry does not exist, remove bibliografiaData.imageUrl if it exists
-            book.imageUrl = null;
+            book.imageUrl = "src/assets/400x600.png";
           }
         } else {
           // Handle the case where 'images' array is missing or not an array
-          book.imageUrl = null;
+          book.imageUrl = "src/assets/400x600.png";
         }
       });
-
+      console.log("bibliografiaData", bibliografiaData);
       //
       // a questo punto aggiorno il campo bibliografia su PINIA
       bibliografiaStore.updateBibliografia(bibliografiaData); // Update Pinia store

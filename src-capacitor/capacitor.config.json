@@ -1,17 +1,5 @@
 {
   "appId": "com.prinapo.maigret",
-  "appName": "Maigret Collector",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  },
-  "plugins": {
-    "SplashScreen": {
-      "launchAutoHide": true,
-      "androidSplashResourceName": "splash",
-      "iosSplashResourceName": "splash",
-      "androidScaleType": "CENTER_CROP",
-      "splashFullScreen": true
-    }
-  }
+  "appName": "Quasar App",
+  "webDir": "www"
 }

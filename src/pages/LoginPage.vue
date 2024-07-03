@@ -18,6 +18,7 @@
                 icon="add"
                 color="purple-4"
                 @click="registrationPage"
+                style="min-height: 48dp"
               />
             </div>
           </q-card-section>
@@ -29,6 +30,7 @@
                 v-model="email"
                 type="email"
                 label="Email"
+                style="min-height: 48dp"
               >
                 <template v-slot:prepend>
                   <q-icon name="email" />
@@ -37,6 +39,7 @@
               <q-input
                 square
                 clearable
+                style="min-height: 48dp"
                 v-model="password"
                 type="password"
                 label="Password"
@@ -58,6 +61,7 @@
                   class="full-width text-white"
                   label="Login"
                   type="submit"
+                  style="min-height: 48dp"
                 />
               </q-card-actions>
               <q-card-section class="text-center q-pa-sm">
@@ -95,7 +99,12 @@
               class="absolute-bottom-right q-pr-md"
               style="transform: translateY(50%)"
             >
-              <q-btn fab icon="close" color="purple-4" />
+              <q-btn
+                fab
+                icon="close"
+                color="purple-4"
+                style="min-height: 48dp"
+              />
             </div>
           </q-card-section>
 
@@ -136,6 +145,7 @@ const router = useRouter();
 const isLoggedIn = ref(false);
 const $q = useQuasar();
 const currentUser = ref(null);
+const isPasswordVisible = ref(false);
 
 const registrationPage = () => {
   router.push({ name: "registration" });

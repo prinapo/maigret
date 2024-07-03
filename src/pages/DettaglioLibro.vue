@@ -1,30 +1,93 @@
 <template>
   <div class="bg-primary">
-    <div
-      id="images"
-      class="row items-start q-mt-md q-px-md q-col-gutter-md bg-primary"
-    >
-      <q-card
-        v-if="showFullSizeCard"
-        style="
-          max-width: 600px;
-          width: 100%;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 9999;
-        "
+    <div id="image carousel" v-if="!isAdmin">
+      <q-carousel
+        v-model="slide"
+        transition-prev="slide-right"
+        transition-next="slide-left"
+        swipeable
+        animated
+        control-color="amber"
+        navigation
+        padding
+        arrows
+        height="400px"
+        class="bg-grey-9 shadow-2 rounded-borders"
       >
-        <q-img
-          class="col"
-          :src="fullSizeImage"
-          style="width: 90%; height: auto"
-          fit="contain"
-          basic
-          @click="handleCloseClick"
-        />
-      </q-card>
+        <q-carousel-slide
+          v-for="(imageBatch, outerIndex) in imageBatches"
+          :key="outerIndex"
+          :name="outerIndex"
+        >
+          <div class="row justify-around" style="height: 100%" id="slide div">
+            <div
+              v-for="(image, innerIndex) in imageBatch"
+              :key="innerIndex"
+              id="for"
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                width: 250px;
+              "
+            >
+              <q-img
+                :src="getImageSource(image.name)"
+                @error="handleImageError"
+                no-spinner
+                style="
+                  max-height: 100%;
+                  width: 100%;
+                  object-fit: contain;
+                  display: flex;
+                  align-items: flex-end;
+                  justify-content: center;
+                "
+                fit="contain"
+                @click="showImageFullscreen(outerIndex, innerIndex)"
+              >
+                <div
+                  class="caption-container"
+                  style="
+                    background: rgba(0, 0, 0, 0.5);
+                    color: white;
+                    width: 100%;
+                    text-align: center;
+                    padding: 4px 0;
+                    position: absolute;
+                    bottom: 0;
+                  "
+                >
+                  {{ image.coverType }}
+                </div>
+              </q-img>
+              <q-dialog
+                v-model="dialogs[outerIndex][innerIndex]"
+                full-screen
+                transition-show="fade"
+                transition-hide="fade"
+              >
+                <q-card style="width: 80vw; height: 100%">
+                  <!-- Remove the q-bar containing the close button -->
+                  <q-img
+                    :src="getImageSource(image.name)"
+                    style="width: 100%; height: 100%"
+                    fit="contain"
+                    @click="closeDialog(outerIndex, innerIndex)"
+                  ></q-img>
+                </q-card>
+              </q-dialog>
+            </div>
+          </div>
+        </q-carousel-slide>
+      </q-carousel>
+    </div>
+    <div
+      id="images for admin"
+      class="row items-start q-mt-md q-px-md q-col-gutter-md bg-primary"
+      v-if="isAdmin"
+    >
       <div class="row q-gutter-md" id="card container">
         <q-card
           v-for="(image, outerIndex) in images"
@@ -32,7 +95,12 @@
           flat
           bordered
           class="column q-mr-xl q-ml-xl"
-          style="width: 250px; height: 400px"
+          style="
+            width: 250px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+          "
           id="card"
         >
           <q-card-section id="Select and upload image">
@@ -46,7 +114,6 @@
                   :readonly="!isAdmin"
                   :hide-dropdown-icon="!isAdmin"
                   :borderless="!isAdmin"
-                  dense
                   class="full-width"
                   @update:model-value="
                     saveImageDetail(
@@ -61,33 +128,39 @@
             </q-item>
           </q-card-section>
 
-          <q-card-section id="image-section">
+          <q-card-section
+            id="image-section"
+            style="
+              flex: 1;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            "
+          >
             <q-img
               class="col"
               :src="getImageSource(image.name)"
               style="max-width: 250px; max-height: 300px"
               fit="contain"
               @error="handleImageError"
-              @dblclick="handleDoubleClick(outerIndex)"
-              @touchend="handleTouchEnd(outerIndex, image.name, $event)"
-              @click="handleClick"
             />
           </q-card-section>
-          <q-card-section v-if="showUploaderPopup">
+          <q-card-section>
             <FirebaseUploader
-              v-if="uploadImageIndex !== null"
+              v-if="outerIndex !== null"
+              class="col"
               :blocking="true"
               extention=""
               directory="images"
               :bookId="route.params.id"
-              :imageUuid="images[uploadImageIndex].name"
-              :imageIndex="uploadImageIndex"
+              :imageUuid="images[outerIndex].name"
+              :imageIndex="outerIndex"
               @uploaded="
                 handleFileUploadedLocal(
                   bookId,
                   $event.originalFile.name,
-                  images[uploadImageIndex].name,
-                  uploadImageIndex,
+                  images[outerIndex].name,
+                  outerIndex,
                 )
               "
               :fileInputRef="fileInputRef"
@@ -108,6 +181,7 @@
               icon="add"
               color="purple-4"
               @click="confirmAddCover = true"
+              style="min-height: 48dp"
             />
             <q-dialog v-model="confirmAddCover" persistent>
               <q-card>
@@ -120,6 +194,7 @@
                     label="Annulla"
                     color="primary"
                     @click="confirmAddCover = false"
+                    style="min-height: 48dp"
                   />
                   <q-btn
                     flat
@@ -127,6 +202,7 @@
                     color="negative"
                     @click="addImage('')"
                     v-close-popup
+                    style="min-height: 48dp"
                   />
                 </q-card-actions>
               </q-card>
@@ -141,6 +217,7 @@
                 imageToRemoveIndex = outerIndex;
                 confirmRemoveImage = true;
               "
+              style="min-height: 48dp"
             />
             <q-dialog v-model="confirmRemoveImage" persistent>
               <q-card>
@@ -153,6 +230,7 @@
                     label="Annulla"
                     color="primary"
                     @click="confirmRemoveImage = false"
+                    style="min-height: 48dp"
                   />
                   <q-btn
                     flat
@@ -163,6 +241,7 @@
                       imageToRemoveIndex = null;
                       confirmRemoveImage = false;
                     "
+                    style="min-height: 48dp"
                   />
                 </q-card-actions>
               </q-card>
@@ -201,6 +280,7 @@
                 :hide-dropdown-icon="!isAdmin"
                 :borderless="!isAdmin"
                 class="col-grow text-h6 text-grey-11"
+                style="min-height: 48dp"
               >
               </q-select>
             </div>
@@ -228,6 +308,7 @@
                 :hide-dropdown-icon="!isAdmin"
                 :borderless="!isAdmin"
                 class="col-grow text-h6 text-grey-11"
+                style="min-height: 48dp"
               >
               </q-select>
             </div>
@@ -246,6 +327,7 @@
                 color="accent"
                 @focus="handleInputFocus(detail.value)"
                 @blur="handleInputBlur(bookId, detail.id, detail.value)"
+                style="min-height: 48dp"
               />
             </div>
           </q-item-section>
@@ -294,7 +376,7 @@
                   color="accent"
                   class="col"
                   type="number"
-                  style="max-width: 100px"
+                  style="max-width: 100px; min-height: 48dp"
                   :readonly="!isAdmin"
                   @focus="handleInputFocus(edizione.anno)"
                   @blur="
@@ -342,6 +424,7 @@
                 icon="add"
                 color="purple-4"
                 @click="confirmAddEdizione = true"
+                style="min-height: 48dp"
               />
               <q-dialog v-model="confirmAddEdizione" persistent>
                 <q-card>
@@ -355,12 +438,14 @@
                       label="Annulla"
                       color="primary"
                       @click="confirmAddEdizione = false"
+                      style="min-height: 48dp"
                     />
                     <q-btn
                       flat
                       label="Conferma"
                       color="negative"
                       @click="addEdizione()"
+                      style="min-height: 48dp"
                     />
                   </q-card-actions>
                 </q-card>
@@ -372,6 +457,7 @@
                 icon="delete"
                 color="purple-4"
                 @click="confirmRemoveEdizione = true"
+                style="min-height: 48dp"
               />
               <q-dialog v-model="confirmRemoveEdizione" persistent>
                 <q-card>
@@ -385,12 +471,14 @@
                       label="Annulla"
                       color="primary"
                       @click="confirmRemoveEdizione = false"
+                      style="min-height: 48dp"
                     />
                     <q-btn
                       flat
                       label="Conferma"
                       color="negative"
                       @click="removeEdizione(edizioneIndex)"
+                      style="min-height: 48dp"
                     />
                   </q-card-actions>
                 </q-card>
@@ -404,6 +492,7 @@
             label="Elimina il libro"
             color="negative"
             @click="confirmDeleteBook = true"
+            style="min-height: 48dp"
           />
 
           <q-dialog v-model="confirmDeleteBook" persistent>
@@ -418,12 +507,14 @@
                   label="Annulla"
                   color="primary"
                   @click="confirmDeleteBook = false"
+                  style="min-height: 48dp"
                 />
                 <q-btn
                   flat
                   label="Conferma"
                   color="negative"
                   @click="deleteBook(bookId)"
+                  style="min-height: 48dp"
                 />
               </q-card-actions>
             </q-card>
@@ -436,7 +527,7 @@
 
 <script setup>
 import { db, fireStoreUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch, computed } from "vue";
 import { useAuth } from "../composable/auth";
 import { fetchBookDetails } from "../utils/FetchDetails";
 
@@ -460,7 +551,9 @@ import {
 } from "src/store/database";
 const shortUuidGenerator = short();
 import bookImage from "../assets/400x600.png";
-const { isLoggedIn, userId, checkAuthState } = useAuth();
+import { useQuasar } from "quasar";
+
+const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } = useAuth();
 const router = useRouter();
 const route = useRoute();
 const bookDetails = ref([]);
@@ -482,28 +575,19 @@ const collaneStore = useCollaneStore();
 const collaneOptionList = ref([]);
 const collanaValue = ref();
 const selectedCollana = ref(null);
-const slide = ref(1);
+const $q = useQuasar();
+
 /**
  * Fetches the details of a book and its editions when the component is mounted.
  * It first checks the authentication state, then retrieves the book ID from the current route.
  * It then calls the `fetchBookDetails` function to fetch the book details and editions, and updates the corresponding data properties.
  */
+
 onMounted(async () => {
   // Ensure authentication state is checked
   //console.log("check auth state");
   await checkAuthState();
   // Get the current values of isLoggedIn and userId
-  if (isLoggedIn.value) {
-    const userDocRef = doc(db, "Users", userId.value);
-    const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.data();
-    isAdmin = isLoggedIn && userData.role === "admin";
-    isCollector = isLoggedIn && userData.role === "collector";
-  } else {
-    isAdmin = false;
-    isCollector = false;
-    userId.value = null;
-  }
 
   const {
     bookDetails: fetchedBookDetails,
@@ -514,20 +598,27 @@ onMounted(async () => {
   bookDetails.value = fetchedBookDetails;
   edizioni.value = fetchedEdizioni;
   images.value = fetchedImages;
+  //console.log("images.value", images.value);
   coversOptions.value = coverStrore.covers.cover;
+  //console.log("covers", coversOptions.value);
+
   //gestisco il fatto che non tutti i libri hanno una copertina
   //prima controllo che esista nel libro il campo immagine e se non essite lo creo
   //con un immagie con "id prima di copertina"
   //e con name che viene generato con shortuiid dento addImage
-  if (!images.value || images.value.length === 0) {
-    const idValue = "qNvdwFMLNt2Uz7JjqTjacu";
-    await addImage(idValue); // Call the addImage function to add a default image
+  if (isAdmin.value) {
+    if (!images.value || images.value.length === 0) {
+      const idValue = "qNvdwFMLNt2Uz7JjqTjacu";
+      await addImage(idValue); // Call the addImage function to add a default image
+    }
   }
-  // a questo punto images o ha un solo elemento appena creato o larray originale
-  // controllo che il campo "name" di "images" non sia vuoto, se lo è lo sostituisco
+  // a questo punto images o ha  solo elemento appena creato o larray originale
+  // controllo che il campo "nameun" di "images" non sia vuoto, se lo è lo sostituisco
   //con un valore generato
-  await checkAndUpdateImages(images.value, bookId);
-
+  if (isAdmin.value) {
+    //console.log("chiamo chak and update ia damin è ", isAdmin.value);
+    await checkAndUpdateImages(images.value, bookId);
+  }
   await createSelectedImagesOptions(images.value, coversOptions);
 
   editori.value = editoriStore.editori.editore;
@@ -557,8 +648,6 @@ onMounted(async () => {
   );
 });
 
-const uploadImageIndex = ref(null);
-const showUploaderPopup = ref(false);
 const fileInputRef = ref(null);
 const confirmAddEdizione = ref(false);
 const confirmRemoveEdizione = ref(false);
@@ -566,69 +655,8 @@ const confirmDeleteBook = ref(false);
 const confirmAddCover = ref(false);
 const confirmRemoveImage = ref(false);
 const detailOriginalValue = ref();
-const lastTap = ref(0);
-const showFullSizeCard = ref(false);
-const fullSizeImage = ref(null);
-
+const slide = ref(0);
 const images = ref([]);
-let isAdmin = false;
-let isCollector = false;
-// tool for long press detection
-
-const handleCloseClick = () => {
-  showFullSizeCard.value = false;
-};
-const handleClick = () => {
-  console.log("clicked");
-  if (showUploaderPopup.value === true) {
-    showUploaderPopup.value = false;
-    console.log("changed the showuploadervalue t", showUploaderPopup.value);
-  } else {
-    showFullSizeCard.value = true;
-  }
-};
-
-const handleDoubleClick = (index) => {
-  console.log("handle doubel click");
-  if (isAdmin) {
-    uploadImageIndex.value = index;
-    showUploaderPopup.value = true;
-    showFullSizeCard.value = false;
-    console.log(
-      "set showUploaderPopup to true in handleduobleclick on double click",
-    );
-  }
-};
-const handleTouchEnd = (index, imageName) => {
-  console.log("touchend");
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTap.value;
-  console.log(currentTime, lastTap.value);
-  console.log("taplenght", tapLength);
-  if (tapLength < 600 && tapLength > 0) {
-    if (isAdmin) {
-      uploadImageIndex.value = index;
-      showUploaderPopup.value = true;
-      console.log("set showUploaderPopup to true on double tap");
-    }
-  } else {
-    console.log("is single click");
-    if (showUploaderPopup.value === true) {
-      showUploaderPopup.value = false;
-    } else {
-      console.log("imagename", imageName);
-      fullSizeImage.value = getImageSource(imageName);
-
-      console.log("fullsizeimage", fullSizeImage.value);
-      showFullSizeCard.value = true;
-    }
-  }
-  lastTap.value = currentTime;
-};
-
-watch(showUploaderPopup, (newVal, oldVal) => {
-  console.log("showUploaderPopup changed from", oldVal, "to", newVal);
-});
 
 const handleInputBlur = (bookId, detailId, detailValue) => {
   if (detailOriginalValue.value !== detailValue) {
@@ -660,15 +688,13 @@ const handleFileUploadedLocal = async (
   targetName,
   index,
 ) => {
-  console.log("called handlefileupload");
+  //console.log("called handlefileupload");
   images.value = await handleFileUploaded(
     bookId,
     originalFileName,
     targetName,
     index,
   );
-  showUploaderPopup.value = false;
-  console.log("set showUploaderPopup to false after file upload");
 };
 
 const createSelectedImagesOptions = async (images, coversOptions) => {
@@ -905,6 +931,73 @@ const addEdizione = async () => {
     console.error("Error adding new edizione:", error);
   }
 };
+const calculateImagesPerSlide = () => {
+  const screenWidth = $q.screen.width;
+  if (screenWidth >= 1200) {
+    return 4;
+  } else if (screenWidth >= 992) {
+    return 3;
+  } else if (screenWidth >= 768) {
+    return 2;
+  } else {
+    return 1;
+  }
+};
+const imagesPerSlide = ref(calculateImagesPerSlide());
+const numberOfCarouselSlide = ref(
+  Math.ceil(images.value.length / imagesPerSlide.value),
+);
+
+const chunkArray = (array, size) => {
+  const result = [];
+  //console.log("enteryng chunk", array);
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  //console.log("result", result);
+  return result;
+};
+// Function to initialize dialog array
+const initializeDialogs = (passedBatches) => {
+  dialogs.value = passedBatches.map((batch) => batch.map(() => false));
+};
+
+const dialogs = ref([]);
+const findCoverType = (id, coverOptions) => {
+  const cover = coverOptions.find((option) => option.value === id);
+  return cover ? cover.label : null;
+};
+const imageBatches = computed(() => {
+  const coverOptions = coversOptions.value; // Assuming CoversOptions is reactive
+  const imagesWithCoverType = images.value.map((image) => ({
+    ...image,
+    coverType: findCoverType(image.id, coverOptions),
+  }));
+
+  const batches = chunkArray(imagesWithCoverType, imagesPerSlide.value);
+  // Initialize the dialog array based on the new batches
+  initializeDialogs(batches);
+  return batches;
+});
+// Function to initialize dialog array
+
+// Function to initialize dialog array
+
+const showImageFullscreen = (outerIndex, innerIndex) => {
+  dialogs.value[outerIndex][innerIndex] = true;
+};
+const closeDialog = (outerIndex, innerIndex) => {
+  dialogs.value[outerIndex][innerIndex] = false;
+};
+watch(
+  () => $q.screen.width,
+  (newWidth) => {
+    imagesPerSlide.value = calculateImagesPerSlide();
+    numberOfCarouselSlide.value = Math.ceil(
+      images.value.lenght / imagesPerSlide.value,
+    );
+  },
+);
 </script>
 
 <style lang="sass" scoped></style>

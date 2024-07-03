@@ -23,6 +23,8 @@
                   class="text-h6 text-grey-11"
                   dark
                   color="accent"
+                  hidden="!isAdmin"
+                  style="min-height: 48dp"
                 />
               </q-item-section>
             </q-item>
@@ -31,7 +33,13 @@
       </div>
     </div>
     <div class="text-center mt-4" v-if="isLoggedIn">
-      <q-btn color="primary" label="Save Book" @click="saveBook" />
+      <q-btn
+        color="primary"
+        label="Save Book"
+        @click="saveBook"
+        v-if="isAdmin"
+        style="min-height: 48dp"
+      />
     </div>
   </div>
 </template>
@@ -46,7 +54,7 @@ import { useRouter } from "vue-router";
 
 import { useAuth } from "../composable/auth";
 
-const { isLoggedIn, checkAuthState } = useAuth();
+const { isLoggedIn, isAdmin, checkAuthState } = useAuth();
 // Call checkAuthState to ensure isLoggedIn is up-to-date
 checkAuthState();
 

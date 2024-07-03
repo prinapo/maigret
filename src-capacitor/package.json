@@ -1,13 +1,12 @@
 {
-  "name": "com.prinapo.maigret",
-  "version": "0.0.1",
-  "description": "An app to save the maigreto collection status",
-  "author": "prinapo <giovanni.prinetti@gmail.com>",
+  "name": "maigret_collector",
+  "version": "17",
+  "description": "Catalogo completo dei libri di Simenon con il commissario Maigret",
   "private": true,
   "dependencies": {
-    "@capacitor/android": "^5.7.1",
-    "@capacitor/app": "^5.0.0",
-    "@capacitor/cli": "^5.0.0",
-    "@capacitor/core": "^5.0.0"
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
   }
 }

@@ -8,7 +8,6 @@
 // se ce ne è uno non si deve cancellare
 // deletebook non cancella davvero il libro ma lo sposta nel cestino delle bibliografie
 
-import { ref } from "vue";
 import { db } from "../firebase/firebaseInit";
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { updateTimestamp } from "../utils/global";
@@ -19,6 +18,7 @@ import {
 } from "src/store/database";
 
 import { Notify } from "quasar";
+import { fireStoreUrl } from "../firebase/firebaseInit";
 
 const bibliografiaStore = useBibliografiaStore();
 const collaneStore = useCollaneStore();
@@ -30,9 +30,9 @@ export const saveDetail = async (bookId, itemId, value) => {
   // creo il nuovo timestamp
   const timestamp = new Date().valueOf();
   const bookRef = doc(db, "Bibliografia", bookId);
-  console.log(bookId);
-  console.log(itemId);
-  console.log(value);
+  // console.log(bookId);
+  // console.log(itemId);
+  // console.log(value);
   try {
     //creo il ref al libro corrente le info del signolo libro
 
@@ -390,6 +390,8 @@ export const handleFileUploaded = async (
 
   try {
     // read and update the book on firebase
+    // ho caricato l'immagine e adesso scrivo sul database
+    // sul libro il nome dell'immagine
 
     const bookRef = doc(db, "Bibliografia", bookId);
     const dataSnapshot = await getDoc(bookRef);
@@ -400,6 +402,8 @@ export const handleFileUploaded = async (
       images: BookData.images,
     });
 
+    //aggiorno anche il file di bibliografia locale
+    //e poi aggiorno il loval storage
     const bibliografiaStore = useBibliografiaStore();
     const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
       (book) => book.id === bookId,
@@ -415,17 +419,21 @@ export const handleFileUploaded = async (
       );
 
       const book = bibliografiaStore.bibliografia[bookIndexInBibliografia];
-      // guardo se essite una prim copertina e lo metto nel campi imageurl per poterla vedere
+      // guardo se essite una prima copertina e lo metto nel campi imageurl per poterla vedere
       // Check if the book has an 'images' array and if it contains an entry with id=qNvdwFMLNt2Uz7JjqTjacu
+      // questo id rappresenta l'uuid di prima copertina
       if (book.images && Array.isArray(book.images)) {
         const imageEntry = book.images.find(
           (image) => image.id === "qNvdwFMLNt2Uz7JjqTjacu",
         );
         if (imageEntry) {
-          book.imageUrl = imageEntry.name;
+          book.imageUrl = `${fireStoreUrl}${imageEntry.name}?alt=media`;
+          //console.log("book.imageUrl prima copertina", book.imageUrl);
         } else if (book.images.length > 0) {
           // If the entry exists, copy the value of the 'name' field to bibliografiaData.imageUrl
-          book.imageUrl = book.images[0].name;
+          book.imageUrl = `${fireStoreUrl}${book.images[0].name}?alt=media`;
+
+          //          console.log("book.imageUrl no prima copertina", book.imageUrl);
         } else {
           // If the entry does not exist, remove bibliografiaData.imageUrl if it exists
           book.imageUrl = null;
@@ -436,12 +444,22 @@ export const handleFileUploaded = async (
       }
       bibliografiaStore.bibliografia[bookIndexInBibliografia].imageUrl =
         book.imageUrl;
+      localStorage.setItem(
+        "bibliografia",
+        JSON.stringify(bibliografiaStore.bibliografia),
+      );
+      //    console.log(
+      //      "bibligrafiatoriaStore.bibliografia[bookIndexInBibliografia].imageUrl",
+      //      bibliografiaStore.bibliografia[bookIndexInBibliografia].imageUrl,
+      //    );
     }
+
     Notify.create({
       message: `Image Saved`,
       type: "positive",
       color: "green",
     });
+
     return BookData.images;
   } catch (error) {
     Notify.create({

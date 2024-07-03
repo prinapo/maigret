@@ -18,7 +18,7 @@
                 dense
                 @update:model-value="updateSearchQuery"
                 clearable
-                style="height: 48px"
+                style="height: 48dp"
               ></q-input>
               <!-- Filter by Editore -->
               <q-select
@@ -78,6 +78,7 @@
           :items="rowsOfBooks"
           :item-size="600"
           style="height: 100%"
+          virtual-scroll-slice-size="20"
         >
           <template v-slot="{ item }">
             <div class="row items-start q-mt-md q-px-md q-col-gutter-md">
@@ -92,12 +93,21 @@
                 >
                   <q-img
                     class="col"
-                    :src="
-                      fireStoreUrl + book.imageUrl + '?alt=media' || bookImage
-                    "
+                    :src="book.imageUrl"
                     style="width: 200px; height: 280px"
                     fit="contain"
-                  />
+                    no-spinner
+                  >
+                    <template #error>
+                      <q-img
+                        :src="bookImage"
+                        alt="Placeholder"
+                        fit="contain"
+                        no-spinner
+                        style="width: 200px; height: 280px"
+                      />
+                    </template>
+                  </q-img>
                   <q-card-section>
                     <div>{{ book.titolo }}</div>
                     <div>{{ book.editoreName }}</div>
@@ -120,34 +130,45 @@
           :items="filteredBibliografia"
           separator
           :virtual-scroll-item-size="200"
+          v-slot="{ item }"
         >
-          <template v-slot="{ item }">
-            <q-item
-              clickable
-              v-ripple
-              @click="openDettaglioLibro(item.id)"
-              :class="item.possessed ? 'bg-green-3' : 'bg-grey-2'"
-            >
-              <q-item-section>
-                <q-img
-                  :src="
-                    fireStoreUrl + item.imageUrl + '?alt=media' || bookImage
-                  "
-                  width="120px"
-                  fit="scale-down"
-                />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label lines="1">{{ item.titolo }}</q-item-label>
-                <q-item-label caption>{{ item.editore }}</q-item-label>
-                <q-item-label caption>{{ item.collanaName }}</q-item-label>
-                <q-item-label caption>{{ item.possessed }}</q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-icon name="info" />
-              </q-item-section>
-            </q-item>
-          </template>
+          <q-item
+            clickable
+            @click="openDettaglioLibro(item.id)"
+            :class="item.possessed ? 'bg-green-3' : 'bg-grey-2'"
+            style="height: 120px"
+            dense
+          >
+            <q-item-section>
+              <q-img
+                :src="item.imageUrl"
+                width="120px"
+                hwihgt="120px"
+                fit="scale-down"
+                no-spinner
+                :key="item.imageUrl"
+              >
+                <template #error>
+                  <q-img
+                    :src="bookImage"
+                    alt="Placeholder"
+                    fit="scale-down"
+                    no-spinner
+                    style="width: 120px"
+                  />
+                </template>
+              </q-img>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label lines="1">{{ item.titolo }}</q-item-label>
+              <q-item-label caption>{{ item.editore }}</q-item-label>
+              <q-item-label caption>{{ item.collanaName }}</q-item-label>
+              <q-item-label caption>{{ item.possessed }}</q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-icon name="info" />
+            </q-item-section>
+          </q-item>
         </q-virtual-scroll>
       </div>
     </div>
@@ -155,18 +176,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composable/auth";
 import { useQuasar } from "quasar";
 import { useFiltersStore } from "../store/filtersStore";
+
 import {
   useBibliografiaStore,
   useEditoriStore,
   useCollaneStore,
 } from "src/store/database";
 import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
-import { fireStoreUrl } from "../firebase/firebaseInit"; // Import fireStoreUrl from firebaseInit
 
 const router = useRouter();
 const bibliografiaStore = useBibliografiaStore();
@@ -280,13 +301,13 @@ const calculateColumnsAndGroupBooks = (books) => {
   const screenWidth = $q.screen.width;
   let columns;
 
-  if (screenWidth < 750) {
+  if (screenWidth < 770) {
     columns = 1;
-  } else if (screenWidth < 1100) {
+  } else if (screenWidth < 1116) {
     columns = 2;
-  } else if (screenWidth < 1450) {
+  } else if (screenWidth < 1462) {
     columns = 3;
-  } else if (screenWidth < 1800) {
+  } else if (screenWidth < 1808) {
     columns = 4;
   } else {
     columns = 5;

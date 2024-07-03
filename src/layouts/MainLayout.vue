@@ -8,7 +8,7 @@
           <q-avatar>
             <img src="images/MaigretIcon.svg" />
           </q-avatar>
-          Maigret Collectors
+          Maigret Collectors v3.20
         </q-toolbar-title>
 
         <!-- Show login icon if not logged in, otherwise show logout icon -->
@@ -38,7 +38,7 @@
 
         <q-separator />
 
-        <q-item clickable to="/configuration">
+        <q-item clickable to="/configuration" v-if="isLoggedIn">
           <q-item-section>
             <q-item-label>Configuration</q-item-label>
           </q-item-section>
@@ -55,7 +55,7 @@
           </q-item-section>
         </q-item>
         <q-separator />
-        <q-item clickable to="/newbook">
+        <q-item clickable to="/newbook" v-if="isLoggedIn">
           <q-item-section>
             <q-item-label>New Book</q-item-label>
           </q-item-section>
