@@ -1,218 +1,298 @@
 <template>
-  <div>
-    <div class="q-gutter-sm q-mb-md" style="color: secondary">
-      <q-card-section>
-        <div class="row items-center">
-          <!-- Filters Section -->
-          <div class="col" style="max-width: 600px">
-            <q-expansion-item
-              label="Filters"
-              v-model="isOpen"
-              @update:model-value="toggleExpansion"
-            >
-              <!-- Filter by Title -->
-              <q-input
-                v-model="searchQuery"
-                outlined
-                label="Filter by Title"
-                dense
-                @update:model-value="updateSearchQuery"
-                clearable
-                style="height: 48dp"
-              ></q-input>
-              <!-- Filter by Editore -->
-              <q-select
-                v-model="selectedEditore"
-                outlined
-                label="Filter by Editore"
-                dense
-                :options="editori"
-                @update:model-value="handleEditoreChange"
-                clearable
-                option-value="id"
-                option-label="editore"
-              ></q-select>
-              <!-- Filter by Collana -->
-              <q-select
-                v-model="selectedCollana"
-                outlined
-                label="Filter by Collana"
-                dense
-                :options="collane"
-                option-value="id"
-                option-label="collana"
-                @update:model-value="handleCollanaChange"
-                clearable
-              ></q-select>
-              <!-- Tick selection to show/hide books with language "Francese" -->
-              <q-checkbox
-                v-model="showFranceseBooks"
-                label="Show Francese Books"
-                @update:model-value="handleFranceseChange"
-              />
-            </q-expansion-item>
-          </div>
-
-          <!-- Toggle Section -->
-          <div class="col-auto" v-show="isListView">
-            <q-btn
-              @click="toggleViewMode"
-              color="primary"
-              flat
-              icon="grid_view"
-            />
-          </div>
-
-          <!-- Toggle Button (Grid View) -->
-          <div class="col-auto" v-show="!isListView">
-            <q-btn @click="toggleViewMode" color="primary" flat icon="list" />
-          </div>
-        </div>
-      </q-card-section>
-    </div>
-
-    <!-- Grid View -->
-    <div v-if="!isListView">
-      <div class="q-pa-md" style="height: 100vh">
-        <q-virtual-scroll
-          :items="rowsOfBooks"
-          :item-size="600"
-          style="height: 100%"
-          virtual-scroll-slice-size="20"
+  <div class="q-pa-md">
+    <q-page class="bg-grey-2" v-if="isInitialized">
+      <div id="grid view" class="grid-container" v-if="!isListView">
+        <q-card
+          id="card_level"
+          v-for="(book, index) in sortedBibliografia"
+          :key="book.id"
+          flat
+          class="card"
+          v-show="shouldShowBook(book)"
         >
-          <template v-slot="{ item }">
-            <div class="row items-start q-mt-md q-px-md q-col-gutter-md">
-              <template v-for="book in item" :key="book.id">
-                <q-card
-                  flat
-                  bordered
-                  class="column q-mr-xl q-ml-xl"
-                  style="width: 250px; height: 400px"
-                  @click="openDettaglioLibro(book.id)"
-                  :class="book.possessed ? 'bg-green-3' : 'bg-grey-2'"
-                >
-                  <q-img
-                    class="col"
-                    :src="book.imageUrl"
-                    style="width: 200px; height: 280px"
-                    fit="contain"
-                    no-spinner
-                  >
-                    <template #error>
-                      <q-img
-                        :src="bookImage"
-                        alt="Placeholder"
-                        fit="contain"
-                        no-spinner
-                        style="width: 200px; height: 280px"
-                      />
-                    </template>
-                  </q-img>
-                  <q-card-section>
-                    <div>{{ book.titolo }}</div>
-                    <div>{{ book.editoreName }}</div>
-                    <div>{{ book.collanaName }} {{ book.numeroCollana }}</div>
-                  </q-card-section>
-                </q-card>
-              </template>
-            </div>
-          </template>
-        </q-virtual-scroll>
-      </div>
-    </div>
-
-    <!-- List View -->
-    <div v-if="isListView" class="list-view q-pa-md">
-      <div class="q-ma-auto q-gutter-md row">
-        <q-virtual-scroll
-          :style="{ 'max-height': '90vh' }"
-          class="col-xs-12 col-sm-10 col-md-8 col-lg-6 col-xl-4"
-          :items="filteredBibliografia"
-          separator
-          :virtual-scroll-item-size="200"
-          v-slot="{ item }"
-        >
-          <q-item
-            clickable
-            @click="openDettaglioLibro(item.id)"
-            :class="item.possessed ? 'bg-green-3' : 'bg-grey-2'"
-            style="height: 120px"
-            dense
+          <q-card-section
+            id="first_section_image"
+            class="q-pa-sm"
+            @click="openDettaglioLibro(book.id)"
           >
-            <q-item-section>
-              <q-img
-                :src="item.imageUrl"
-                width="120px"
-                hwihgt="120px"
-                fit="scale-down"
-                no-spinner
-                :key="item.imageUrl"
+            <q-badge
+              v-if="book.posseduto"
+              color="green"
+              floating
+              style="position: absolute; top: 5px; right: 5px; z-index: 1"
+              >posseduto</q-badge
+            >
+            <q-img
+              :src="`${fireStoreTmblUrl}${encodeURIComponent(book.defaultImageName)}?alt=media`"
+              class="full-width"
+              fit="contain"
+              :placeholder-src="placeholderImage"
+              :error-src="placeholderImage"
+            >
+              <q-badge
+                v-if="book.numeroCollana"
+                color="green"
+                style="
+                  position: absolute;
+                  bottom: 5px;
+                  right: 5px;
+                  font-size: 0.8em;
+                  padding: 2px 4px;
+                  min-width: 18px;
+                  min-height: 18px;
+                "
+                >{{ book.numeroCollana }}</q-badge
               >
-                <template #error>
-                  <q-img
-                    :src="bookImage"
-                    alt="Placeholder"
-                    fit="scale-down"
-                    no-spinner
-                    style="width: 120px"
-                  />
-                </template>
-              </q-img>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label lines="1">{{ item.titolo }}</q-item-label>
-              <q-item-label caption>{{ item.editore }}</q-item-label>
-              <q-item-label caption>{{ item.collanaName }}</q-item-label>
-              <q-item-label caption>{{ item.possessed }}</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-icon name="info" />
-            </q-item-section>
-          </q-item>
-        </q-virtual-scroll>
+            </q-img>
+          </q-card-section>
+          <q-card-section
+            id="text_section"
+            class="text-caption q-pl-sm q-pr-sm q-pb-sm q-pt-none"
+            style="height: 60px; width: 160px; overflow: hidden"
+          >
+            <div class="text-weight-bold ellipsis text-no-wrap overflow-hidden">
+              {{ book.titolo }}
+            </div>
+            <div
+              style="line-height: 1.2"
+              class="text-grey-7 ellipsis text-no-wrap overflow-hidden"
+              @click="handleEditoreClick(book.editore)"
+            >
+              {{ editoriList.find((e) => e.id === book.editore)?.editore }}
+            </div>
+            <div
+              style="line-height: 1.2"
+              class="text-grey-7 ellipsis text-no-wrap overflow-hidden"
+              @click="handleCollanaClick(book.collana)"
+            >
+              {{ collaneList.find((c) => c.id === book.collana)?.collana }}
+            </div>
+          </q-card-section>
+        </q-card>
       </div>
-    </div>
+
+      <!-- List View -->
+
+      <q-virtual-scroll
+        v-if="isListView"
+        :style="{ 'max-height': '90vh' }"
+        class="col-xs-12 col-sm-10 col-md-8 col-lg-6 col-xl-4"
+        :items="filteredBibliografia"
+        separator
+        :virtual-scroll-item-size="20"
+        v-slot="{ item }"
+      >
+        <q-item
+          clickable
+          @click="openDettaglioLibro(item.id)"
+          :class="item.posseduto ? 'bg-green-3' : 'bg-grey-2'"
+          style="height: 120px"
+          dense
+        >
+          <q-item-section>
+            <q-img
+              :src="getImageSource(item.defaultImageName)"
+              fit="scale-down"
+              no-spinner
+              :key="item.defaultImageName"
+              class="q-pa-md q-pt-lg"
+              lazy
+              :placeholder-src="placeholderImage"
+            />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label caption>{{ item.titolo }}</q-item-label>
+            <q-item-label caption>{{ item.editore }}</q-item-label>
+            <q-item-label caption>{{ item.collana }}</q-item-label>
+            <q-item-label caption>{{ item.posseduto }}</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="info" />
+          </q-item-section>
+        </q-item>
+      </q-virtual-scroll>
+    </q-page>
+
+    <q-dialog v-model="isDialogOpen" full-width full-height persistent>
+      <q-card
+        class="full-height hide-scrollbar relative-position"
+        style="padding-top: 0"
+      >
+        <q-btn
+          icon="close"
+          flat
+          round
+          dense
+          v-close-popup
+          class="absolute-top-left q-ma-md bg-grey-8"
+          color="white"
+          style="z-index: 1000; border-radius: 50%"
+        />
+        <q-card-section class="q-pa-none full-height">
+          <BookDetailContent :bookId="selectedBookId" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watchEffect } from "vue";
-import { useRouter } from "vue-router";
+import { fireStoreTmblUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
+import { ref, computed, onMounted } from "vue";
 import { useAuth } from "../composable/auth";
-import { useQuasar } from "quasar";
 import { useFiltersStore } from "../store/filtersStore";
+import BookDetailContent from "../components/BookDetailContent.vue";
+import placeholderImage from "../assets/placeholder.jpg";
 
 import {
   useBibliografiaStore,
   useEditoriStore,
   useCollaneStore,
 } from "src/store/database";
-import bookImage from "../assets/400x600.png"; // Import the book image from assets directory
 
-const router = useRouter();
+const isDialogOpen = ref(false);
+const selectedBookId = ref(null);
+
+const openBookDetails = (book) => {
+  selectedBookId.value = book;
+  isDialogOpen.value = true;
+};
+
+const editoriList = computed(() => editoriStore.editori);
+const collaneList = computed(() => collaneStore.collane);
+
 const bibliografiaStore = useBibliografiaStore();
 const filtersStore = useFiltersStore();
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
+const localBibliografia = ref([]);
+
 const { checkAuthState } = useAuth();
-const $q = useQuasar();
 
 const searchQuery = ref("");
-const selectedEditore = ref("");
-const selectedCollana = ref("");
+const selectedEditore = ref(null);
+const selectedCollana = ref(null);
 const showFranceseBooks = ref(false);
+const orderBy = ref(null);
+const italiano = ref(false);
+const francese = ref(false);
+const posseduto = ref(false);
+const nonPosseduto = ref(false);
 const isOpen = ref(false);
 const isListView = ref(false);
 const isInitialized = ref(false);
 
-let bibliografia = [];
 let editori = [];
 let collane = [];
 
-onMounted(() => {
-  bibliografia = bibliografiaStore.bibliografia;
-  editori = editoriStore.editori.editore;
-  collane = collaneStore.collane.collana;
+const openDettaglioLibro = (bookId) => {
+  openBookDetails(bookId);
+};
+
+const handleEditoreClick = (editoreId) => {
+  const selectedEditoreObject = editori.find((e) => e.id === editoreId);
+  selectedEditore.value = selectedEditoreObject;
+  filtersStore.updateSelectedEditore(selectedEditoreObject);
+  isOpen.value = true;
+  filtersStore.toggleIsOpen();
+};
+
+const handleCollanaClick = (collanaId) => {
+  const selectedCollanaObject = collane.find((c) => c.id === collanaId);
+  selectedCollana.value = selectedCollanaObject;
+  filtersStore.updateSelectedCollana(selectedCollanaObject);
+  isOpen.value = true;
+  filtersStore.toggleIsOpen();
+};
+const filteredBibliografia = computed(() => {
+  return localBibliografia.value;
+});
+
+const shouldShowBook = (book) => {
+  // Search query check
+  if (
+    filtersStore.searchQuery &&
+    !book.titolo?.toLowerCase().includes(filtersStore.searchQuery.toLowerCase())
+  ) {
+    return false;
+  }
+
+  // Publisher check
+  if (
+    filtersStore.selectedEditore &&
+    book.editore !== filtersStore.selectedEditore.id
+  ) {
+    return false;
+  }
+
+  // Series check
+  if (
+    filtersStore.selectedCollana &&
+    book.collana !== filtersStore.selectedCollana.id
+  ) {
+    return false;
+  }
+
+  // Language checks
+  const isItaliano = ["Italiano", "italiano"].includes(book.lingua);
+  const isFrancese = ["Francese", "francese"].includes(book.lingua);
+
+  if (filtersStore.italiano && !filtersStore.francese && !isItaliano) {
+    return false;
+  }
+  if (filtersStore.francese && !filtersStore.italiano && !isFrancese) {
+    return false;
+  }
+  if (!filtersStore.italiano && !filtersStore.francese) {
+    return false; // Hide all if no language selected
+  }
+
+  // Possession checks
+  if (filtersStore.posseduto && !filtersStore.nonPosseduto) {
+    return book.posseduto === true;
+  }
+  if (!filtersStore.posseduto && filtersStore.nonPosseduto) {
+    return book.posseduto === false;
+  }
+  if (!filtersStore.posseduto && !filtersStore.nonPosseduto) {
+    return false; // Hide all if neither possession status selected
+  }
+
+  return true; // Show if all filters pass or no filters active
+};
+const sortedBibliografia = computed(() => {
+  const orderByKey = filtersStore.orderBy?.value; // Extract the value property
+  console.log("Sorting by key:", orderByKey);
+
+  if (!orderByKey) {
+    console.log("No sorting applied, returning original array");
+    return filteredBibliografia.value;
+  }
+
+  const sorted = [...filteredBibliografia.value].sort((a, b) => {
+    // Handle undefined or null values
+    const valueA = a[orderByKey] ?? "";
+    const valueB = b[orderByKey] ?? "";
+
+    // Handle string comparison
+    if (typeof valueA === "string" && typeof valueB === "string") {
+      return valueA.localeCompare(valueB);
+    }
+
+    // Handle number comparison
+    return valueA - valueB;
+  });
+
+  return sorted;
+});
+onMounted(async () => {
+  await Promise.all([
+    checkAuthState(),
+    Promise.resolve().then(() => {
+      editori = editoriStore.editori;
+      collane = collaneStore.collane;
+    }),
+  ]);
 
   checkAuthState();
 
@@ -220,114 +300,50 @@ onMounted(() => {
   selectedEditore.value = filtersStore.selectedEditore;
   selectedCollana.value = filtersStore.selectedCollana;
   showFranceseBooks.value = filtersStore.showFranceseBooks;
+  orderBy.value = filtersStore.orderBy;
+  italiano.value = filtersStore.italiano;
+  francese.value = filtersStore.francese;
+  posseduto.value = filtersStore.posseduto;
+  nonPosseduto.value = filtersStore.nonPosseduto;
   isOpen.value = filtersStore.isOpen;
   isListView.value = filtersStore.isListView;
+  localBibliografia.value = [...bibliografiaStore.bibliografia].sort((a, b) => {
+    const orderBy = filtersStore.orderBy;
+    if (!orderBy) return 0; // Se non c'è ordinamento, mantieni l'ordine originale
+
+    return a[orderBy] < b[orderBy] ? -1 : a[orderBy] > b[orderBy] ? 1 : 0;
+  });
+
   isInitialized.value = true;
+
+  console.log(
+    "onMounted BibliografiaPage - isInitialized",
+    localBibliografia.value,
+  );
 });
-
-const openDettaglioLibro = (id) => {
-  router.push({ name: "DettaglioLibro", params: { id } });
-};
-
-const handleEditoreChange = (value) => {
-  //console.log("selected editore", value);
-  filtersStore.updateSelectedEditore(value);
-};
-
-const handleCollanaChange = (value) => {
-  filtersStore.updateSelectedCollana(value);
-};
-
-const handleFranceseChange = (value) => {
-  filtersStore.updateShowFranceseBooks(value);
-};
-
-const toggleExpansion = () => {
-  filtersStore.toggleIsOpen();
-  isOpen.value = filtersStore.isOpen;
-};
-
-const updateSearchQuery = (value) => {
-  filtersStore.updateSearchQuery(value);
-};
-
-const filteredBibliografia = computed(() => {
-  if (!isInitialized.value) return [];
-
-  const searchQueryValue = filtersStore.searchQuery;
-  const selectedEditoreValue = filtersStore.selectedEditore;
-  const selectedCollanaValue = filtersStore.selectedCollana;
-  const showFranceseBooksValue = filtersStore.showFranceseBooks;
-
-  let filtered = bibliografia;
-
-  if (searchQueryValue) {
-    filtered = filtered.filter((book) =>
-      book.titolo?.toLowerCase().includes(searchQueryValue.toLowerCase()),
-    );
-  }
-
-  if (selectedEditoreValue) {
-    filtered = filtered.filter(
-      (book) => book.editore === selectedEditoreValue.id,
-    );
-  }
-
-  if (selectedCollanaValue) {
-    filtered = filtered.filter(
-      (book) => book.collana === selectedCollanaValue.id,
-    );
-  }
-
-  if (!showFranceseBooksValue) {
-    filtered = filtered.filter((book) => book.lingua !== "Francese");
-  }
-
-  return filtered;
-});
-
-const clearFilters = () => {
-  filtersStore.updateSearchQuery("");
-  filtersStore.updateSelectedEditore("");
-  filtersStore.updateSelectedCollana("");
-  filtersStore.updateShowFranceseBooks(false);
-
-  searchQuery.value = "";
-  selectedEditore.value = "";
-  selectedCollana.value = "";
-};
-
-const calculateColumnsAndGroupBooks = (books) => {
-  const screenWidth = $q.screen.width;
-  let columns;
-
-  if (screenWidth < 770) {
-    columns = 1;
-  } else if (screenWidth < 1116) {
-    columns = 2;
-  } else if (screenWidth < 1462) {
-    columns = 3;
-  } else if (screenWidth < 1808) {
-    columns = 4;
-  } else {
-    columns = 5;
-  }
-
-  const groupedBooks = [];
-  for (let i = 0; i < books.length; i += columns) {
-    groupedBooks.push(books.slice(i, i + columns));
-  }
-  return groupedBooks;
-};
-
-const rowsOfBooks = computed(() =>
-  calculateColumnsAndGroupBooks(filteredBibliografia.value),
-);
-
-const toggleViewMode = () => {
-  filtersStore.updateListView(!filtersStore.isListView);
-  isListView.value = filtersStore.isListView;
-};
 </script>
+<style scoped>
+.book-details {
+  overflow: hidden;
+}
 
-<style scoped></style>
+.card {
+  max-width: 140px;
+}
+.grid-container {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+@media (max-width: 600px) {
+  .grid-container {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(120px, 1fr)
+    ); /* Minimo 120px per schermi piccoli */
+  }
+}
+</style>

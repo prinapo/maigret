@@ -10,8 +10,12 @@ export const useFiltersStore = defineStore({
     isListView: false,
     showFranceseBooks: false,
     editoriOptions: [],
-    isOpen: false, // New variable to track expansion status
-    // Define other state properties as needed
+    isOpen: false,
+    orderBy: "",
+    italiano: true,
+    francese: true,
+    posseduto: true,
+    nonPosseduto: true,
   }),
   actions: {
     updateSearchQuery(newSearchQuery) {
@@ -34,7 +38,21 @@ export const useFiltersStore = defineStore({
       this.isListView = newIsListView;
       localStorage.setItem("isListView", this.isListView ? "true" : "false");
     },
-
+    updateOrderBy(newOrderBy) {
+      this.orderBy = newOrderBy;
+    },
+    toggleItaliano() {
+      this.italiano = !this.italiano;
+    },
+    toggleFrancese() {
+      this.francese = !this.francese;
+    },
+    togglePosseduto() {
+      this.posseduto = !this.posseduto;
+    },
+    toggleNonPosseduto() {
+      this.nonPosseduto = !this.nonPosseduto;
+    },
     // Define other actions as needed
   },
   mutations: {
@@ -50,10 +68,26 @@ export const useFiltersStore = defineStore({
     setShowFranceseBooks(state, value) {
       state.showFranceseBooks = value;
     },
+    setOrderBy(state, value) {
+      state.orderBy = value;
+    },
+    toggleItaliano(state) {
+      state.italiano = !state.italiano;
+    },
+    toggleFrancese(state) {
+      state.francese = !state.francese;
+    },
+    togglePosseduto(state) {
+      state.posseduto = !state.posseduto;
+    },
+    toggleNonPosseduto(state) {
+      state.nonPosseduto = !state.nonPosseduto;
+    },
     toggleIsOpen(state) {
       state.isOpen = !state.isOpen;
       localStorage.setItem("isExpansionOpen", state.isOpen ? "true" : "false");
     },
+
     setListView(state, value) {
       state.isListView = value;
       localStorage.setItem("isListView", state.isListView ? "true" : "false");

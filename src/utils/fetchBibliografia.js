@@ -1,209 +1,257 @@
 import { db } from "../firebase/firebaseInit";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query } from "firebase/firestore";
 import {
   useBibliografiaStore,
   useCollaneStore,
   useEditoriStore,
 } from "../store/database";
-import { ref } from "vue";
-import { useAuth } from "../composable/auth";
-import { fireStoreUrl } from "../firebase/firebaseInit";
-const { userId, checkAuthState } = useAuth();
-// Call checkAuthState to ensure isLoggedIn is up-to-date
+import {
+  setBibliografia,
+  getBibliografia,
+  setLastUpdate,
+  getLastUpdate,
+  getUserData,
+} from "./indexedDB";
+import initialBibliografiaData from "../assets/initialBibliografiaData.json";
+import initialBibliografiaLastUpdate from "../assets/initialBibliografiaLastUpdate.json";
+import { useAuth } from "../composable/auth"; // Import useAuth
+import { fetchUserData } from "./fetchUserData";
+
+const { checkAuthState } = useAuth();
 checkAuthState();
 
-// Function to fetch and update Bibliografia data and localStorage
-export async function fetchAndUpdateBibliografia() {
-  const loading = ref(true); // Initialize as true to show the spinner
-
+export async function fetchAndUpdateBibliografia(userData) {
   try {
-    const bibliografiaStore = useBibliografiaStore(); // Initialize the Pinia store
-    const collaneStore = useCollaneStore(); // Initialize the Pinia store
-    const editoriStore = useEditoriStore(); // Initialize the Pinia store
-
-    const editoriData = editoriStore.editori.editore;
-    const collaneData = collaneStore.collane.collana;
-
-    // Read the last update time for Bibliografia from the "Updates" collection
-    const bibliografiaTimeRef = doc(db, "Updates", "bibliografiaTimes");
-    const bibliografiaTimeSnapshot = await getDoc(bibliografiaTimeRef);
-    const bibliografiaTimeData = bibliografiaTimeSnapshot.data();
-    const bibliografiaLastUpdateFirebase = bibliografiaTimeData.biblioTimestamp;
-
-    const localBibliografiaLastUpdate =
-      parseInt(localStorage.getItem("bibliografiaLastUpdate")) || 0;
-
-    // controllo che un valore locale esista, se non esiste
-    // o se è minore di quello su firebase carico la bilbiografia da Firebase
-    if (
-      !localBibliografiaLastUpdate ||
-      bibliografiaLastUpdateFirebase > localBibliografiaLastUpdate
-    ) {
-      console.log(
-        "First boot or updates are newer than local storage for Bibliografia. Fetching Bibliografia...",
-      );
-      const bibliografiaRef = collection(db, "Bibliografia");
-      const bibliografiaSnapshot = await getDocs(bibliografiaRef);
-      console.log("ricevuto bilbio");
-
-      // Mappo i campi che sono nei libri in bibliografia in un array di oggetti
-      // In reltà ci sono dei campi come uniqueId che non dovrebbero servire, il campo
-      // id (doc.id) è già l'identificativo univoco
-      const bibliografiaData = bibliografiaSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        titolo: doc.data().titolo,
-        editore: doc.data().editore,
-        collana: doc.data().collana,
-        numeroCollana: doc.data().numeroCollana,
-        signedUrl: doc.data().signedUrl,
-        uniqueId: doc.data()._id,
-        imageUrl: doc.data().imageUrl,
-        images: doc.data().images || [],
-      }));
-
-      console.log("ricevuto bilbioData", userId.value);
-
-      // Per poter gestire il pssesso dei libri devo caricare i dati
-      // dell'utete registrato in Firebase
-      const userIdValue = userId.value;
-      console.log("set userDI", userIdValue);
-      if (userIdValue) {
-        const userDocRef = doc(db, "Users", userIdValue);
-        console.log("set userDocRef");
-
-        const userDocSnap = await getDoc(userDocRef);
-        console.log("set userDocSnap");
-        const userData = userDocSnap.data();
-
-        // in userData sono salvati tutti i libri posseduti dall'utente
-        // Iterate through both bibliografiaData and userData.books arrays
-        // lo scopo è di aggiungere ad ogni libro lo stato del possesso
-        //di almeno una edizione
-        console.log("entering the first foreach");
-        bibliografiaData.forEach((entry) => {
-          if (Array.isArray(userData.books) && userData.books.length > 0) {
-            console.log("entering the second foreach");
-
-            userData.books.forEach((book) => {
-              // Check if the uniqueId exists in the user's books array
-              if (book.edizioneUuid === entry.id) {
-                // Copy the value of the possessed variable to entry.possessed
-                entry.possessed = book.posseduto;
-              }
-            });
-          } else {
-            // userData.books is empty or not an array
-            // Handle this case as per your requirements
-            // For example, you can set entry.possessed to false
-            entry.possessed = false;
-          }
-        });
-      }
-      // bibliogrfiaData adesso ha un campo possessed per ogni libro
-      // ora visto che le collane sono inserite nel database di firebase come
-      // un uuid che corrisponde a una collana nel database Collane su Firebase
-      // devo aggiungere il nome della collana al libro
-      // Copio in collaneData il valore collana nell'array che contiene collana e uuid
-      //      console.log("Collane store.collane", collaneStore.collane.collana);
-
-      // per ogni libro cerco il nome collana corrispondente all'id e lo
-      // copio nel comapo collanaName che creo localmente e nons su firebase
-      if (collaneData) {
-        // Iterate over each entry in bibliografiaData
-        console.log("entering the third foreach");
-
-        bibliografiaData.forEach((entry) => {
-          // Check if the entry has a valid collana ID
-          if (entry.collana) {
-            // Find the matching collana object in collaneData array
-            const matchingCollana = collaneData.find(
-              (collana) => collana.id === entry.collana,
-            );
-
-            if (matchingCollana) {
-              // Assign the collana name to collanaName property of the entry
-              entry.collanaName = matchingCollana.collana;
-            }
-          }
-        });
-      } else {
-        console.error("Collane data is missing.");
-      }
-      // faccio per gli editori la stessa cos che ho fatto per le collane
-
-      // per ogni libro cerco il nome editore corrispondente all'id e lo
-      // copio nel comapo editoreName che creo localmente e non su firebase
-      console.log("entering the fourth foreach");
-
-      bibliografiaData.forEach((entry) => {
-        // Find the matching collana object in collane array
-        const bibliografiaEditoreId = entry.editore;
-        const matchingEditore = editoriData.find(
-          (editore) => editore.id === bibliografiaEditoreId,
+    if (!navigator.onLine) {
+      // if is not online read from iDB
+      const localBibliografiaData = await getBibliografia();
+      if (localBibliografiaData.length > 0) {
+        //
+        const processedLocalBibliografiaData = await processPossessionStatus(
+          localBibliografiaData,
         );
-        if (matchingEditore) {
-          entry.editoreName = matchingEditore.editore;
-        }
-      });
-      // devi aggiungere l'immagine dell'immagine di copertina
-      // prendo l'immagine che ha come "id prima di copertine"
-      // e se non c'è quella con indice 0
-      console.log("entering the fisth foreach");
+        // update the bibliografa info on PINIA store
+        updateStore(processedLocalBibliografiaData);
+        return `OFFLINE Successfully updated ${processedLocalBibliografiaData.length} bibliografia on PINIA`;
+      } else {
+        return "No internet connection and no local Bibliografia data available.";
+      }
+    }
 
-      bibliografiaData.forEach((book) => {
-        // Check if the book has an 'images' array and if it contains an entry with id=qNvdwFMLNt2Uz7JjqTjacu
-        if (book.images && Array.isArray(book.images)) {
-          console.log("entering the find");
+    const { updateRequired, bibliografiaLastUpdateFirebase } =
+      await checkForUpdates();
+    if (updateRequired) {
+      const firebaseBibliografiaData = await fetchBibliografia();
 
-          const imageEntry = book.images.find(
-            (image) => image.id === "qNvdwFMLNt2Uz7JjqTjacu",
-          );
-          if (imageEntry) {
-            book.imageUrl = `${fireStoreUrl}${imageEntry.name}?alt=media`;
-          } else if (book.images.length > 0 && book.images[0].name) {
-            // If the entry exists, copy the value of the 'name' field to bibliografiaData.imageUrl
-            book.imageUrl = `${fireStoreUrl}${book.images[0].name}?alt=media`;
-          } else {
-            // If the entry does not exist, remove bibliografiaData.imageUrl if it exists
-            book.imageUrl = "src/assets/400x600.png";
-          }
-        } else {
-          // Handle the case where 'images' array is missing or not an array
-          book.imageUrl = "src/assets/400x600.png";
-        }
-      });
-      console.log("bibliografiaData", bibliografiaData);
-      //
-      // a questo punto aggiorno il campo bibliografia su PINIA
-      bibliografiaStore.updateBibliografia(bibliografiaData); // Update Pinia store
+      const bibliografiDataAfterPossession = await processPossessionStatus(
+        firebaseBibliografiaData,
+      );
 
-      // aggiorno il campo bibliografia anche sul local storage
-      localStorage.setItem("bibliografia", JSON.stringify(bibliografiaData));
-      // aggiorno il campo ultimo aggiornamento su localStorage
-      //  allineandolo  aquello su firebase
-      localStorage.setItem(
-        "bibliografiaLastUpdate",
+      const bibliografiDataAfterCollana = await processCollanaNames(
+        bibliografiDataAfterPossession,
+      );
+
+      const bibliografiaDataAfterEditore = await processEditoreNames(
+        bibliografiDataAfterCollana,
+      );
+
+      await updateIndexedDB(
+        bibliografiaDataAfterEditore,
         bibliografiaLastUpdateFirebase,
       );
+      // update the PINIA bibliografio, so now the data are all aligned
+
+      const bibliografiaStore = useBibliografiaStore();
+      bibliografiaStore.updateBibliografia(bibliografiaDataAfterEditore);
+      return `Successfully updated ${bibliografiaDataAfterEditore.length} bibliografia entries`;
     } else {
-      // non ci sono aggiornamenti il file su firebase è aggiornato
-      // con quello locale
-      // Copio i dati dal local storage e aggiorno PINIA
-      console.log("entering the getstorage");
+      const iDBBibliografiaData = await getBibliografia();
+      const bibliografiaStore = useBibliografiaStore();
 
-      const localBibliografiaData = localStorage.getItem("bibliografia");
-
-      if (localBibliografiaData) {
-        // Update Pinia store with the locally stored data
-        bibliografiaStore.updateBibliografia(
-          JSON.parse(localBibliografiaData),
-        ) || [];
-      }
+      bibliografiaStore.updateBibliografia(iDBBibliografiaData);
+      const updatedBibliografiaData =
+        await processPossessionStatus(iDBBibliografiaData);
+      return `Retrieved ${updatedBibliografiaData.length} bibliografia entries from PINIA`;
     }
   } catch (error) {
     console.error("Error fetching and updating Bibliografia:", error);
-  } finally {
-    loading.value = false; // Set loading to false after fetch operation completes
+    return `Error fetching and updating Bibliografia: ${error.message}`;
   }
-  return { loading };
+
+  return {};
+}
+
+async function fetchBibliografia() {
+  try {
+    const bibliografiaRef = collection(db, "Bibliografia");
+    //    const q = query(bibliografiaRef, limit(4));
+
+    const q = query(bibliografiaRef);
+    const bibliografiaSnapshot = await getDocs(q);
+
+    const bibliografiaData = bibliografiaSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      uniqueId: doc.data().uniqueId,
+      numeroCollana: doc.data().numeroCollana,
+      titolo: doc.data().titolo,
+      defaultImageName: doc.data().defaultImageName,
+      defaultImageTimestamp: doc.data().defaultImageTimestamp,
+      collana: doc.data().collana,
+      editore: doc.data().editore,
+      lingua: doc.data().lingua,
+      posseduto: doc.data().posseduto,
+    }));
+    // Limit to the first 4 results
+    return bibliografiaData;
+  } catch (error) {
+    console.error("Error fetching bibliografia data:", error);
+    throw error;
+  }
+}
+
+async function checkForUpdates() {
+  try {
+    const localBibliografiaData = await getBibliografia();
+    const localBibliografiaLastUpdate = await getLastUpdate(
+      "bibliografiaLastUpdate",
+    );
+    if (localBibliografiaData.length === 0 || !localBibliografiaLastUpdate) {
+      await setBibliografia(initialBibliografiaData);
+      await setLastUpdate(
+        "bibliografiaLastUpdate",
+        initialBibliografiaLastUpdate,
+      );
+    }
+
+    const bibliografiaTimeRef = doc(db, "Updates", "bibliografiaTimes");
+    const bibliografiaTimeSnapshot = await getDoc(bibliografiaTimeRef);
+    if (!bibliografiaTimeSnapshot.exists()) {
+      throw new Error("No update time found for Bibliografia");
+    }
+    const bibliografiaTimeData = bibliografiaTimeSnapshot.data();
+    const bibliografiaLastUpdateFirebase = bibliografiaTimeData.biblioTimestamp;
+    const localBibliografiaLastUpdateValue =
+      parseInt(localBibliografiaLastUpdate) || 0;
+
+    const updateRequired =
+      !localBibliografiaLastUpdateValue ||
+      bibliografiaLastUpdateFirebase > localBibliografiaLastUpdateValue;
+
+    return {
+      updateRequired,
+      bibliografiaLastUpdateFirebase,
+      localBibliografiaLastUpdate: localBibliografiaLastUpdateValue,
+    };
+  } catch (error) {
+    console.error("Error checking for updates:", error);
+    throw error;
+  }
+}
+
+async function processCollanaNames(bibliografiaData) {
+  try {
+    const collaneStore = useCollaneStore();
+    const collaneData = collaneStore.collane;
+
+    if (Array.isArray(collaneData) && collaneData.length > 0) {
+      bibliografiaData.forEach((entry) => {
+        if (entry.collana) {
+          const matchingCollana = collaneData.find(
+            (collana) => collana.id === entry.collana,
+          );
+
+          if (matchingCollana) {
+            entry.collanaName = matchingCollana.collana;
+          }
+        }
+      });
+    } else {
+      console.error("Collane data is missing or empty.");
+    }
+    return bibliografiaData; // Return the updated bibliografiaData
+  } catch (error) {
+    console.error("Error processing collana names:", error);
+    throw error;
+  }
+}
+
+async function processEditoreNames(bibliografiaData) {
+  try {
+    const editoreStore = useEditoriStore(); // Change from collaneStore to editoreStore
+    const editoreData = editoreStore.editori; // Change from collane to editori
+
+    if (Array.isArray(editoreData) && editoreData.length > 0) {
+      bibliografiaData.forEach((entry) => {
+        if (entry.editore) {
+          const matchingEditore = editoreData.find(
+            (editore) => editore.id === entry.editore,
+          );
+
+          if (matchingEditore) {
+            entry.editoreName = matchingEditore.editore;
+          }
+        }
+      });
+    } else {
+      console.error("Editore data is missing or empty.");
+    }
+    return bibliografiaData; // Return the updated bibliografiaData
+  } catch (error) {
+    console.error("Error processing editore names:", error);
+    throw error;
+  }
+}
+async function processPossessionStatus(bibliografiaData) {
+  try {
+    const userData = await getUserData();
+    // If no user data or no books, set all books as not possessed
+    if (!userData?.books) {
+      bibliografiaData.forEach((book) => (book.posseduto = false));
+      return bibliografiaData;
+    }
+
+    // First set all books as not possessed
+    bibliografiaData.forEach((book) => (book.posseduto = false));
+
+    // Then update only the possessed ones from user data
+
+    userData.books.forEach((userBook) => {
+      const book = bibliografiaData.find((b) => b.id === userBook.bookId);
+      if (book) {
+        book.posseduto = userBook.posseduto;
+      }
+    });
+
+    return bibliografiaData;
+  } catch (error) {
+    console.error("Error processing possession status:", error);
+    throw error;
+  }
+}
+
+async function updateIndexedDB(
+  bibliografiaData,
+  bibliografiaLastUpdateFirebase,
+) {
+  const currentBibliografiaData = await getBibliografia();
+  try {
+    await setBibliografia(bibliografiaData);
+    await setLastUpdate(
+      "bibliografiaLastUpdate",
+      bibliografiaLastUpdateFirebase,
+    );
+  } catch (error) {
+    console.error("Error updating IndexedDB:", error);
+    throw error;
+  }
+}
+
+function updateStore(bibliografiaData) {
+  try {
+    const bibliografiaStore = useBibliografiaStore();
+    bibliografiaStore.updateBibliografia(bibliografiaData);
+  } catch (error) {
+    console.error("Error updating store:", error);
+    throw error;
+  }
 }

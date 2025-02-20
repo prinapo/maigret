@@ -49,6 +49,10 @@ export default configure((/* ctx */) => {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
         node: "node20",
       },
+      env: {
+        VERSION_CODE: JSON.stringify(process.env.VERSION_CODE || "327"),
+        VERSION_NAME: JSON.stringify(process.env.VERSION_NAME || "3.27"),
+      },
 
       vueRouterMode: "hash", // available values: 'hash', 'history'
       // vueRouterBase,
@@ -142,7 +146,7 @@ export default configure((/* ctx */) => {
     ssr: {
       prodPort: 3000, // The default port that the production server should use
       // (gets superseded if process.env.PORT is specified at runtime)
-
+      pwa: true,
       middlewares: [
         "render", // keep this as last one
       ],
@@ -155,8 +159,6 @@ export default configure((/* ctx */) => {
       // manualStoreHydration: true,
       // manualPostHydrationTrigger: true,
 
-      pwa: false,
-
       // pwaOfflineHtmlFilename: 'offline.html', // do NOT use index.html as name!
       // will mess up SSR
 
@@ -166,7 +168,24 @@ export default configure((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-pwa/configuring-pwa
     pwa: {
-      workboxMode: "GenerateSW", // 'GenerateSW' or 'InjectManifest'
+      workboxMode: "GenerateSW",
+      extendGenerateSWOptions(cfg) {
+        // Extend the Workbox configuration for GenerateSW
+        cfg.runtimeCaching = [
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/, // Regex to match image file extensions
+            handler: "CacheFirst", // Cache images first, fallback to network if not in cache
+            options: {
+              cacheName: "image-cache",
+              expiration: {
+                maxEntries: 50, // Maximum number of images to cache
+                maxAgeSeconds: 30 * 24 * 60 * 60, // Cache images for 30 days
+              },
+            },
+          },
+        ];
+      },
+      // 'GenerateSW' or 'InjectManifest'
       // swFilename: 'sw.js',
       // manifestFilename: 'manifest.json'
       // extendManifestJson (json) {},
@@ -184,19 +203,21 @@ export default configure((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-capacitor-apps/configuring-capacitor
     capacitor: {
-      hideSplashscreen: false,
-      appName: "maigret_collector",
-      version: "17",
+      appName: "Maigret Collector",
+      version: "3.24",
       description:
         "Catalogo completo dei libri di Simenon con il commissario Maigret",
       author: "prinapo <giovanni.prinetti@gmail.com>",
       appId: "com.prinapo.maigret",
-      //webDir: "www",
+      versionCode: 324,
+      versionName: "3.24",
+      //webDir: 'www',
       //iosStatusBarPadding: true, // add the dynamic island safe area for iOS
       plugins: {
         SplashScreen: {
-          launchShowDuration: 6000, // Show splash screen for 3 seconds
+          launchShowDuration: 3000, // Show splash screen for 3 seconds
           launchAutoHide: true, // Automatically hide after duration
+          launchFadeOutDuration: 3000,
           backgroundColor: "#000000", // Background color of the splash screen
           androidScaleType: "CENTER_CROP",
           iosScaleType: "CENTER_CROP",

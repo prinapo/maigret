@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Quasar App</string>
-    <string name="title_activity_main">Quasar App</string>
+    <string name="app_name">Maigret</string>
+    <string name="title_activity_main">Maigret</string>
     <string name="package_name">com.prinapo.maigret</string>
     <string name="custom_url_scheme">com.prinapo.maigret</string>
 </resources>

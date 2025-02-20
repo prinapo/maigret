@@ -9,6 +9,11 @@
         <q-card square class="shadow-24" style="width: 300px; height: 485px">
           <q-card-section class="bg-deep-purple-7">
             <h4 class="text-h5 text-white q-my-md">Maigret Collectors</h4>
+            <p class="text-white q-my-md">
+              {{ currentUser ? currentUser.email : "Not logged in" }} ({{
+                isLoggedIn ? "Logged In" : "Logged Out"
+              }})
+            </p>
             <div
               class="absolute-bottom-right q-pr-md"
               style="transform: translateY(50%)"
@@ -92,9 +97,12 @@
       <div class="row">
         <q-card square class="shadow-24" style="width: 300px; height: 485px">
           <q-card-section class="bg-deep-purple-7">
-            <h4 class="text-h5 text-white q-my-md">
-              you are logged in as:{{ currentUser ? currentUser.email : "" }}
-            </h4>
+            <h4 class="text-h5 text-white q-my-md">Sei collegato come:</h4>
+            <p class="text-white q-my-md">
+              {{ currentUser ? currentUser.email : "Not logged in" }}
+              ({{ isLoggedIn ? "Logged In" : "Logged Out" }})
+              {{ isAdmin ? "(Admin)" : isCollector ? "(Collector)" : "" }}
+            </p>
             <div
               class="absolute-bottom-right q-pr-md"
               style="transform: translateY(50%)"
@@ -119,7 +127,7 @@
             />
           </q-card-actions>
           <q-card-section class="text-center q-pa-sm">
-            <p class="text-grey-6">Return to login</p>
+            <p class="text-grey-6"></p>
           </q-card-section>
         </q-card>
       </div>
@@ -135,6 +143,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
+import { useAuth } from "../composable/auth";
 import { auth } from "../firebase/firebaseInit";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
@@ -142,15 +151,17 @@ import { useQuasar } from "quasar";
 const email = ref("");
 const password = ref("");
 const router = useRouter();
-const isLoggedIn = ref(false);
 const $q = useQuasar();
 const currentUser = ref(null);
 const isPasswordVisible = ref(false);
+const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } = useAuth();
 
 const registrationPage = () => {
   router.push({ name: "registration" });
 };
-
+onMounted(() => {
+  checkAuthState();
+});
 const login = async () => {
   if (!email.value.trim()) {
     // Check if email is empty or contains only whitespace
@@ -171,7 +182,6 @@ const login = async () => {
       password.value,
     );
     const user = userCredential.user;
-    console.log("user afetr try", user);
 
     // Check if the user is logged in and their email is verified
     if (user && user.emailVerified) {
@@ -201,9 +211,10 @@ const login = async () => {
 
 const logout = async () => {
   try {
-    localStorage.setItem("userId", userID.value);
     await signOut(auth);
     isLoggedIn.value = false;
+    isAdmin.value = false;
+    isCollector.value = false;
   } catch (error) {
     console.error("Error logging out:", error);
     alert("Logout Error", error.message); // Show error dialog
@@ -219,7 +230,6 @@ const forgotPassword = async () => {
 
   try {
     await sendPasswordResetEmail(auth, email.value);
-    console.log("Password reset email sent successfully.");
     // Optionally, provide feedback to the user that the email has been sent
   } catch (error) {
     console.error("Error sending password reset email:", error);
@@ -235,7 +245,6 @@ onAuthStateChanged(auth, (user) => {
     isLoggedIn.value = false;
     currentUser.value = null;
   }
-  console.log("User logged in:", isLoggedIn.value);
 });
 
 const alert = (title, message) => {
@@ -243,14 +252,8 @@ const alert = (title, message) => {
     title: title,
     message: message,
   })
-    .onOk(() => {
-      // console.log('OK')
-    })
-    .onCancel(() => {
-      // console.log('Cancel')
-    })
-    .onDismiss(() => {
-      // console.log('I am triggered on both OK and Cancel')
-    });
+    .onOk(() => {})
+    .onCancel(() => {})
+    .onDismiss(() => {});
 };
 </script>

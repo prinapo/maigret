@@ -1,0 +1,30 @@
+{
+  "enableStatusBarItem": true,
+  "enableQuickPick": true,
+  "uploadOnSave": false,
+  "autoDelete": true,
+  "checkGitignore": false,
+  "activeTargets": [
+    "Maigret WEB"
+  ],
+  "concurrency": 5,
+  "ignore": [
+    ".git/**/*",
+    ".vscode/**/*"
+  ],
+  "include": [],
+  "targets": [
+    {
+      "name": "Maigret WEB",
+      "type": "ftp",
+      "host": "ftp.sostienilsostegno.com",
+      "port": 21,
+      "user": "admin@maigret.crostata.org",
+      "password": "61PrnGnnMgr!!",
+      "dir": "/",
+      "baseDir": "/dist/spa",
+      "privateKey": null,
+      "passphrase": null
+    }
+  ]
+}

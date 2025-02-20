@@ -23,4 +23,7 @@ const auth = getAuth(firebaseApp);
 const fireStoreUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/images%2F";
 
-export { firebaseApp, db, storage, auth, fireStoreUrl };
+const fireStoreTmblUrl =
+  "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/thumbnails%2F";
+
+export { firebaseApp, db, storage, auth, fireStoreUrl, fireStoreTmblUrl };

@@ -1,0 +1,14 @@
+c:\Users\giova\.vscode\extensions\ruakr.ftp-kr-1.4.5
+
+[ftp-kr Reporting]
+platform: win32
+arch: x64
+
+[Error]
+message: extension-output-ruakr.ftp-kr-#2-ftp-kr\maigret is not in workspace
+
+[Stack Trace]
+Error: extension-output-ruakr.ftp-kr-#2-ftp-kr\maigret is not in workspace
+    at Function.fromFile (c:\Users\giova\.vscode\extensions\ruakr.ftp-kr-1.4.5\src\vsutil\ws.ts:160:31)
+    at runCommand (c:\Users\giova\.vscode\extensions\ruakr.ftp-kr-1.4.5\src\vsutil\cmd.ts:69:35)
+    at h (c:\Users\giova\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\api\node\extensionHostProcess.js:161:210546)

@@ -29,24 +29,47 @@ export const useBibliografiaStore = defineStore("bibliografia", {
         (book) => book.id === bookId,
       );
       if (bookIndex !== -1) {
-        this.bibliografia[bookIndex].possessed = newValue;
+        this.$patch((state) => {
+          state.bibliografia[bookIndex].posseduto = newValue;
+        });
       } else {
         console.error("Book not found in bibliografia.");
       }
     },
-    updateEdizioni(newEdizioni) {
-      this.edizioni = newEdizioni;
-    },
-    removeEdizione(uuid) {
-      this.edizioni = this.edizioni.filter(
-        (edizione) => edizione.uuid !== uuid,
+    // Update edizioni for a specific book
+    updateEdizioni(bookId, newEdizioni) {
+      const bookIndex = this.bibliografia.findIndex(
+        (book) => book.id === bookId,
       );
+      if (bookIndex !== -1) {
+        this.$patch((state) => {
+          state.bibliografia[bookIndex].edizioni = newEdizioni;
+        });
+      } else {
+        console.error("Book not found in bibliografia.");
+      }
+    },
+    // Remove a specific edizione from a book
+    removeEdizione(bookId, uuid) {
+      const bookIndex = this.bibliografia.findIndex(
+        (book) => book.id === bookId,
+      );
+      if (bookIndex !== -1) {
+        this.$patch((state) => {
+          state.bibliografia[bookIndex].edizioni = state.bibliografia[
+            bookIndex
+          ].edizioni.filter((edizione) => edizione.uuid !== uuid);
+        });
+      } else {
+        console.error("Book not found in bibliografia.");
+      }
     },
     updateBookDetail(bookId, itemId, value) {
       const index = this.bibliografia.findIndex((book) => book.id === bookId);
       if (index !== -1) {
-        // Assuming the item exists in the bibliografia array
-        this.bibliografia[index][itemId] = value;
+        this.$patch((state) => {
+          state.bibliografia[index][itemId] = value;
+        });
       } else {
         console.error("Book not found in bibliografia.");
       }
@@ -98,6 +121,25 @@ export const useCoversStore = defineStore("covers", {
     // Clear editori state
     clearCovers() {
       this.covers = [];
+    },
+  },
+});
+
+export const useUserStore = defineStore("user", {
+  state: () => ({
+    userData: null,
+  }),
+  actions: {
+    setUserData(newUserData) {
+      this.userData = newUserData;
+    },
+    clearUserData() {
+      this.userData = null;
+    },
+    updateUserField(field, value) {
+      if (this.userData) {
+        this.userData[field] = value;
+      }
     },
   },
 });

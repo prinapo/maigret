@@ -7,11 +7,6 @@ const routes = [
         path: "/",
         component: () => import("pages/BibliografiaPage.vue"),
       },
-      {
-        path: "/dettaglio/:id",
-        name: "DettaglioLibro",
-        component: () => import("pages/DettaglioLibro.vue"),
-      },
 
       {
         path: "/login",

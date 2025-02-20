@@ -174,14 +174,8 @@ const alert = (title, message) => {
     title: title,
     message: message,
   })
-    .onOk(() => {
-      // console.log('OK')
-    })
-    .onCancel(() => {
-      // console.log('Cancel')
-    })
-    .onDismiss(() => {
-      // console.log('I am triggered on both OK and Cancel')
-    });
+    .onOk(() => {})
+    .onCancel(() => {})
+    .onDismiss(() => {});
 };
 </script>

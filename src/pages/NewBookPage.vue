@@ -9,7 +9,7 @@
         <div class="text-h4 text-center text-white q-py-xs q-my-xs">
           New Book
         </div>
-        <q-card-section id="text" class="overflow: auto" v-if="isLoggedIn">
+        <q-card-section id="text" class="overflow: auto" v-if="isAdmin">
           <!-- Book Details Form -->
           <q-list>
             <!-- Iterate through book details -->
@@ -23,7 +23,7 @@
                   class="text-h6 text-grey-11"
                   dark
                   color="accent"
-                  hidden="!isAdmin"
+                  v-if="isAdmin"
                   style="min-height: 48dp"
                 />
               </q-item-section>
@@ -32,7 +32,7 @@
         </q-card-section>
       </div>
     </div>
-    <div class="text-center mt-4" v-if="isLoggedIn">
+    <div class="text-center mt-4" v-if="isAdmin">
       <q-btn
         color="primary"
         label="Save Book"
@@ -78,7 +78,6 @@ const saveBook = async () => {
 
     // Update local storage
     const localData = JSON.parse(localStorage.getItem("bibliografia")) || [];
-    console.log("docrefid", docRef.id);
     localData.push({
       id: docRef.id,
       titolo: titolo.value,
@@ -94,17 +93,9 @@ const saveBook = async () => {
       // Add more fields as needed
     });
 
-    // Provide feedback to the user
-    //alert("Book saved successfully!");
-    console.log("Book saved with ID: ", docRef.id);
-    // Optionally, you can reset the form or show a success message
-    // ResetForm();
-    // ShowSuccessMessage();
     router.push({ name: "DettaglioLibro", params: { id: docRef.id } });
   } catch (error) {
     console.error("Error saving book: ", error);
-    // Optionally, you can show an error message
-    // ShowErrorMessage();
   }
 };
 </script>
