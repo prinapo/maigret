@@ -50,8 +50,8 @@ export default configure((/* ctx */) => {
         node: "node20",
       },
       env: {
-        APP_VERSION: JSON.stringify("3.42"),
-        VERSION_CODE: JSON.stringify("342"),
+        APP_VERSION: JSON.stringify("3.43"),
+        VERSION_CODE: JSON.stringify("343"),
       },
       sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'

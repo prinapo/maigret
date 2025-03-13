@@ -27,7 +27,7 @@
           <div class="full-width flex flex-center" style="height: 250px">
             <q-img
               :src="getImageSource(image.name)"
-              @error="handleImageError"
+              :error-src="placeholderImage"
               fit="contain"
               no-spinner
               class="full-width"
@@ -149,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, toRefs } from "vue";
+import { ref, onMounted, computed, toRefs, nextTick } from "vue";
 import { fireStoreUrl, fireStoreTmblUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
 import FirebaseUploader from "../firebase/FirebaseUploader.js";
 import { useAuth } from "../composable/auth"; // Assuming you have an auth composable
@@ -195,7 +195,8 @@ const getImageSource = (imageName) => {
     if (!imageName || imageName === "placeholder.jpg") {
       return placeholderImage;
     }
-    return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media`;
+    const cacheBuster = Math.random().toString(36).substring(7);
+    return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media&token=${cacheBuster}`;
   } catch (error) {
     console.error("Image source error:", error);
     return placeholderImage;
@@ -206,15 +207,12 @@ const getFullScreenImageUrl = (imageName) => {
     if (!imageName || imageName === "placeholder.jpg") {
       return placeholderImage;
     }
-    return `${fireStoreUrl}${encodeURIComponent(imageName)}?alt=media`;
+    const cacheBuster = Math.random().toString(36).substring(7);
+    return `${fireStoreUrl}${encodeURIComponent(imageName)}?alt=media&token=${cacheBuster}`;
   } catch (error) {
     console.error("Image source error:", error);
     return placeholderImage;
   }
-};
-
-const handleImageError = (event) => {
-  event.target.src = placeholderImage; // Fallback to the default image when the image fails to load
 };
 
 const showImageFullscreen = (imageIndex) => {
@@ -231,14 +229,27 @@ const handleFileUploadedLocal = async (
   imageUuid,
   imageIndex,
 ) => {
-  // Call the handleFileUploaded function from handleFileUpload.js
-  const updatedImages = await handleFileUploaded(
-    bookId,
-    originalFileName,
-    imageUuid,
-    imageIndex,
-  );
-  images.value = updatedImages; // Update the local images array with the updated images
+  try {
+    // First set image to placeholder
+    images.value[imageIndex] = {
+      ...images.value[imageIndex],
+      name: "placeholder.jpg",
+    };
+
+    // Wait a tick for the placeholder to show
+    await nextTick();
+
+    // Then update with new image
+    const updatedImages = await handleFileUploaded(
+      bookId,
+      originalFileName,
+      imageUuid,
+      imageIndex,
+    );
+    images.value = updatedImages;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+  }
 };
 
 const handleCoverChange = async (coverTypeId, imageIndex) => {
