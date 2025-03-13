@@ -116,13 +116,18 @@ const openDettaglioLibro = (bookId) => {
   openBookDetails(bookId);
 };
 
-const getImageSource = computed(() => (imageName) => {
-  if (!imageName || imageName === "placeholder.jpg") {
+const getImageSource = (imageName) => {
+  try {
+    if (!imageName || imageName === "placeholder.jpg") {
+      return placeholderImage;
+    }
+    const cacheBuster = Math.random().toString(36).substring(7);
+    return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media&token=${cacheBuster}`;
+  } catch (error) {
+    console.error("Image source error:", error);
     return placeholderImage;
-  } else {
-    return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media`;
   }
-});
+};
 const shouldShowBook = (book) => {
   // Search query check
   if (
