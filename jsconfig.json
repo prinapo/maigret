@@ -2,38 +2,30 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "src/*": [
-        "src/*"
-      ],
-      "app/*": [
-        "*"
-      ],
-      "components/*": [
-        "src/components/*"
-      ],
-      "layouts/*": [
-        "src/layouts/*"
-      ],
-      "pages/*": [
-        "src/pages/*"
-      ],
-      "assets/*": [
-        "src/assets/*"
-      ],
-      "boot/*": [
-        "src/boot/*"
-      ],
-      "stores/*": [
-        "src/stores/*"
-      ],
-      "vue$": [
-        "node_modules/vue/dist/vue.runtime.esm-bundler.js"
-      ]
+      "src/*": ["src/*"],
+      "app/*": ["*"],
+      "components/*": ["src/components/*"],
+      "layouts/*": ["src/layouts/*"],
+      "pages/*": ["src/pages/*"],
+      "assets/*": ["src/assets/*"],
+      "boot/*": ["src/boot/*"],
+      "stores/*": ["src/stores/*"],
+      "vue$": ["node_modules/vue/dist/vue.runtime.esm-bundler.js"]
     }
   },
   "exclude": [
     "dist",
     ".quasar",
-    "node_modules"
+    "node_modules",
+    "my-quasar-app",
+    "public",
+    "src-pwa",
+    "src-ssr",
+    "src-capacitor",
+    "src-capacitor-pwa",
+    ".github",
+    ".idea",
+    ".trunk",
+    ".vscode"
   ]
 }

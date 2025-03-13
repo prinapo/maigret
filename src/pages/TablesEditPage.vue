@@ -220,7 +220,7 @@
   </q-list>
 </template>
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import short from "short-uuid";
 import { doc, setDoc } from "firebase/firestore";
 import {
@@ -315,10 +315,11 @@ const covers = computed(() => coversStore.covers);
 const editori = computed(() => editoriStore.editori);
 const collane = computed(() => collaneStore.collane);
 
-rows.value = covers.value.cover;
-editoriRows.value = editori.value.editore;
-collaneRows.value = collane.value.collana;
-
+onMounted(() => {
+  rows.value = covers.value.cover || [];
+  editoriRows.value = editori.value.editore || [];
+  collaneRows.value = collane.value.collana || [];
+});
 // Functions
 const addRow = () => {
   loading.value = true;

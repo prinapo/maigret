@@ -20,14 +20,14 @@
               :option-label="(option) => option.editore"
               color="accent"
               fill-input
-              :outlined="isAdmin"
+              :outlined="adminMode"
               label="Editore"
               @update:model-value="saveDetail(bookId, detail.id, $event.id)"
               dark
-              :readonly="!isAdmin"
-              :hide-dropdown-icon="!isAdmin"
-              :borderless="!isAdmin"
-              class="col-grow text-h6 text-grey-11"
+              :readonly="!adminMode"
+              :hide-dropdown-icon="!adminMode"
+              :borderless="!adminMode"
+              class="col-grow text-h6"
               style="min-height: 48dp"
             >
             </q-select>
@@ -46,14 +46,14 @@
               :option-label="(option) => option.collana"
               color="accent"
               fill-input
-              :outlined="isAdmin"
+              :outlined="adminMode"
               label="Collana"
               @update:model-value="saveDetail(bookId, detail.id, $event.id)"
               dark
-              :readonly="!isAdmin"
-              :hide-dropdown-icon="!isAdmin"
-              :borderless="!isAdmin"
-              class="col-grow text-h6 text-grey-11"
+              :readonly="!adminMode"
+              :hide-dropdown-icon="!adminMode"
+              :borderless="!adminMode"
+              class="col-grow text-h6"
               style="min-height: 48dp"
             >
             </q-select>
@@ -63,12 +63,12 @@
         <q-item-section top v-else class="full-width">
           <div class="row items-center q-gutter-sm full-width">
             <q-input
-              :outlined="isAdmin"
+              :outlined="adminMode"
               v-model="detail.value"
               :label="detail.label"
-              :readonly="!isAdmin"
-              :borderless="!isAdmin"
-              class="text-h6 text-grey-11 col-grow"
+              :readonly="!adminMode"
+              :borderless="!adminMode"
+              class="text-h6 col-grow"
               dark
               color="accent"
               @focus="handleInputFocus(detail.value)"
@@ -79,7 +79,7 @@
         </q-item-section>
       </q-item>
     </q-list>
-    <div class="q-pa-md q-gutter-sm text-center mt-4" v-if="isAdmin">
+    <div class="q-pa-md q-gutter-sm text-center mt-4" v-if="adminMode">
       <q-btn
         label="Elimina il libro"
         color="negative"
@@ -125,8 +125,13 @@ import {
 import { useAuth } from "../composable/auth";
 import { saveDetail } from "../utils/detailsUtils";
 import { deleteBook } from "../utils/deleteBookUtils";
+import { useUserSettingsStore } from "src/store/userSettings";
+import { storeToRefs } from "pinia";
 
-const { isAdmin, checkAuthState } = useAuth();
+const userSettings = useUserSettingsStore();
+const { adminMode } = storeToRefs(userSettings);
+
+const { checkAuthState } = useAuth();
 const editoriStore = useEditoriStore();
 const editoriOptionList = computed(() => editoriStore.editori);
 const collaneStore = useCollaneStore();

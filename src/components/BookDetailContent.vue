@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md bg-primary">
+  <div class="q-pa-md">
     <div class="row q-col-gutter-sm">
       <div class="col-12">
         <BookImages v-if="bookId" :bookId="bookId" />

@@ -3,7 +3,8 @@ import { fetchAndUpdateCollane } from "./fetchCollane";
 import { fetchAndUpdateCovers } from "./fetchCovers";
 import { fetchUserData } from "./fetchUserData";
 import { fetchAndUpdateBibliografia } from "./fetchBibliografia";
-import { Dialog } from "quasar";
+import { Dialog, Dark } from "quasar";
+import { useUserSettingsStore } from "../store/userSettings"; // Importa lo store
 
 export async function initializeData() {
   let messages = [];
@@ -29,6 +30,12 @@ export async function initializeData() {
 
   try {
     updatePopup("Starting data fetch...");
+
+    const userSettingsStore = useUserSettingsStore();
+    await userSettingsStore.loadSettings();
+
+    // Applica il tema scuro se necessario
+    Dark.set(userSettingsStore.theme === "dark");
 
     updatePopup("Fetching Editori...");
     const editoriResponse = await fetchAndUpdateEditori();

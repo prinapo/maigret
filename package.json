@@ -5,7 +5,8 @@
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "build": "quasar build"
+    "build": "quasar build && npm run sentry:sourcemaps",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org prinapo --project javascript-vue ./dist/ssr && sentry-cli sourcemaps upload --org prinapo --project javascript-vue ./dist/ssr"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.0",
@@ -13,6 +14,8 @@
     "@capacitor/filesystem": "^6.0.1",
     "@capacitor/splash-screen": "^6.0.1",
     "@quasar/extras": "^1.16.12",
+    "@sentry/cli": "^2.42.1",
+    "@sentry/vue": "^9.1.0",
     "debug": "^4.3.5",
     "express": "^4.21.0",
     "firebase": "^10.12.3",
@@ -21,6 +24,7 @@
     "pina": "^0.20.2204228",
     "pinia": "^2.1.7",
     "quasar": "^2.17.6",
+    "register-service-worker": "^1.7.2",
     "sanitize-html": "^2.13.0",
     "semver": "^7.6.3",
     "short-uuid": "^5.2.0",
@@ -40,7 +44,14 @@
     "eslint-plugin-vue": "^9.27.0",
     "postcss": "^8.4.39",
     "prettier": "^3.2.5",
-    "webpack-bundle-analyzer": "^4.10.2"
+    "webpack-bundle-analyzer": "^4.10.2",
+    "workbox-build": "^7.3.0",
+    "workbox-cacheable-response": "^7.3.0",
+    "workbox-core": "^7.3.0",
+    "workbox-expiration": "^7.3.0",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0",
+    "workbox-strategies": "^7.3.0"
   },
   "engines": {
     "node": "^24 || ^22 || ^20 || ^18",

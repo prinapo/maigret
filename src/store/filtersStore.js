@@ -13,7 +13,7 @@ export const useFiltersStore = defineStore({
     isOpen: false,
     orderBy: "",
     italiano: true,
-    francese: true,
+    francese: false,
     posseduto: true,
     nonPosseduto: true,
   }),
