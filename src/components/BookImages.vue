@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-grey-9 shadow-2 rounded-borders" style="position: relative">
+  <div class="shadow-2 rounded-borders" style="position: relative">
     <q-virtual-scroll
       :items="images"
       virtual-scroll-horizontal
@@ -16,14 +16,13 @@
         >
           <!-- Trash icon for admin users -->
           <q-icon
-            v-if="isAdmin"
+            v-if="adminMode"
             name="delete"
             class="delete-icon"
             color="red"
             size="md"
             @click="confirmDelete(innerIndex)"
           />
-
           <!-- Wrapper per uniformare la dimensione delle immagini -->
           <div class="full-width flex flex-center" style="height: 250px">
             <q-img
@@ -37,7 +36,7 @@
             >
             </q-img>
             <div
-              v-if="!isAdmin"
+              v-if="!adminMode"
               class="absolute-bottom bg-dark text-white text-center q-pa-xs"
               style="
                 width: 100%;
@@ -56,7 +55,7 @@
           </div>
 
           <q-select
-            v-if="isAdmin"
+            v-if="adminMode"
             v-model="image.coverId"
             :options="coverOptions"
             option-value="id"
@@ -66,12 +65,12 @@
               'Cover Type'
             "
             @update:model-value="handleCoverChange($event.id, innerIndex)"
-            :disable="!isAdmin"
+            :disable="!adminMode"
             dense
             dark
             class="full-width"
-            :borderless="!isAdmin"
-            :hide-dropdown-icon="!isAdmin"
+            :borderless="!adminMode"
+            :hide-dropdown-icon="!adminMode"
           />
 
           <q-dialog
@@ -91,13 +90,13 @@
           </q-dialog>
 
           <FirebaseUploader
-            v-if="isAdmin"
+            v-if="adminMode"
             class="full-width q-mt-sm"
             :blocking="true"
             extention=""
             directory="images"
             :bookId="bookId"
-            :imageUuid="image.name"
+            :imageUuid="image.id"
             :imageIndex="innerIndex"
             @uploaded="
               handleFileUploadedLocal(
@@ -117,7 +116,7 @@
       </template>
     </q-virtual-scroll>
     <q-icon
-      v-if="isAdmin"
+      v-if="adminMode"
       name="add_circle"
       size="48px"
       color="primary"
@@ -152,7 +151,6 @@
 <script setup>
 import { ref, onMounted, computed, toRefs } from "vue";
 import { fireStoreUrl, fireStoreTmblUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
-import bookImage from "../assets/400x600.png";
 import FirebaseUploader from "../firebase/FirebaseUploader.js";
 import { useAuth } from "../composable/auth"; // Assuming you have an auth composable
 import {
@@ -164,6 +162,11 @@ import {
 } from "../utils/imageUtils"; // Import addImage function
 import { useCoversStore } from "../store/database"; // Import covers store
 import placeholderImage from "../assets/placeholder.jpg";
+import { useUserSettingsStore } from "src/store/userSettings";
+import { storeToRefs } from "pinia";
+
+const userSettings = useUserSettingsStore();
+const { adminMode } = storeToRefs(userSettings);
 
 const props = defineProps({
   bookId: {
@@ -180,7 +183,7 @@ const confirmDialogVisible = ref(false); // Define the visibility of the confirm
 const tempImageIndex = ref(null); // Temporary variable to store the index of the image to be deleted
 const itemSize = 270; // Size of each item in the virtual scroll
 const sliceSize = 10; // Number of items to render in each slice
-const { isAdmin, checkAuthState } = useAuth();
+const { checkAuthState } = useAuth();
 const coversStore = useCoversStore(); // Use covers store
 const coverOptions = computed(() => coversStore.covers); // Get cover options from covers store
 
@@ -211,7 +214,7 @@ const getFullScreenImageUrl = (imageName) => {
 };
 
 const handleImageError = (event) => {
-  event.target.src = bookImage; // Fallback to the default image when the image fails to load
+  event.target.src = placeholderImage; // Fallback to the default image when the image fails to load
 };
 
 const showImageFullscreen = (imageIndex) => {
@@ -277,3 +280,14 @@ onMounted(() => {
   loadImages();
 });
 </script>
+
+<style scoped>
+.img-thumbnail {
+  max-width: 100%;
+  height: auto;
+}
+.dark-mode {
+  background-color: #333;
+  color: #fff;
+}
+</style>

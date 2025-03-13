@@ -1,16 +1,12 @@
 <template>
   <q-layout view="hHh LpR fFf">
-    <q-header elevated class="bg-primary text-white">
+    <q-header elevated>
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-
-        <q-toolbar-title>
-          <q-avatar>
-            <img src="images/MaigretIcon.svg" />
-          </q-avatar>
-          Maigret Collectors
-        </q-toolbar-title>
+        <span class="text-caption">{{ version }}</span>
+        <q-toolbar-title>Maigret Collectors</q-toolbar-title>
         <q-btn
+          v-if="isHome"
           flat
           dense
           round
@@ -18,8 +14,6 @@
           @click="mostraFiltro = true"
         />
         <q-space />
-
-        <!-- Show login icon if not logged in, otherwise show logout icon -->
         <q-btn
           dense
           flat
@@ -30,14 +24,12 @@
         />
         <q-btn dense flat round v-else icon="logout" @click="logout" />
       </q-toolbar>
-
       <q-dialog v-model="mostraFiltro">
         <FiltroComponent />
       </q-dialog>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" side="left" overlay bordered>
-      <!-- drawer content -->
       <q-list>
         <q-item clickable to="/home">
           <q-item-section>
@@ -47,31 +39,29 @@
             <q-icon name="home" />
           </q-item-section>
         </q-item>
-
         <q-separator />
-
         <q-item clickable to="/configuration" v-if="isAdmin">
           <q-item-section>
-            <q-item-label>Utility</q-item-label>
+            <q-item-label>Configurations</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-icon name="build" />
+            <q-icon name="settings" />
           </q-item-section>
         </q-item>
         <q-item clickable to="/login">
           <q-item-section>
-            <q-item-label>login</q-item-label>
+            <q-item-label>Login</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="login" />
           </q-item-section>
         </q-item>
-        <q-item clickable to="/tables">
+        <q-item clickable to="/tables" v-if="isAdmin">
           <q-item-section>
-            <q-item-label>Tabels</q-item-label>
+            <q-item-label>Tables</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-icon name="table" />
+            <q-icon name="table_chart" />
           </q-item-section>
         </q-item>
         <q-separator />
@@ -80,7 +70,7 @@
             <q-item-label>New Book</q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-icon name="new" />
+            <q-icon name="note_add" />
           </q-item-section>
         </q-item>
         <q-separator />
@@ -96,7 +86,12 @@
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" v-if="$route.meta?.keepAlive" />
+        </keep-alive>
+        <component :is="Component" v-if="!$route.meta?.keepAlive" />
+      </router-view>
     </q-page-container>
 
     <q-dialog v-model="showAboutDialog">
@@ -109,7 +104,7 @@
           <p>Contact: support@maigretcollectors.com</p>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Close" color="primary" v-close-popup />
+          <q-btn flat label="Close" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -117,45 +112,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase/firebaseInit";
 import { useAuth } from "../composable/auth";
 import FiltroComponent from "../components/Filter.vue";
 
-const leftDrawerOpen = ref(false);
-const userID = ref(null);
 const router = useRouter();
-const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } = useAuth();
-const currentUser = ref(null);
-const mostraFiltro = ref(false);
+const route = useRoute();
+const isHome = computed(() => route.path === "/");
+const { isLoggedIn, isAdmin, checkAuthState } = useAuth();
 
+const leftDrawerOpen = ref(false);
+const mostraFiltro = ref(false);
 const showAboutDialog = ref(false);
 const versionCode = ref(process.env.VERSION_CODE);
 const versionName = ref(process.env.VERSION_NAME);
-const filterDrawerOpen = ref(false); // Variabile per il drawer del filtro
+const version = process.env.APP_VERSION;
 
-onMounted(() => {
-  checkAuthState();
-});
-onAuthStateChanged(auth, (user) => {
-  isLoggedIn.value = !!user;
-  if (user) {
-    userID.value = user.uid;
-    currentUser.value = user;
-  } else {
-    userID.value = null;
-    currentUser.value = null;
+onMounted(async () => {
+  try {
+    await checkAuthState();
+  } catch (error) {
+    console.error("Error initializing:", error);
   }
 });
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 };
-const toggleFilterDrawer = () => {
-  filterDrawerOpen.value = !filterDrawerOpen.value; // Alterna la visibilità del drawer dei filtri
-};
+
 const goToLogin = () => {
   router.push("/login");
 };
@@ -163,12 +150,9 @@ const goToLogin = () => {
 const logout = async () => {
   try {
     await signOut(auth);
-    isLoggedIn.value = false;
     router.push("/login");
   } catch (error) {
     console.error("Error logging out:", error);
   }
 };
-
-const isListView = ref(true);
 </script>

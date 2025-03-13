@@ -5,7 +5,7 @@
         v-for="(edizione, edizioneIndex) in edizioni"
         :key="edizioneIndex"
         class="column q-mr-xl q-ml-xl"
-        :class="edizione.posseduto ? 'bg-green-3' : 'bg-grey-2'"
+        :class="edizione.posseduto ? 'primary' : 'positive'"
         style="max-width: 200px"
       >
         <q-card-section class="overflow-auto">
@@ -16,7 +16,7 @@
                 label="Edizione"
                 color="accent"
                 style="max-width: 100px"
-                :readonly="!isAdmin"
+                :readonly="!adminMode"
                 @focus="handleInputFocus(edizione.numero)"
                 @blur="
                   handleEdizioneInputBlur(
@@ -39,7 +39,7 @@
                 class="col"
                 type="number"
                 style="max-width: 100px; min-height: 48dp"
-                :readonly="!isAdmin"
+                :readonly="!adminMode"
                 @focus="handleInputFocus(edizione.anno)"
                 @blur="handleInputBlur('anno', edizioneIndex, edizione.anno)"
               />
@@ -72,11 +72,10 @@
           id="Aggiunta rimozione Edizione"
           class="row items-center q-gutter-md justify-end"
         >
-          <div v-if="isAdmin">
+          <div v-if="adminMode">
             <q-btn
               fab
               icon="add"
-              color="purple-4"
               @click="confirmAddEdizione = true"
               style="min-height: 48dp"
             />
@@ -105,11 +104,11 @@
               </q-card>
             </q-dialog>
           </div>
-          <div v-if="isAdmin && edizioni.length > 1">
+          <div v-if="adminMode && edizioni.length > 1">
             <q-btn
               fab
               icon="delete"
-              color="purple-4"
+              color="warning"
               @click="confirmRemoveEdizione = true"
               style="min-height: 48dp"
             />
@@ -157,6 +156,11 @@ import {
   fetchEditions,
 } from "../utils/edizioniUtils";
 
+import { useUserSettingsStore } from "src/store/userSettings";
+import { storeToRefs } from "pinia";
+
+const userSettings = useUserSettingsStore();
+const { adminMode } = storeToRefs(userSettings);
 // Props destructuring
 const props = defineProps({
   bookId: {

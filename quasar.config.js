@@ -50,10 +50,10 @@ export default configure((/* ctx */) => {
         node: "node20",
       },
       env: {
-        VERSION_CODE: JSON.stringify(process.env.VERSION_CODE || "327"),
-        VERSION_NAME: JSON.stringify(process.env.VERSION_NAME || "3.27"),
+        APP_VERSION: JSON.stringify("3.42"),
+        VERSION_CODE: JSON.stringify("342"),
       },
-
+      sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'
       // vueRouterBase,
       // vueDevtools,
@@ -87,20 +87,6 @@ export default configure((/* ctx */) => {
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
     framework: {
       config: {
-        brand: {
-          primary: "#3d5a80",
-          secondary: "#98c1d9",
-          accent: "#ee6c4d",
-
-          dark: "#1d1d1d",
-          "dark-page": "#293241",
-          darkpage: "#293241",
-
-          positive: "#21BA45",
-          negative: "#C10015",
-          info: "#e0fbfc",
-          warning: "#F2C037",
-        },
         loading: {},
         capacitor: {
           // Quasar handles app exit on mobile phone back button.
@@ -122,7 +108,7 @@ export default configure((/* ctx */) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ["Notify", "Loading", "Dialog"],
+      plugins: ["Dark", "Notify", "Loading", "Dialog"],
     },
 
     // animations: 'all', // --- includes all animations
@@ -204,13 +190,14 @@ export default configure((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-capacitor-apps/configuring-capacitor
     capacitor: {
       appName: "Maigret Collector",
-      version: "3.24",
+      version: process.env.APP_VERSION || "3.41",
       description:
         "Catalogo completo dei libri di Simenon con il commissario Maigret",
       author: "prinapo <giovanni.prinetti@gmail.com>",
       appId: "com.prinapo.maigret",
-      versionCode: 324,
-      versionName: "3.24",
+      versionCode: parseInt(process.env.VERSION_CODE) || 341,
+      versionName: process.env.APP_VERSION || "3.41",
+
       //webDir: 'www',
       //iosStatusBarPadding: true, // add the dynamic island safe area for iOS
       plugins: {

@@ -1,6 +1,6 @@
 {
   "name": "Maigret Collector",
-  "version": "3.24",
+  "version": "3.41",
   "description": "Catalogo completo dei libri di Simenon con il commissario Maigret",
   "private": true,
   "dependencies": {

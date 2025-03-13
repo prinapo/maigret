@@ -376,7 +376,7 @@ export const addEdizione = async (bookId) => {
         anno: 1900,
         numero: 1,
         uuid: shortUuidGenerator.new(),
-        immagini: [
+        images: [
           {
             id: shortUuidGenerator.new(),
             coverType: "",

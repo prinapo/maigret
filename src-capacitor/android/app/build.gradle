@@ -7,8 +7,8 @@ android {
         applicationId "com.prinapo.maigret"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 328
-        versionName "3.28"
+        versionCode 341
+        versionName "3.41"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

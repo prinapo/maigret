@@ -1,118 +1,41 @@
 <template>
-  <div class="q-pa-md">
-    <q-page class="bg-grey-2" v-if="isInitialized">
-      <div id="grid view" class="grid-container" v-if="!isListView">
+  <div class="q-pa-md" v-if="isInitialized">
+    <q-page>
+      <div class="card-container">
         <q-card
-          id="card_level"
-          v-for="(book, index) in sortedBibliografia"
+          v-for="book in sortedBibliografia"
           :key="book.id"
           flat
           class="card"
+          clickable
+          @click="openBookDetails(book.id)"
           v-show="shouldShowBook(book)"
         >
-          <q-card-section
-            id="first_section_image"
-            class="q-pa-sm"
-            @click="openDettaglioLibro(book.id)"
-          >
-            <q-badge
-              v-if="book.posseduto"
-              color="green"
-              floating
-              style="position: absolute; top: 5px; right: 5px; z-index: 1"
-              >posseduto</q-badge
-            >
+          <div class="card-placeholder">
             <q-img
-              :src="`${fireStoreTmblUrl}${encodeURIComponent(book.defaultImageName)}?alt=media`"
+              :src="getImageSource(book.defaultImageName)"
               class="full-width"
               fit="contain"
               :placeholder-src="placeholderImage"
               :error-src="placeholderImage"
+              lazy
             >
+              <template v-slot:loading>
+                <q-skeleton type="rect" class="full-width full-height" />
+              </template>
               <q-badge
                 v-if="book.numeroCollana"
                 color="green"
-                style="
-                  position: absolute;
-                  bottom: 5px;
-                  right: 5px;
-                  font-size: 0.8em;
-                  padding: 2px 4px;
-                  min-width: 18px;
-                  min-height: 18px;
-                "
+                class="numero-collana-badge"
                 >{{ book.numeroCollana }}</q-badge
               >
             </q-img>
-          </q-card-section>
-          <q-card-section
-            id="text_section"
-            class="text-caption q-pl-sm q-pr-sm q-pb-sm q-pt-none"
-            style="height: 60px; width: 160px; overflow: hidden"
-          >
-            <div class="text-weight-bold ellipsis text-no-wrap overflow-hidden">
-              {{ book.titolo }}
-            </div>
-            <div
-              style="line-height: 1.2"
-              class="text-grey-7 ellipsis text-no-wrap overflow-hidden"
-              @click="handleEditoreClick(book.editore)"
-            >
-              {{ editoriList.find((e) => e.id === book.editore)?.editore }}
-            </div>
-            <div
-              style="line-height: 1.2"
-              class="text-grey-7 ellipsis text-no-wrap overflow-hidden"
-              @click="handleCollanaClick(book.collana)"
-            >
-              {{ collaneList.find((c) => c.id === book.collana)?.collana }}
-            </div>
-          </q-card-section>
+          </div>
         </q-card>
       </div>
-
-      <!-- List View -->
-
-      <q-virtual-scroll
-        v-if="isListView"
-        :style="{ 'max-height': '90vh' }"
-        class="col-xs-12 col-sm-10 col-md-8 col-lg-6 col-xl-4"
-        :items="filteredBibliografia"
-        separator
-        :virtual-scroll-item-size="20"
-        v-slot="{ item }"
-      >
-        <q-item
-          clickable
-          @click="openDettaglioLibro(item.id)"
-          :class="item.posseduto ? 'bg-green-3' : 'bg-grey-2'"
-          style="height: 120px"
-          dense
-        >
-          <q-item-section>
-            <q-img
-              :src="getImageSource(item.defaultImageName)"
-              fit="scale-down"
-              no-spinner
-              :key="item.defaultImageName"
-              class="q-pa-md q-pt-lg"
-              lazy
-              :placeholder-src="placeholderImage"
-            />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label caption>{{ item.titolo }}</q-item-label>
-            <q-item-label caption>{{ item.editore }}</q-item-label>
-            <q-item-label caption>{{ item.collana }}</q-item-label>
-            <q-item-label caption>{{ item.posseduto }}</q-item-label>
-          </q-item-section>
-          <q-item-section side>
-            <q-icon name="info" />
-          </q-item-section>
-        </q-item>
-      </q-virtual-scroll>
     </q-page>
-
+  </div>
+  <div class="q-pa-md">
     <q-dialog v-model="isDialogOpen" full-width full-height persistent>
       <q-card
         class="full-height hide-scrollbar relative-position"
@@ -138,17 +61,24 @@
 
 <script setup>
 import { fireStoreTmblUrl } from "../firebase/firebaseInit"; // Assuming you have Firebase storage initialized
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useAuth } from "../composable/auth";
 import { useFiltersStore } from "../store/filtersStore";
 import BookDetailContent from "../components/BookDetailContent.vue";
 import placeholderImage from "../assets/placeholder.jpg";
+import { storeToRefs } from "pinia";
+import { useQuasar } from "quasar";
 
 import {
   useBibliografiaStore,
   useEditoriStore,
   useCollaneStore,
 } from "src/store/database";
+const $q = useQuasar();
+
+const batchSize = 60; // Numero di libri da caricare inizialmente
+const visibleBooks = ref([]);
+const isLoadingMore = ref(true);
 
 const isDialogOpen = ref(false);
 const selectedBookId = ref(null);
@@ -158,78 +88,57 @@ const openBookDetails = (book) => {
   isDialogOpen.value = true;
 };
 
-const editoriList = computed(() => editoriStore.editori);
-const collaneList = computed(() => collaneStore.collane);
-
 const bibliografiaStore = useBibliografiaStore();
+const { bibliografia } = storeToRefs(bibliografiaStore);
+
 const filtersStore = useFiltersStore();
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
-const localBibliografia = ref([]);
 
 const { checkAuthState } = useAuth();
+//const editori = computed(() => editoriStore.editori);
+//const collane = computed(() => collaneStore.collane);
+const {
+  searchQuery,
+  selectedEditore,
+  selectedCollana,
+  orderBy,
+  italiano,
+  francese,
+  posseduto,
+  nonPosseduto,
+} = storeToRefs(filtersStore);
 
-const searchQuery = ref("");
-const selectedEditore = ref(null);
-const selectedCollana = ref(null);
-const showFranceseBooks = ref(false);
-const orderBy = ref(null);
-const italiano = ref(false);
-const francese = ref(false);
-const posseduto = ref(false);
-const nonPosseduto = ref(false);
-const isOpen = ref(false);
-const isListView = ref(false);
 const isInitialized = ref(false);
-
-let editori = [];
-let collane = [];
+const observer = ref(null);
 
 const openDettaglioLibro = (bookId) => {
   openBookDetails(bookId);
 };
 
-const handleEditoreClick = (editoreId) => {
-  const selectedEditoreObject = editori.find((e) => e.id === editoreId);
-  selectedEditore.value = selectedEditoreObject;
-  filtersStore.updateSelectedEditore(selectedEditoreObject);
-  isOpen.value = true;
-  filtersStore.toggleIsOpen();
-};
-
-const handleCollanaClick = (collanaId) => {
-  const selectedCollanaObject = collane.find((c) => c.id === collanaId);
-  selectedCollana.value = selectedCollanaObject;
-  filtersStore.updateSelectedCollana(selectedCollanaObject);
-  isOpen.value = true;
-  filtersStore.toggleIsOpen();
-};
-const filteredBibliografia = computed(() => {
-  return localBibliografia.value;
+const getImageSource = computed(() => (imageName) => {
+  if (!imageName || imageName === "placeholder.jpg") {
+    return placeholderImage;
+  } else {
+    return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media`;
+  }
 });
-
 const shouldShowBook = (book) => {
   // Search query check
   if (
-    filtersStore.searchQuery &&
-    !book.titolo?.toLowerCase().includes(filtersStore.searchQuery.toLowerCase())
+    searchQuery.value &&
+    !book.titolo?.toLowerCase().includes(searchQuery.value.toLowerCase())
   ) {
     return false;
   }
 
   // Publisher check
-  if (
-    filtersStore.selectedEditore &&
-    book.editore !== filtersStore.selectedEditore.id
-  ) {
+  if (selectedEditore.value && book.editore !== selectedEditore.value.id) {
     return false;
   }
 
   // Series check
-  if (
-    filtersStore.selectedCollana &&
-    book.collana !== filtersStore.selectedCollana.id
-  ) {
+  if (selectedCollana.value && book.collana !== selectedCollana.value.id) {
     return false;
   }
 
@@ -237,113 +146,230 @@ const shouldShowBook = (book) => {
   const isItaliano = ["Italiano", "italiano"].includes(book.lingua);
   const isFrancese = ["Francese", "francese"].includes(book.lingua);
 
-  if (filtersStore.italiano && !filtersStore.francese && !isItaliano) {
+  if (italiano.value && !francese.value && !isItaliano) {
     return false;
   }
-  if (filtersStore.francese && !filtersStore.italiano && !isFrancese) {
+  if (francese.value && !italiano.value && !isFrancese) {
     return false;
   }
-  if (!filtersStore.italiano && !filtersStore.francese) {
+  if (!italiano.value && !francese.value) {
     return false; // Hide all if no language selected
   }
 
   // Possession checks
-  if (filtersStore.posseduto && !filtersStore.nonPosseduto) {
+  if (posseduto.value && !nonPosseduto.value) {
     return book.posseduto === true;
   }
-  if (!filtersStore.posseduto && filtersStore.nonPosseduto) {
+  if (!posseduto.value && nonPosseduto.value) {
     return book.posseduto === false;
   }
-  if (!filtersStore.posseduto && !filtersStore.nonPosseduto) {
+  if (!posseduto.value && !nonPosseduto.value) {
     return false; // Hide all if neither possession status selected
   }
 
-  return true; // Show if all filters pass or no filters active
+  return true;
 };
-const sortedBibliografia = computed(() => {
-  const orderByKey = filtersStore.orderBy?.value; // Extract the value property
-  console.log("Sorting by key:", orderByKey);
 
-  if (!orderByKey) {
-    console.log("No sorting applied, returning original array");
-    return filteredBibliografia.value;
+const sortedBibliografia = computed(() => {
+  const orderByKey = orderBy.value?.value;
+  console.log("orderByKey", orderByKey);
+
+  if (!orderByKey || !bibliografia.value) {
+    // Log first 5 books before sorting
+    console.log(
+      "Before sorting (no order):",
+      bibliografia.value?.slice(0, 5).map((b) => ({
+        titolo: b.titolo,
+        numeroCollana: b.numeroCollana,
+      })),
+    );
+    return bibliografia.value;
   }
 
-  const sorted = [...filteredBibliografia.value].sort((a, b) => {
-    // Handle undefined or null values
-    const valueA = a[orderByKey] ?? "";
-    const valueB = b[orderByKey] ?? "";
+  const sorted = [...bibliografia.value].sort((a, b) => {
+    if (orderByKey === "numeroCollana") {
+      // Convert both values to numbers, removing non-digits
+      const numA =
+        parseInt(String(a.numeroCollana).replace(/\D/g, "")) || Infinity;
+      const numB =
+        parseInt(String(b.numeroCollana).replace(/\D/g, "")) || Infinity;
 
-    // Handle string comparison
-    if (typeof valueA === "string" && typeof valueB === "string") {
-      return valueA.localeCompare(valueB);
+      // Simple numeric comparison
+      return numA - numB;
     }
 
-    // Handle number comparison
-    return valueA - valueB;
+    // For other fields, use string comparison
+    const valueA = a[orderByKey] ?? "";
+    const valueB = b[orderByKey] ?? "";
+    return String(valueA).localeCompare(String(valueB), undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
   });
+
+  // Log first 5 books after sorting
+  console.log(
+    "After sorting:",
+    sorted.slice(0, 5).map((b) => ({
+      titolo: b.titolo,
+      numeroCollana: b.numeroCollana,
+    })),
+  );
 
   return sorted;
 });
+const processBooks = async (books, start, end) => {
+  try {
+    const newLength = Math.min(end, books.length);
+    visibleBooks.value = Array(newLength).fill(null);
+    return true;
+  } catch (error) {
+    console.error("Error processing books:", error);
+    $q.notify({
+      type: "negative",
+      message: "Error loading books",
+      position: "top",
+      timeout: 2000,
+    });
+    return false;
+  }
+};
+const loadBooks = async () => {
+  if (!sortedBibliografia.value) return;
+
+  visibleBooks.value = [];
+  isLoadingMore.value = true;
+
+  // Load first batch from sorted books
+  await processBooks(sortedBibliografia.value, 0, batchSize);
+
+  // Load rest in background if needed
+  if (sortedBibliografia.value.length > batchSize) {
+    setTimeout(() => {
+      processBatchesInBackground(sortedBibliografia.value);
+    }, 200);
+  }
+};
+const processBatchesInBackground = async (books) => {
+  let processed = batchSize;
+  while (processed < books.length && isLoadingMore.value) {
+    const success = await processBooks(books, processed, processed + batchSize);
+    if (!success) break;
+    processed += batchSize;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+};
+watch(
+  () => filtersStore.orderBy,
+  async () => {
+    await loadBooks();
+  },
+);
+watch(
+  () => visibleBooks.value.length,
+  () => {
+    const lastCard = document.querySelector(".card:last-child");
+    if (lastCard && observer.value) {
+      observer.value.disconnect();
+      observer.value.observe(lastCard);
+    }
+  },
+);
+
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  document.body.classList.add("disable-transitions");
+
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    document.body.classList.remove("disable-transitions");
+  }, 100);
+});
+
 onMounted(async () => {
-  await Promise.all([
-    checkAuthState(),
-    Promise.resolve().then(() => {
-      editori = editoriStore.editori;
-      collane = collaneStore.collane;
-    }),
-  ]);
+  observer.value = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        isLoadingMore.value = true;
+      }
+    },
+    {
+      rootMargin: "100px",
+    },
+  );
+
+  // Update observer when visible books change
+
+  const lastCard = document.querySelector(".card:last-child");
+  if (lastCard && observer.value) {
+    observer.value.observe(lastCard);
+  }
+  await loadBooks();
 
   checkAuthState();
-
-  searchQuery.value = filtersStore.searchQuery;
-  selectedEditore.value = filtersStore.selectedEditore;
-  selectedCollana.value = filtersStore.selectedCollana;
-  showFranceseBooks.value = filtersStore.showFranceseBooks;
-  orderBy.value = filtersStore.orderBy;
-  italiano.value = filtersStore.italiano;
-  francese.value = filtersStore.francese;
-  posseduto.value = filtersStore.posseduto;
-  nonPosseduto.value = filtersStore.nonPosseduto;
-  isOpen.value = filtersStore.isOpen;
-  isListView.value = filtersStore.isListView;
-  localBibliografia.value = [...bibliografiaStore.bibliografia].sort((a, b) => {
-    const orderBy = filtersStore.orderBy;
-    if (!orderBy) return 0; // Se non c'è ordinamento, mantieni l'ordine originale
-
-    return a[orderBy] < b[orderBy] ? -1 : a[orderBy] > b[orderBy] ? 1 : 0;
-  });
-
   isInitialized.value = true;
+});
 
-  console.log(
-    "onMounted BibliografiaPage - isInitialized",
-    localBibliografia.value,
-  );
+onUnmounted(() => {
+  // Cleanup observer
+  if (observer.value) {
+    observer.value.disconnect();
+  }
 });
 </script>
 <style scoped>
-.book-details {
-  overflow: hidden;
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(clamp(80px, calc((100% - 32px) / 3), 150px), 1fr)
+  );
+  gap: clamp(4px, 1vw, 16px);
+  padding: clamp(4px, 1vw, 16px);
+  justify-content: start;
+  transition: grid-template-columns 0.3s ease-in-out;
+  will-change: grid-template-columns;
 }
 
 .card {
-  max-width: 140px;
-}
-.grid-container {
-  display: grid;
-  gap: 10px;
   width: 100%;
-  padding: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  max-width: 150px;
+  margin: 0 auto;
+  padding: clamp(2px, 0.8vw, 8px);
+  backface-visibility: hidden;
 }
 
-@media (max-width: 600px) {
-  .grid-container {
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(120px, 1fr)
-    ); /* Minimo 120px per schermi piccoli */
-  }
+.card:hover {
+  transform: scale(1.05);
+  z-index: 1;
+  transition: transform 0.2s ease-in-out;
+}
+
+.card-placeholder {
+  aspect-ratio: 0.7;
+  width: 100%;
+  position: relative;
+  min-height: auto;
+}
+
+.q-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.numero-collana-badge {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  font-size: clamp(0.7em, 0.6em + 0.2vw, 0.8em);
+  padding: clamp(1px, 0.2vw, 4px) clamp(2px, 0.4vw, 4px);
+  min-width: clamp(16px, 2vw, 18px);
+  min-height: clamp(16px, 2vw, 18px);
+}
+.disable-transitions * {
+  transition: none !important;
 }
 </style>

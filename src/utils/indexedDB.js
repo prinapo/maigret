@@ -12,7 +12,7 @@ const toPlainObject = (obj) => {
   }
   return obj;
 };
-const dbPromise = openDB("maigret-db", 6, {
+const dbPromise = openDB("maigret-db", 7, {
   // Incremented version number to 6
   upgrade(db) {
     if (!db.objectStoreNames.contains("bibliografia")) {
@@ -33,8 +33,25 @@ const dbPromise = openDB("maigret-db", 6, {
     if (!db.objectStoreNames.contains("userData")) {
       db.createObjectStore("userData", { keyPath: "id" });
     }
+    if (!db.objectStoreNames.contains("settings")) {
+      db.createObjectStore("settings", { keyPath: "key" });
+    }
   },
 });
+
+export const setSetting = async (key, value) => {
+  const db = await dbPromise;
+  const tx = db.transaction("settings", "readwrite");
+  await tx.store.put({ key, value });
+  await tx.done;
+};
+export const getSetting = async (key, defaultValue = null) => {
+  const db = await dbPromise;
+  const tx = db.transaction("settings", "readonly");
+  const entry = await tx.store.get(key);
+  await tx.done;
+  return entry ? entry.value : defaultValue;
+};
 
 export const cacheImage = async (fileName, imageUrl, timestamp) => {
   try {

@@ -5,13 +5,22 @@ const routes = [
     children: [
       {
         path: "/",
+        name: "bibliografia",
         component: () => import("pages/BibliografiaPage.vue"),
+        meta: {
+          keepAlive: true,
+          title: "Bibliografia",
+        },
       },
 
       {
         path: "/login",
         name: "LoginPage",
         component: () => import("pages/LoginPage.vue"),
+        meta: {
+          keepAlive: false,
+          title: "Login",
+        },
       },
       {
         path: "/home",
@@ -38,9 +47,21 @@ const routes = [
         component: () => import("pages/RegistrationPage.vue"),
       },
       {
-        path: "/tables",
+        path: "tables",
         name: "tables",
         component: () => import("pages/TablesEditPage.vue"),
+        meta: {
+          keepAlive: false, // Don't cache tables page due to data requirements
+        },
+      },
+      {
+        path: "/loading",
+        name: "loading",
+        component: () => import("pages/LoadingPage.vue"),
+        meta: {
+          keepAlive: false,
+          title: "Loading",
+        },
       },
     ],
   },

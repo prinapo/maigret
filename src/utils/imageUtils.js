@@ -81,8 +81,9 @@ export const addImage = async (bookId, idValue) => {
       let existingImages = bookDocSnap.data().images || [];
       const defaultImage = {
         id: shortUuid,
-        name: shortUuid,
+        name: "placeholder.jpg",
         coverType: "Unknown",
+        timestamp: new Date().valueOf(),
       };
 
       await updateDoc(bookRef, {

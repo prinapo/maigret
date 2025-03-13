@@ -10,7 +10,7 @@ import {
   getLastUpdate,
 } from "./indexedDB";
 
-const placeholderUrl = "src/assets/400x600.png";
+const placeholderUrl = "placeholder.jpg";
 
 // Function to fetch and update Covers data and IndexedDB
 export async function fetchAndUpdateCovers() {
