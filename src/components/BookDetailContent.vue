@@ -5,7 +5,17 @@
         <BookImages v-if="bookId" :bookId="bookId" />
       </div>
       <div class="col-12">
-        <BookDetails v-if="bookId" :bookId="bookId" />
+        <Suspense>
+          <template #default>
+            <BookDetails v-if="bookId" :bookId="bookId" />
+          </template>
+          <template #fallback>
+            <div class="text-center q-pa-md">
+              <q-spinner color="primary" size="3em" />
+              <div class="text-body1 q-mt-md">Caricamento dettagli...</div>
+            </div>
+          </template>
+        </Suspense>
       </div>
       <div class="col-12">
         <BookEditions v-if="bookId" :bookId="bookId" />
