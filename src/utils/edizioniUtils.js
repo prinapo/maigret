@@ -13,50 +13,40 @@ import short from "short-uuid";
 
 const bibliografiaStore = useBibliografiaStore();
 const shortUuidGenerator = short();
-export const fetchEditions = async (bookId) => {
+export const fetchEditions = async (bookId, userId) => {
   try {
     // Get book from Pinia bibliografia store
-    const bookIndex = bibliografiaStore.bibliografia.findIndex(
-      (book) => book.id === bookId,
-    );
-
-    let edizioni = [];
-    let currentBook;
-
-    if (
-      bookIndex === -1 ||
-      !bibliografiaStore.bibliografia[bookIndex].edizioni
-    ) {
-      // Try to get editions from Firebase if not in bibliografia store
-
-      const bookRef = doc(db, "Bibliografia", bookId);
-      const bookDoc = await getDoc(bookRef);
-
-      if (!bookDoc.exists()) {
-        console.error("Error No such document in Firebase!");
-        return [];
-      }
-
-      currentBook = { id: bookId, ...bookDoc.data() }; // Ensure id is present
-      edizioni = currentBook.edizioni || [];
-    } else {
-      // Get editions from bibliografia store
-      currentBook = bibliografiaStore.bibliografia[bookIndex];
-      edizioni = currentBook.edizioni || [];
+    const bibliografia = bibliografiaStore.bibliografia || [];
+    const book = bibliografia.find((book) => book.id === bookId);
+    if (!book) {
+      console.error("Error No such document in PINIA database!");
+      return [];
     }
+    const edizioni = book.edizioni || [];
+    const bookIndex = bibliografia.findIndex((book) => book.id === bookId);
 
     // Get user data and find book possession info
-    const userData = await getUserData();
+    const userDocRef = doc(db, "Users", userId);
+    const userDocSnap = await getDoc(userDocRef);
+    const userData = userDocSnap.exists() ? userDocSnap.data() : null;
     const userBook = userData?.books?.find((b) => b.bookId === bookId);
+
+    console.log("Fetching editions with user data:", {
+      bookId,
+      userId,
+      hasUserData: !!userData,
+      hasUserBook: !!userBook,
+    });
 
     // Update editions possession status
     const updatedEdizioni = edizioni.map((edition) => {
       const userEdition = userBook?.edizioni?.find(
         (e) => e.uuid === edition.uuid,
       );
+      const posseduto = userEdition?.posseduto || false;
       return {
         ...edition,
-        posseduto: userEdition ? userEdition.posseduto : false,
+        posseduto,
       };
     });
 
@@ -65,30 +55,32 @@ export const fetchEditions = async (bookId) => {
       (edition) => edition.posseduto,
     );
 
-    // Create updated book object
-    const updatedBook = {
-      ...currentBook,
-      id: bookId, // Ensure id is present
-      edizioni: updatedEdizioni,
-      posseduto: hasAnyPosseduto,
-    };
-
     // Update Pinia store if book exists
     if (bookIndex !== -1) {
       bibliografiaStore.$patch((state) => {
-        state.bibliografia[bookIndex] = updatedBook;
+        state.bibliografia[bookIndex] = {
+          ...book,
+          edizioni: updatedEdizioni,
+          posseduto: hasAnyPosseduto,
+        };
       });
 
-      // Get current bibliografia from IndexedDB
-      const currentBibliografia = await getBibliografia();
-      const updatedBibliografia = currentBibliografia.map((book) =>
-        book.id === bookId ? updatedBook : book,
-      );
-
       // Update IndexedDB
+      const currentBibliografia = await getBibliografia();
+      const updatedBibliografia = currentBibliografia.map((b) =>
+        b.id === bookId
+          ? { ...b, edizioni: updatedEdizioni, posseduto: hasAnyPosseduto }
+          : b,
+      );
       await setBibliografia(updatedBibliografia);
     }
 
+    console.log("Returning editions:", {
+      count: updatedEdizioni.length,
+      hasAnyPosseduto,
+    });
+
+    // Return only the updated editions
     return updatedEdizioni;
   } catch (error) {
     console.error("Error fetching editions:", error);

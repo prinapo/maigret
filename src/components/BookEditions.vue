@@ -55,6 +55,7 @@
             <div class="col">
               <q-toggle
                 v-model="edizione.posseduto"
+                :disable="adminMode"
                 label="Posseduto"
                 color="green"
                 @update:model-value="
@@ -144,9 +145,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, toRefs } from "vue";
+import { ref, onMounted, toRefs } from "vue";
 import { useAuth } from "../composable/auth";
-import { useBibliografiaStore } from "src/store/database";
 import {
   saveEdizioneDetail,
   savePossessoEdizione,
@@ -174,19 +174,12 @@ const { bookId } = toRefs(props);
 const { userId, isAdmin, isCollector, checkAuthState } = useAuth();
 
 // Store initialization
-const bibliografiaStore = useBibliografiaStore();
 
 // Reactive refs
 const detailOriginalValue = ref("");
 const confirmAddEdizione = ref(false);
 const confirmRemoveEdizione = ref(false);
-
-const edizioni = computed(() => {
-  const book = bibliografiaStore.bibliografia.find(
-    (book) => book.id === bookId.value,
-  );
-  return book?.edizioni || [];
-});
+const edizioni = ref("");
 
 // Event handlers
 const handleAddEdizione = async () => {
@@ -194,12 +187,12 @@ const handleAddEdizione = async () => {
   if (success) confirmAddEdizione.value = false;
 };
 
+// Update handleSavePossessoEdizione to not run in admin mode
 const handleSavePossessoEdizione = async (
   edizioneUuid,
   edizionePosseduto,
   userId,
 ) => {
-  // removed bookId parameter since we can use bookId.value
   try {
     if (edizionePosseduto) {
       await savePossessoEdizione(
@@ -245,14 +238,21 @@ const handleInputFocus = (detailValue) => {
 
 // Lifecycle hooks
 onMounted(async () => {
-  checkAuthState();
+  await checkAuthState();
 
-  // Recupera le edizioni del libro
-  const loadedEdizioni = await fetchEditions(bookId.value);
+  // Load editions with possession info
+  console.log("loadedEdizioni passed value", bookId.value, userId.value);
 
-  // Se non ci sono edizioni, aggiungine una
+  const loadedEdizioni = await fetchEditions(bookId.value, userId.value);
   if (!loadedEdizioni || loadedEdizioni.length === 0) {
-    await addEdizione(bookId.value, edizioni);
+    // If no editions, create one and fetch again
+    await addEdizione(bookId.value);
+    edizioni.value = await fetchEditions(bookId.value, userId.value);
+    console.log("edizioni", edizioni.value);
+  } else {
+    // Use loaded editions directly
+    edizioni.value = loadedEdizioni;
+    console.log("edizioni", edizioni.value);
   }
 });
 </script>

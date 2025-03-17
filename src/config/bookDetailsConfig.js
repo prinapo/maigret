@@ -1,0 +1,63 @@
+export const bookDetailsConfig = [
+  {
+    id: "titolo",
+    label: "Titolo",
+    type: "text",
+    section: "Dettagli Principali",
+    sectionOrder: 0,
+  },
+  {
+    id: "editore",
+    label: "Editore",
+    type: "select",
+    options: "editori",
+    section: "Dettagli Principali",
+    sectionOrder: 0,
+    store: {
+      use: "useEditoriStore",
+      name: "editoriStore",
+      labelField: "editore",
+    },
+  },
+  {
+    id: "collana",
+    label: "Collana",
+    type: "select",
+    options: "collane",
+    section: "Dettagli Principali",
+    sectionOrder: 0,
+    store: {
+      use: "useCollaneStore",
+      name: "collaneStore",
+      labelField: "collana",
+    },
+  },
+  {
+    id: "numeroCollana",
+    label: "Numero Collana",
+    type: "text",
+    section: "Dettagli Principali",
+    sectionOrder: 3,
+  },
+  {
+    id: "autore",
+    label: "Autore",
+    type: "text",
+    section: "Dettagli Secondari",
+    sectionOrder: 1,
+  },
+  {
+    id: "annoPubblicazione",
+    label: "Anno Pubblicazione",
+    type: "text",
+    section: "Dettagli Secondari",
+    sectionOrder: 1,
+  },
+  {
+    id: "ISBN",
+    label: "ISBN",
+    type: "text",
+    section: "Dettagli Terzi",
+    sectionOrder: 3,
+  },
+];
