@@ -1,133 +1,128 @@
+<!-- src/pages/Filter.vue -->
 <template>
-  <q-card class="bg-white">
+  <q-card>
     <q-list padding>
-      <!-- First Row: Text Input and Selects -->
+      <!-- Prima riga: ricerca, editore, collana, ordina-per -->
       <div class="row">
+        <!-- 1. Ricerca titolo (rimane input) -->
         <div class="col-6 col-sm-3">
           <q-item>
             <q-item-section>
               <q-input
                 v-model="searchQuery"
                 outlined
-                label="Titolo"
+                :label="$t('filter.title')"
                 dense
-                @update:model-value="updateSearchQuery"
                 clearable
                 prepend-icon="search"
                 class="q-mb-md"
+                :debounce="500"
+                @update:model-value="onSearchInput"
               />
             </q-item-section>
           </q-item>
         </div>
+
+        <!-- 2. Select Editore (multiple) -->
         <div class="col-6 col-sm-3">
           <q-item>
             <q-item-section>
               <q-select
-                v-model="selectedEditore"
+                v-model="selectedEditoriObjects"
                 outlined
-                label="Editore"
+                :label="$t('filter.publisher')"
                 dense
-                :options="editori"
-                @update:model-value="handleEditoreChange"
+                multiple
+                :options="editoriOptions"
+                option-value="value"
+                option-label="label"
                 clearable
-                option-value="id"
-                option-label="editore"
                 class="q-mb-md"
                 prepend-icon="business"
               />
             </q-item-section>
           </q-item>
         </div>
+
+        <!-- 3. Select Collana (multiple) -->
         <div class="col-6 col-sm-3">
           <q-item>
             <q-item-section>
               <q-select
-                v-model="selectedCollana"
+                v-model="selectedCollaneObjects"
                 outlined
-                label="Collana"
-                :options="collane"
-                @update:model-value="handleCollanaChange"
-                clearable
-                option-value="id"
-                option-label="collana"
-                class="q-mb-md"
+                :label="$t('filter.series')"
                 dense
+                multiple
+                :options="collaneOptions"
+                option-value="value"
+                option-label="label"
+                clearable
+                class="q-mb-md"
               />
             </q-item-section>
           </q-item>
         </div>
+
+        <!-- 4. Select Ordina per (multiple) -->
         <div class="col-6 col-sm-3">
           <q-item>
             <q-item-section>
               <q-select
-                v-model="orderBy"
-                outlined
-                label="Ordina per"
+                v-model="selectedOrderByObjects"
+                :options="orderByOptions"
+                :label="$t('filter.sortBy')"
                 dense
-                :options="order"
+                multiple
+                outlined
+                class="q-mb-sm"
+                clearable
                 option-value="value"
                 option-label="label"
-                @update:model-value="handleOrderByChange"
-                clearable
-                class="q-mb-md"
-                prepend-icon="sort"
               />
             </q-item-section>
           </q-item>
         </div>
       </div>
 
-      <!-- Second Row: Checkboxes -->
+      <!-- Seconda riga: lingua + posseduto -->
       <div class="row">
+        <!-- 5. Select Lingua (multiple) -->
         <div class="col-6 col-sm-3">
-          <q-item clickable @click="handleFranceseChange(!showFranceseBooks)">
+          <q-item>
             <q-item-section>
-              <q-item-label>
-                <q-checkbox
-                  v-model="showFranceseBooks"
-                  label="Francese"
-                  class="q-mb-md"
-                />
-              </q-item-label>
+              <q-select
+                v-model="selectedLinguaObjects"
+                outlined
+                :label="$t('filter.language')"
+                dense
+                multiple
+                :options="lingueOptions"
+                option-value="value"
+                option-label="label"
+                clearable
+                class="q-mb-md"
+              />
             </q-item-section>
           </q-item>
         </div>
+
+        <!-- 6. Select Posseduto (multiple: yes/no) -->
         <div class="col-6 col-sm-3">
-          <q-item clickable @click="handleItalianoChange(!italiano)">
+          <q-item>
             <q-item-section>
-              <q-item-label>
-                <q-checkbox
-                  v-model="italiano"
-                  label="Italiano"
-                  class="q-mb-md"
-                />
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-        <div class="col-6 col-sm-3">
-          <q-item clickable @click="handlePossedutoChange(!posseduto)">
-            <q-item-section>
-              <q-item-label>
-                <q-checkbox
-                  v-model="posseduto"
-                  label="Posseduto"
-                  class="q-mb-md"
-                />
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-        <div class="col-6 col-sm-3">
-          <q-item clickable @click="handleNonPossedutoChange(!nonPosseduto)">
-            <q-item-section>
-              <q-item-label>
-                <q-checkbox
-                  v-model="nonPosseduto"
-                  label="Non Posseduto"
-                  class="q-mb-md"
-                />
-              </q-item-label>
+              <q-select
+                v-model="selectedPossedutoObjects"
+                outlined
+                :label="$t('filter.owned')"
+                dense
+                multiple
+                :options="possedutoOptions"
+                option-value="value"
+                option-label="label"
+                clearable
+                class="q-mb-md"
+              />
             </q-item-section>
           </q-item>
         </div>
@@ -135,99 +130,131 @@
     </q-list>
   </q-card>
 </template>
-<script setup>
-import { useFiltersStore } from "../store/filtersStore";
-import { useEditoriStore } from "../store/database";
-import { useCollaneStore } from "../store/database";
-import { ref, computed } from "vue";
 
+<script setup>
+import { ref, computed, watch, onMounted } from "vue";
+import { storeToRefs } from "pinia";
+import { useFiltersStore } from "stores/filtersStore";
+import { useEditoriStore } from "stores/editoriStore";
+import { useCollaneStore } from "stores/collaneStore";
+import { useLingueStore } from "stores/lingueStore";
+
+// Riferimenti ai pinia-store
+const filtersStore = useFiltersStore();
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
-const filtersStore = useFiltersStore();
+const lingueStore = useLingueStore();
 
-const searchQuery = computed({
-  get: () => filtersStore.searchQuery,
-  set: (value) => filtersStore.updateSearchQuery(value),
-});
-
-const selectedEditore = computed({
-  get: () => filtersStore.selectedEditore,
-  set: (value) => filtersStore.updateSelectedEditore(value),
-});
-
-const selectedCollana = computed({
-  get: () => filtersStore.selectedCollana,
-  set: (value) => filtersStore.updateSelectedCollana(value),
-});
-
-const showFranceseBooks = computed({
-  get: () => filtersStore.francese,
-  set: (value) => filtersStore.toggleFrancese(value),
-});
-
-const orderBy = computed({
-  get: () => filtersStore.orderBy,
-  set: (value) => filtersStore.updateOrderBy(value),
-});
-
-const italiano = computed({
-  get: () => filtersStore.italiano,
-  set: (value) => filtersStore.toggleItaliano(value),
-});
-
-const francese = computed({
-  get: () => filtersStore.francese,
-  set: (value) => filtersStore.toggleFrancese(value),
-});
-
-const posseduto = computed({
-  get: () => filtersStore.posseduto,
-  set: (value) => filtersStore.togglePosseduto(value),
-});
-
-const nonPosseduto = computed({
-  get: () => filtersStore.nonPosseduto,
-  set: (value) => filtersStore.toggleNonPosseduto(value),
-});
-const order = [
+// Opzioni dropdown (array di oggetti {value, label})
+const editoriOptions = ref([]);
+const collaneOptions = ref([]);
+const lingueOptions = ref([]);
+const possedutoOptions = ref([
+  { label: "Posseduto", value: "yes" },
+  { label: "Non Posseduto", value: "no" },
+]);
+const orderByOptions = [
   { label: "Titolo", value: "titolo" },
-  { label: "Collana", value: "collanaName" },
-  { label: "Editore", value: "editoreName" },
-  { label: "Number", value: "numeroCollana" },
+  { label: "Collana", value: "collana" },
+  { label: "Editore", value: "editore" },
+  { label: "Numero Collana", value: "numeroCollana" },
+  { label: "Lingua", value: "lingua" },
 ];
 
-const editoriList = computed(() => editoriStore.editori);
-const collaneList = computed(() => collaneStore.collane);
+// Estraggo i Ref di filters dal Pinia-store
+const { filters } = storeToRefs(filtersStore);
 
-const editori = editoriStore.editori;
-const collane = collaneStore.collane;
+// --- 1) Search query (uguale a prima) ---
+const searchQuery = ref("");
+const onSearchInput = (val) => {
+  if (val && val.length < 3) {
+    filtersStore.updateSearchQuery("");
+    return;
+  }
+  filtersStore.updateSearchQuery(val || "");
+};
+watch(
+  () => filters.value.search,
+  (newVal) => {
+    if (newVal !== searchQuery.value) {
+      searchQuery.value = newVal;
+    }
+  },
+  { immediate: true },
+);
 
-const handleEditoreChange = (value) => {
-  filtersStore.updateSelectedEditore(value);
-};
+// ────────────────────────────────────────────────────────────────
+// 2) Editori come select multi: array di oggetti ↔→ array di stringhe
+// ────────────────────────────────────────────────────────────────
+const selectedEditoriObjects = computed({
+  get: () => {
+    return editoriOptions.value.filter((opt) =>
+      filters.value.selectedEditori.includes(opt.value),
+    );
+  },
+  set: (arr) => {
+    // Gestire il caso in cui arr è null (quando si cancella)
+    const valori = arr ? arr.map((o) => o.value) : [];
+    filtersStore.updateFilter("selectedEditori", valori);
+  },
+});
 
-const handleCollanaChange = (value) => {
-  filtersStore.updateSelectedCollana(value);
-};
-const handleOrderByChange = (value) => {
-  filtersStore.updateOrderBy(value);
-};
+const selectedCollaneObjects = computed({
+  get: () => {
+    return collaneOptions.value.filter((opt) =>
+      filters.value.selectedCollane.includes(opt.value),
+    );
+  },
+  set: (arr) => {
+    const valori = arr ? arr.map((o) => o.value) : [];
+    filtersStore.updateFilter("selectedCollane", valori);
+  },
+});
 
-const handleFranceseChange = (value) => {
-  filtersStore.toggleFrancese(value);
-};
-const handleItalianoChange = (value) => {
-  filtersStore.toggleItaliano(value);
-};
-const handlePossedutoChange = (value) => {
-  filtersStore.togglePosseduto(value);
-};
-const handleNonPossedutoChange = (value) => {
-  filtersStore.toggleNonPosseduto(value);
-};
+const selectedOrderByObjects = computed({
+  get: () => {
+    return orderByOptions.filter((opt) =>
+      filters.value.orderBy.includes(opt.value),
+    );
+  },
+  set: (arr) => {
+    const valori = arr ? arr.map((o) => o.value) : [];
+    filtersStore.updateOrderByArray(valori);
+  },
+});
 
-const updateSearchQuery = (value) => {
-  filtersStore.updateSearchQuery(value);
-};
+const selectedLinguaObjects = computed({
+  get: () => {
+    return lingueOptions.value.filter((opt) =>
+      filters.value.lingua.includes(opt.value),
+    );
+  },
+  set: (arr) => {
+    const valori = arr ? arr.map((o) => o.value) : [];
+    filtersStore.updateLingua(valori);
+  },
+});
+
+const selectedPossedutoObjects = computed({
+  get: () => {
+    return possedutoOptions.value.filter((opt) =>
+      filters.value.posseduto.includes(opt.value),
+    );
+  },
+  set: (arr) => {
+    const valori = arr ? arr.map((o) => o.value) : [];
+    filtersStore.updatePossedutoArray(valori);
+  },
+});
+
+// Carico le opzioni (modelli) al mount
+onMounted(() => {
+  editoriOptions.value = editoriStore.editori || [];
+  collaneOptions.value = collaneStore.collane || [];
+  lingueOptions.value = lingueStore.lingue || [];
+});
 </script>
-<style scoped></style>
+
+<style scoped>
+/* Nessuno stile custom: Quasar gestisce già tutto */
+</style>

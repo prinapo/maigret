@@ -1,86 +1,73 @@
-import { db } from "../firebase/firebaseInit";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { useUserStore } from "../stores/userStore";
+
+// Il resto del file può rimanere uguale poiché già usa syncBook e altre funzioni centralizzate
 import { Notify } from "quasar";
-import { updateTimestamp } from "../utils/global";
-import { useBibliografiaStore } from "../store/database";
-import {
-  getUserData,
-  setBibliografia,
-  getBibliografia,
-  setUserData,
-} from "./indexedDB";
+import { useBibliografiaStore } from "../stores/bibliografiaStore";
+import { syncBook } from "./firebaseDatabaseUtils";
 import short from "short-uuid";
 
 const bibliografiaStore = useBibliografiaStore();
 const shortUuidGenerator = short();
+
 export const fetchEditions = async (bookId, userId) => {
   try {
-    // Get book from Pinia bibliografia store
+    // 1. Check if we have data in PINIA
     const bibliografia = bibliografiaStore.bibliografia || [];
-    const book = bibliografia.find((book) => book.id === bookId);
-    if (!book) {
-      console.error("Error No such document in PINIA database!");
-      return [];
-    }
-    const edizioni = book.edizioni || [];
-    const bookIndex = bibliografia.findIndex((book) => book.id === bookId);
+    const bookInPinia = bibliografia.find((book) => book.id === bookId);
+    console.log("Book in Pinia:", bookInPinia);
 
-    // Get user data and find book possession info
-    const userDocRef = doc(db, "Users", userId);
-    const userDocSnap = await getDoc(userDocRef);
-    const userData = userDocSnap.exists() ? userDocSnap.data() : null;
-    const userBook = userData?.books?.find((b) => b.bookId === bookId);
-
-    console.log("Fetching editions with user data:", {
-      bookId,
-      userId,
-      hasUserData: !!userData,
-      hasUserBook: !!userBook,
-    });
-
-    // Update editions possession status
-    const updatedEdizioni = edizioni.map((edition) => {
-      const userEdition = userBook?.edizioni?.find(
-        (e) => e.uuid === edition.uuid,
-      );
-      const posseduto = userEdition?.posseduto || false;
-      return {
-        ...edition,
-        posseduto,
-      };
-    });
-
-    // Check if any edition is posseduto
-    const hasAnyPosseduto = updatedEdizioni.some(
-      (edition) => edition.posseduto,
+    // Safe console.log with optional chaining
+    console.log("Book in Pinia edizioni:", bookInPinia?.edizioni || []);
+    console.log(
+      "Book in Pinia lunghezza edizioni:",
+      bookInPinia?.edizioni?.length || 0,
     );
 
-    // Update Pinia store if book exists
-    if (bookIndex !== -1) {
-      bibliografiaStore.$patch((state) => {
-        state.bibliografia[bookIndex] = {
-          ...book,
-          edizioni: updatedEdizioni,
-          posseduto: hasAnyPosseduto,
-        };
-      });
+    let currentEditions = [];
 
-      // Update IndexedDB
-      const currentBibliografia = await getBibliografia();
-      const updatedBibliografia = currentBibliografia.map((b) =>
-        b.id === bookId
-          ? { ...b, edizioni: updatedEdizioni, posseduto: hasAnyPosseduto }
-          : b,
+    // 2. If not in PINIA, the data will be loaded by realtime listeners
+    // We don't need to manually fetch from Firebase here
+    if (
+      !bookInPinia ||
+      !bookInPinia.edizioni ||
+      bookInPinia.edizioni.length === 0
+    ) {
+      console.log(
+        "Book or editions not found in PINIA. Data should be loaded by realtime listeners:",
+        bookId,
       );
-      await setBibliografia(updatedBibliografia);
+      return [];
+    } else {
+      currentEditions = bookInPinia.edizioni;
+      console.log("Current editions from PINIA:", currentEditions);
     }
 
-    console.log("Returning editions:", {
-      count: updatedEdizioni.length,
-      hasAnyPosseduto,
-    });
+    // If no userId, return editions without possession info
+    if (!userId) {
+      console.log("No userId");
+      return currentEditions.map((edition) => ({
+        ...edition,
+        posseduto: false,
+      }));
+    }
+    console.log("UserId:", userId);
 
-    // Return only the updated editions
+    // 3. Get possession info from user store (loaded by realtime listeners)
+    const userStore = useUserStore();
+    const userData = userStore.userData;
+    console.log("User book:", userData?.books);
+
+    const userBook = userData?.books?.find((b) => b.bookId === bookId);
+    console.log("User book filtered:", userBook);
+
+    const updatedEdizioni = currentEditions.map((edition) => ({
+      ...edition,
+      posseduto:
+        userBook?.edizioni?.find((e) => e.uuid === edition.uuid)?.posseduto ||
+        false,
+    }));
+    console.log("Update editions:", updatedEdizioni);
+
     return updatedEdizioni;
   } catch (error) {
     console.error("Error fetching editions:", error);
@@ -89,48 +76,43 @@ export const fetchEditions = async (bookId, userId) => {
 };
 
 export const saveEdizioneDetail = async (name, index, value, bookId) => {
+  if (!name || index === undefined || !bookId) {
+    throw new Error("Missing required parameters");
+  }
+
   try {
-    const timestamp = new Date().valueOf();
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const edizioniSnapshot = await getDoc(bookRef);
-    const edizioniData = edizioniSnapshot.data();
-    const existingEdizioni = edizioniData.edizioni || [];
+    const bibliografia = bibliografiaStore.bibliografia || [];
+    const book = bibliografia.find((b) => b.id === bookId);
+
+    if (!book) {
+      throw new Error("Book not found");
+    }
+
+    const existingEdizioni = book.edizioni || [];
+
+    if (index < 0 || index >= existingEdizioni.length) {
+      throw new Error("Invalid edition index");
+    }
 
     const updatedEdizioni = existingEdizioni.map((item, i) => {
       if (i === index) {
         return { ...item, [name]: value };
-      } else {
-        return item;
       }
+      return item;
     });
 
-    // Update Firebase
-    await updateDoc(bookRef, { edizioni: updatedEdizioni });
-    await setDoc(bookRef, { timestamp: timestamp }, { merge: true });
+    const updatedBook = { ...book, edizioni: updatedEdizioni };
 
-    // Update Pinia store
-    const bookIndex = bibliografiaStore.bibliografia.findIndex(
-      (book) => book.id === bookId,
-    );
-    if (bookIndex !== -1) {
-      bibliografiaStore.bibliografia[bookIndex].edizioni = updatedEdizioni;
-    }
-
-    // Update IndexedDB
-    setBibliografia(bibliografiaStore.bibliografia);
-    await updateTimestamp(timestamp);
-    Notify.create({
-      message: `Edizione Saved`,
-      type: "positive",
-      color: "green",
-    });
+    // Use centralized sync function
+    await syncBook({ bookId, book: updatedBook });
   } catch (error) {
+    console.error("Error saving edition detail:", error);
     Notify.create({
-      message: `Edizione Not Saved`,
+      message: `Failed to save edition: ${error.message}`,
       type: "negative",
-      color: "red",
+      timeout: 3000,
     });
-    console.error("Error saving edizione detail:", error);
+    throw error;
   }
 };
 
@@ -141,77 +123,57 @@ export const savePossessoEdizione = async (
   bookId,
 ) => {
   try {
-    const userDocRef = doc(db, "Users", userID);
-    const userDocSnap = await getDoc(userDocRef);
-    if (userDocSnap.exists()) {
-      const userData = userDocSnap.data();
+    const userStore = useUserStore();
+    const userData = { ...userStore.userData };
 
-      // Update books in user data
-      userData.books = userData.books || [];
-      const bookIndex = userData.books.findIndex((b) => b.bookId === bookId);
+    // Update books in user data
+    userData.books = userData.books || [];
+    const bookIndex = userData.books.findIndex((b) => b.bookId === bookId);
 
-      if (bookIndex !== -1) {
-        // Update editions in the book
-        userData.books[bookIndex].edizioni =
-          userData.books[bookIndex].edizioni || [];
-        const edizioneIndex = userData.books[bookIndex].edizioni.findIndex(
-          (e) => e.uuid === edizioneUuid,
-        );
+    if (bookIndex !== -1) {
+      // Update editions in the book
+      userData.books[bookIndex].edizioni =
+        userData.books[bookIndex].edizioni || [];
+      const edizioneIndex = userData.books[bookIndex].edizioni.findIndex(
+        (e) => e.uuid === edizioneUuid,
+      );
 
-        if (edizioneIndex !== -1) {
-          userData.books[bookIndex].edizioni[edizioneIndex].posseduto =
-            edizionePosseduto;
-        } else {
-          userData.books[bookIndex].edizioni.push({
-            uuid: edizioneUuid,
-            posseduto: edizionePosseduto,
-          });
-        }
-
-        // Update the book's posseduto field
-        userData.books[bookIndex].posseduto = userData.books[
-          bookIndex
-        ].edizioni.some((e) => e.posseduto);
+      if (edizioneIndex !== -1) {
+        userData.books[bookIndex].edizioni[edizioneIndex].posseduto =
+          edizionePosseduto;
       } else {
-        // Add new book with the edition
-        userData.books.push({
-          bookId: bookId,
+        userData.books[bookIndex].edizioni.push({
+          uuid: edizioneUuid,
           posseduto: edizionePosseduto,
-          edizioni: [{ uuid: edizioneUuid, posseduto: edizionePosseduto }],
         });
       }
 
-      // Update Firestore
-      await setDoc(userDocRef, userData, { merge: true });
-
-      // Update user data in IndexedDB
-      await setUserData(userData);
-
-      // Update bibliografia store if at least one edition is posseduto
-      const oneEditionPosseduto = userData.books.some(
-        (b) => b.bookId === bookId && b.posseduto,
-      );
-      if (oneEditionPosseduto) {
-        const bookIndexInBibliografia =
-          bibliografiaStore.bibliografia.findIndex((b) => b.id === bookId);
-        if (bookIndexInBibliografia !== -1) {
-          bibliografiaStore.bibliografia[bookIndexInBibliografia].posseduto =
-            true;
-          await setBibliografia([...bibliografiaStore.bibliografia]);
-        }
-      }
-
-      Notify.create({
-        message: `Possesso aggiornato con successo`,
-        type: "positive",
-        color: "green",
+      // Update the book's posseduto field
+      userData.books[bookIndex].posseduto = userData.books[
+        bookIndex
+      ].edizioni.some((e) => e.posseduto);
+    } else {
+      // Add new book with the edition
+      userData.books.push({
+        bookId: bookId,
+        posseduto: edizionePosseduto,
+        edizioni: [{ uuid: edizioneUuid, posseduto: edizionePosseduto }],
       });
     }
+
+    // Update Firebase using centralized function
+    const userDocRef = doc(db, "Users", userID);
+    await setDoc(userDocRef, userData, { merge: true });
+    // Note: Pinia will be updated automatically by realtime listeners
+
+    Notify.create({
+      message: `Possesso aggiornato con successo`,
+      type: "positive",
+    });
   } catch (error) {
     Notify.create({
       message: `Errore nel salvataggio del possesso`,
       type: "negative",
-      color: "red",
     });
     console.error("Errore nel salvataggio del possesso:", error);
   }
@@ -219,42 +181,9 @@ export const savePossessoEdizione = async (
 
 export const removePossessoEdizione = async (edizioneUuid, userID, bookId) => {
   try {
-    // 1. First update bibliografia store
-    const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
-      (b) => b.id === bookId,
-    );
+    const userStore = useUserStore();
+    const userData = { ...userStore.userData };
 
-    if (bookIndexInBibliografia !== -1) {
-      // Get the editions array
-      const bibliografiaBook =
-        bibliografiaStore.bibliografia[bookIndexInBibliografia];
-      const updatedEdizioni = bibliografiaBook.edizioni.map((edition) => {
-        if (edition.uuid === edizioneUuid) {
-          return { ...edition, posseduto: false };
-        }
-        return edition;
-      });
-
-      // Check if any edition is still possessed
-      const hasAnyPossessed = updatedEdizioni.some(
-        (edition) => edition.posseduto,
-      );
-
-      // Update bibliografia store with new editions and possession status
-      bibliografiaStore.$patch((state) => {
-        state.bibliografia[bookIndexInBibliografia] = {
-          ...bibliografiaBook,
-          edizioni: updatedEdizioni,
-          posseduto: hasAnyPossessed,
-        };
-      });
-
-      // Update IndexedDB with bibliografia changes
-      await setBibliografia([...bibliografiaStore.bibliografia]);
-    }
-
-    // 2. Then update user data
-    const userData = await getUserData(userID);
     userData.books = userData.books || [];
     const bookIndex = userData.books.findIndex((b) => b.bookId === bookId);
 
@@ -278,17 +207,14 @@ export const removePossessoEdizione = async (edizioneUuid, userID, bookId) => {
         // Update the book's main posseduto field
         userData.books[bookIndex].posseduto = hasAnyPossessed;
 
-        // Update user data in IndexedDB
-        await setUserData(userData);
-
-        // Update Firebase user data
+        // Update Firebase using centralized approach
         const userDocRef = doc(db, "Users", userID);
         await setDoc(userDocRef, userData, { merge: true });
+        // Note: Pinia will be updated automatically by realtime listeners
 
         Notify.create({
           message: `Possesso rimosso con successo`,
           type: "positive",
-          color: "green",
         });
       }
     }
@@ -301,44 +227,27 @@ export const removePossessoEdizione = async (edizioneUuid, userID, bookId) => {
     console.error("Errore nella rimozione del possesso:", error);
   }
 };
+
 export const removeEdizione = async (bookId, edizioni, index) => {
   try {
     if (index < 0 || index >= edizioni.value.length) {
       return;
     }
 
-    const timestamp = new Date().valueOf();
-    const bookRef = doc(db, "Bibliografia", bookId);
+    const bibliografia = bibliografiaStore.bibliografia || [];
+    const book = bibliografia.find((b) => b.id === bookId);
 
-    // Create a clean version of edizioni without possession data for Firebase
-    const cleanEdizioni = edizioni.value.map(({ posseduto, ...rest }) => rest);
-    cleanEdizioni.splice(index, 1);
-
-    // Update Firebase with clean data (no possession info)
-    await setDoc(
-      bookRef,
-      {
-        edizioni: cleanEdizioni,
-        timestamp: timestamp,
-      },
-      { merge: true },
-    );
-
-    // Update Pinia and IndexedDB with full data (including possession)
-    const bibliografiaStore = useBibliografiaStore();
-    const bookIndexInBibliografia = bibliografiaStore.bibliografia.findIndex(
-      (book) => book.id === bookId,
-    );
-
-    if (bookIndexInBibliografia !== -1) {
-      // Keep possession data in local stores
-      edizioni.value.splice(index, 1);
-      bibliografiaStore.bibliografia[bookIndexInBibliografia].edizioni =
-        edizioni;
-      await setBibliografia([...bibliografiaStore.bibliografia]);
+    if (!book) {
+      throw new Error("Book not found");
     }
 
-    await updateTimestamp(timestamp);
+    const cleanEdizioni = book.edizioni.map(({ posseduto, ...rest }) => rest);
+    cleanEdizioni.splice(index, 1);
+
+    const updatedBook = { ...book, edizioni: cleanEdizioni };
+
+    // Use centralized sync function
+    await syncBook({ bookId, book: updatedBook });
 
     Notify.create({
       message: `Edizione Removed`,
@@ -356,69 +265,59 @@ export const removeEdizione = async (bookId, edizioni, index) => {
     return false;
   }
 };
+
 export const addEdizione = async (bookId) => {
+  if (!bookId) {
+    throw new Error("Book ID is required");
+  }
+
   try {
-    const timestamp = new Date().valueOf();
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const bookDocSnap = await getDoc(bookRef);
+    const bibliografia = bibliografiaStore.bibliografia || [];
+    const book = bibliografia.find((b) => b.id === bookId);
 
-    if (bookDocSnap.exists()) {
-      let existingEdizioni = bookDocSnap.data().edizioni || [];
-      const defaultEdizione = {
-        anno: 1900,
-        numero: 1,
-        uuid: shortUuidGenerator.new(),
-        images: [
-          {
-            id: shortUuidGenerator.new(),
-            coverType: "",
-            name: "placeholder.jpg",
-            timestamp: new Date().valueOf(),
-          },
-        ],
-      };
-
-      const newEdizioni = [...existingEdizioni, defaultEdizione];
-
-      // Aggiorna Firebase
-      await setDoc(
-        bookRef,
-        {
-          edizioni: newEdizioni,
-          timestamp: timestamp,
-        },
-        { merge: true },
-      );
-
-      // Aggiorna Pinia e IndexedDB
-      const bookIndex = bibliografiaStore.bibliografia.findIndex(
-        (book) => book.id === bookId,
-      );
-
-      if (bookIndex !== -1) {
-        // Update Pinia
-        bibliografiaStore.bibliografia[bookIndex].edizioni = newEdizioni;
-        // Update IndexedDB
-        await setBibliografia([...bibliografiaStore.bibliografia]);
-      }
-
-      await updateTimestamp(timestamp);
-
-      Notify.create({
-        message: `Edizione Aggiunta`,
-        type: "positive",
-        color: "green",
-      });
-
-      return true;
+    if (!book) {
+      throw new Error("Book not found");
     }
-    return false;
-  } catch (error) {
-    console.error("Errore aggiunta edizione:", error);
+
+    let existingEdizioni = book.edizioni || [];
+
+    if (existingEdizioni.length >= 50) {
+      throw new Error("Maximum number of editions reached");
+    }
+
+    const defaultEdizione = {
+      anno: 1900,
+      numero: existingEdizioni.length + 1,
+      uuid: shortUuidGenerator.new(),
+      images: [
+        {
+          id: shortUuidGenerator.new(),
+          coverType: "",
+          name: "placeholder.jpg",
+          timestamp: new Date().valueOf(),
+        },
+      ],
+    };
+
+    const newEdizioni = [...existingEdizioni, defaultEdizione];
+    const updatedBook = { ...book, edizioni: newEdizioni };
+
+    // Use centralized sync function
+    await syncBook({ bookId, book: updatedBook });
+
     Notify.create({
-      message: `Errore aggiunta edizione`,
+      message: `New edition added successfully`,
+      type: "positive",
+      color: "green",
+    });
+    return true;
+  } catch (error) {
+    console.error("Error adding edition:", error);
+    Notify.create({
+      message: `Failed to add edition: ${error.message}`,
       type: "negative",
       color: "red",
+      timeout: 3000,
     });
     return false;
   }

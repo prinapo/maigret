@@ -1,98 +1,238 @@
 <template>
   <q-page
-    class="window-height window-width row justify-center items-center"
-    style="background: linear-gradient(#8274c5, #5a4a9f)"
+    class="bg-grey-1 window-height window-width row justify-center items-center"
   >
-    <div class="column q-pa-lg">
-      <div class="row">
-        <q-card square class="shadow-24" style="width: 300px; height: 485px">
-          <q-card-section class="bg-deep-purple-7">
-            <h4 class="text-h5 text-white q-my-md">Registration</h4>
-            <div
-              class="absolute-bottom-right q-pr-md"
-              style="transform: translateY(50%)"
-            >
-              <q-btn fab icon="close" color="purple-4" @click="goToLoginPage" />
-            </div>
-          </q-card-section>
-          <q-card-section>
-            <q-form class="q-px-sm q-pt-xl q-pb-lg" @submit="registerUser">
-              <q-input
-                square
-                clearable
-                v-model="email"
-                type="email"
-                label="Email"
-                style="min-height: 48dp"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="email" />
-                </template>
-              </q-input>
+    <q-card
+      class="q-pa-lg shadow-2 rounded-borders"
+      style="width: 100%; max-width: 400px"
+    >
+      <q-card-section class="q-pt-none">
+        <div class="text-h6 text-primary text-center">{{ $t('registration.title') }}</div>
+      </q-card-section>
 
-              <q-input
-                square
-                clearable
-                v-model="password"
-                type="password"
-                label="Password"
-                style="min-height: 48dp"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="lock" />
-                </template>
-              </q-input>
-            </q-form>
-          </q-card-section>
-          <q-card-actions class="q-px-lg">
+      <q-card-section>
+        <q-form @submit.prevent="register">
+          <q-input
+            v-model="name"
+            :label="$t('registration.name')"
+            outlined
+            dense
+            class="q-mb-sm"
+            :rules="[(val) => !!val || 'Il nome è obbligatorio']"
+          />
+          <q-input
+            v-model="email"
+            :label="$t('registration.email')"
+            type="email"
+            outlined
+            dense
+            class="q-mb-sm"
+            :rules="[(val) => !!val || 'L\'email è obbligatoria']"
+          />
+          <q-input
+            v-model="password"
+            :label="$t('registration.password')"
+            type="password"
+            outlined
+            dense
+            class="q-mb-md"
+            :rules="[(val) => !!val || 'La password è obbligatoria']"
+          />
+
+          <div class="q-mb-md">
             <q-btn
-              unelevated
-              size="lg"
-              color="purple-4"
-              class="full-width text-white"
-              label="Get Started"
-              @click="registerUser"
-              style="min-height: 48dp"
+              :label="$t('registration.register')"
+              type="submit"
+              color="primary"
+              class="full-width"
+              :loading="loading"
             />
-          </q-card-actions>
-          <q-card-section class="text-center q-pa-sm">
-            <p class="text-grey-6">Return to login</p>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
+          </div>
+        </q-form>
+
+        <div class="text-caption text-center">
+          Hai già un account?
+          <q-btn flat :label="$t('registration.loginLink')" to="/login" color="primary" size="sm" />
+        </div>
+      </q-card-section>
+    </q-card>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
-import { auth } from "../firebase/firebaseInit";
-import { useRouter } from "vue-router"; // Import useRouter from Vue Router
+import { auth } from "src/boot/firebase";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "stores/authStore";
+import { useUserStore } from "stores/userStore";
 import { useQuasar } from "quasar";
-import { db } from "../firebase/firebaseInit";
-import { collection, addDoc, setDoc, doc } from "firebase/firestore";
 
+const router = useRouter();
 const $q = useQuasar();
+const authStore = useAuthStore();
+const userStore = useUserStore();
 
+// State
+const fullName = ref("");
 const email = ref("");
 const password = ref("");
-const router = useRouter(); // Initialize the router
+const confirmPassword = ref("");
+const acceptTerms = ref(false);
+const isPasswordVisible = ref(false);
+const isConfirmPasswordVisible = ref(false);
+const isLoading = ref(false);
+const showTerms = ref(false);
+const showPrivacy = ref(false);
+const formErrors = ref({
+  fullName: null,
+  email: null,
+  password: null,
+  confirmPassword: null,
+});
+
+const showErrorDialog = ref(false);
+const errorDialog = ref({
+  title: "",
+  message: "",
+  action: null,
+  actionLabel: "",
+});
+
+// Computed
+const isFormValid = computed(() => {
+  return (
+    fullName.value &&
+    email.value &&
+    password.value &&
+    confirmPassword.value &&
+    acceptTerms.value &&
+    isValidEmail(email.value) &&
+    isValidPassword(password.value) &&
+    password.value === confirmPassword.value &&
+    !formErrors.value.fullName &&
+    !formErrors.value.email &&
+    !formErrors.value.password &&
+    !formErrors.value.confirmPassword
+  );
+});
+
+// Methods
+const clearError = (field) => {
+  if (field) {
+    formErrors.value[field] = null;
+  } else {
+    formErrors.value = {
+      fullName: null,
+      email: null,
+      password: null,
+      confirmPassword: null,
+    };
+  }
+};
+
+const showError = (title, message, action = null, actionLabel = null) => {
+  errorDialog.value = {
+    title,
+    message,
+    action,
+    actionLabel,
+  };
+  showErrorDialog.value = true;
+};
+
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const isValidPassword = (password) => {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/.test(
+    password,
+  );
+};
+
+const goToLoginPage = () => {
+  if (!isLoading.value) {
+    router.push("/login");
+  }
+};
+
+const handleAuthError = (error) => {
+  let message = "An error occurred during registration.";
+
+  switch (error.code) {
+    case "auth/email-already-in-use":
+      message = "This email address is already registered.";
+      break;
+    case "auth/invalid-email":
+      message = "Invalid email address.";
+      break;
+    case "auth/operation-not-allowed":
+      message = "Email/password accounts are not enabled.";
+      break;
+    case "auth/weak-password":
+      message = "Password is too weak.";
+      break;
+    case "auth/network-request-failed":
+      message = "Network error. Please check your connection.";
+      break;
+    default:
+      message = error.message || message;
+  }
+
+  showError("Registration Error", message);
+};
 
 const registerUser = async () => {
   try {
-    // Validate email and password inputs
+    // Reset errors
+    clearError();
+
+    // Validate form
+    if (!fullName.value.trim()) {
+      formErrors.value.fullName = "Full name is required";
+      return;
+    }
+
+    if (!email.value.trim()) {
+      formErrors.value.email = "Email is required";
+      return;
+    }
+
     if (!isValidEmail(email.value)) {
-      throw new Error("Invalid email address.");
+      formErrors.value.email = "Invalid email format";
+      return;
     }
+
+    if (!password.value.trim()) {
+      formErrors.value.password = "Password is required";
+      return;
+    }
+
     if (!isValidPassword(password.value)) {
-      throw new Error(
-        "Invalid password. Password must be at least 6 characters long.",
-      );
+      formErrors.value.password = "Password must meet all requirements";
+      return;
     }
+
+    if (password.value !== confirmPassword.value) {
+      formErrors.value.confirmPassword = "Passwords do not match";
+      return;
+    }
+
+    if (!acceptTerms.value) {
+      $q.notify({
+        type: "negative",
+        message: "Please accept the terms and conditions",
+        position: "top",
+      });
+      return;
+    }
+
+    isLoading.value = true;
 
     // Create user account
     const userCredential = await createUserWithEmailAndPassword(
@@ -101,81 +241,63 @@ const registerUser = async () => {
       password.value,
     );
 
+    // Update user profile with display name
+    await updateProfile(userCredential.user, {
+      displayName: fullName.value,
+    });
+
     // Send verification email
     await sendEmailVerification(userCredential.user);
+
+    // Create user profile using userStore (with no permissions)
+    await userStore.createUserProfile({
+      ...userCredential.user,
+      displayName: fullName.value,
+    });
+
+    // Show success message with beta instructions
+    showError(
+      "Registration Successful",
+      `Welcome to the Maigret Collectors beta test! Please check your email to verify your account, then send an email to beta@maigret.com with your registered email address to request collector access.`,
+      () => router.push("/login"),
+      "Go to Login",
+    );
+
+    // Reset form
+    fullName.value = "";
     email.value = "";
     password.value = "";
+    confirmPassword.value = "";
+    acceptTerms.value = false;
 
-    // Add user's information to Firestore
-    await addUserInfo(userCredential.user.uid);
-
-    // Redirect to the login page after successful registration
-    router.push("/login");
-    showNotification("Verification email sent. Please check your inbox.");
-  } catch (error) {
-    console.error("Error registering user:", error);
-    showErrorNotification("Registration Error", error.message);
-  }
-};
-
-const isValidEmail = (email) => {
-  // Implement email validation logic here
-  return /\S+@\S+\.\S+/.test(email);
-};
-
-const isValidPassword = (password) => {
-  // Implement password validation logic here
-  return password.length >= 6;
-};
-
-const addUserInfo = async (uid) => {
-  try {
-    // Specify the collection reference correctly
-    const userRef = doc(db, "Users", uid);
-
-    // Add user's information to Firestore
-    await setDoc(userRef, {
-      name: "", // Add user's name
-      lastName: "", // Add user's last name
-      role: "user", // Set user's role to 'user'
-      uid: uid,
-      // Add more fields as needed
+    $q.notify({
+      type: "positive",
+      message:
+        "Registration successful! Check your email and contact us for beta access.",
+      position: "top",
+      timeout: 5000,
     });
   } catch (error) {
-    console.error("Error adding user info to Firestore:", error);
-    throw new Error("Failed to add user information to Firestore.");
+    console.error("Registration error:", error);
+    handleAuthError(error);
+  } finally {
+    isLoading.value = false;
   }
 };
-
-const showNotification = (message) => {
-  $q.notify({
-    color: "positive",
-    textColor: "white",
-    position: "top",
-    message: message,
-  });
-};
-
-const showErrorNotification = (title, message) => {
-  $q.notify({
-    color: "negative",
-    textColor: "white",
-    position: "top",
-    message: title + ": " + message,
-  });
-};
-
-const goToLoginPage = () => {
-  router.push("/login"); // Redirect to the login page
-};
-
-const alert = (title, message) => {
-  $q.dialog({
-    title: title,
-    message: message,
-  })
-    .onOk(() => {})
-    .onCancel(() => {})
-    .onDismiss(() => {});
-};
 </script>
+
+<style scoped>
+.q-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+li {
+  margin-bottom: 0.2em;
+}
+</style>

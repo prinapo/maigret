@@ -12,7 +12,7 @@
           <template #fallback>
             <div class="text-center q-pa-md">
               <q-spinner color="primary" size="3em" />
-              <div class="text-body1 q-mt-md">Caricamento dettagli...</div>
+              <div class="text-body1 q-mt-md">{{ $t('bookDetailContent.loadingDetails') }}</div>
             </div>
           </template>
         </Suspense>
@@ -25,9 +25,10 @@
 </template>
 
 <script setup>
-import BookDetails from "./BookDetails.vue"; // Import BookDetails component
-import BookImages from "./BookImages.vue"; // Import BookImages component
-import BookEditions from "./BookEditions.vue"; // Import BookEditions component
+//components
+import BookDetails from "components/BookDetails.vue"; // Import BookDetails component
+import BookImages from "components/BookImages.vue"; // Import BookImages component
+import BookEditions from "components/BookEditions.vue"; // Import BookEditions component
 
 defineProps({
   bookId: {

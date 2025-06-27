@@ -1,0 +1,182 @@
+{
+  "assets/placeholder.jpg": [],
+  "boot/auth.js": [
+    "boot/firebase.js"
+  ],
+  "boot/firebase.js": [],
+  "boot/init.js": [
+    "boot/firebase.js",
+    "listeners/realtimeListeners.js",
+    "watchers/appWatcher.js"
+  ],
+  "boot/pinia.js": [],
+  "components/BookDetailContent.vue": [
+    "components/BookDetails.vue",
+    "components/BookEditions.vue",
+    "components/BookImages.vue"
+  ],
+  "components/BookDetails.vue": [
+    "config/bookDetailsConfig.js",
+    "stores/authStore.js",
+    "stores/bibliografiaStore.js",
+    "stores/collaneStore.js",
+    "stores/editoriStore.js",
+    "stores/lingueStore.js",
+    "stores/userStore.js",
+    "utils/deleteBookUtils.js"
+  ],
+  "components/BookEditions.vue": [
+    "stores/authStore.js",
+    "stores/userStore.js",
+    "utils/edizioniUtils.js"
+  ],
+  "components/BookImages.vue": [
+    "assets/placeholder.jpg",
+    "boot/firebase.js",
+    "stores/authStore.js",
+    "stores/bibliografiaStore.js",
+    "stores/collaneStore.js",
+    "stores/coversStore.js",
+    "stores/editoriStore.js",
+    "stores/lingueStore.js",
+    "stores/undoStore.js",
+    "stores/userStore.js",
+    "utils/firebaseDatabaseUtils.js",
+    "utils/imageUtils.js"
+  ],
+  "components/Filter.vue": [
+    "stores/collaneStore.js",
+    "stores/editoriStore.js",
+    "stores/filtersStore.js",
+    "stores/lingueStore.js"
+  ],
+  "components/InitializationProgress.vue": [],
+  "composables/version.js": [],
+  "config/bookDetailsConfig.js": [],
+  "firebase/config.js": [],
+  "layouts/MainLayout.vue": [
+    "boot/firebase.js",
+    "components/Filter.vue",
+    "stores/authStore.js",
+    "stores/userStore.js"
+  ],
+  "listeners/realtimeListeners.js": [
+    "utils/theme.js"
+  ],
+  "pages/BibliografiaPage.vue": [
+    "assets/placeholder.jpg",
+    "boot/firebase.js",
+    "components/BookDetailContent.vue",
+    "components/InitializationProgress.vue",
+    "stores/bibliografiaStore.js",
+    "stores/collaneStore.js",
+    "stores/editoriStore.js",
+    "stores/filtersStore.js",
+    "stores/lingueStore.js",
+    "stores/userStore.js",
+    "utils/theme.js"
+  ],
+  "pages/ConfigurationPage.vue": [
+    "config/bookDetailsConfig.js",
+    "stores/bibliografiaStore.js",
+    "stores/collaneStore.js",
+    "stores/editoriStore.js",
+    "stores/userStore.js",
+    "utils/firebaseDatabaseUtils.js",
+    "utils/theme.js"
+  ],
+  "pages/ErrorNotFound.vue": [],
+  "pages/ErrorPage.vue": [],
+  "pages/LoadingPage.vue": [],
+  "pages/LoginPage.vue": [
+    "boot/firebase.js",
+    "stores/authStore.js",
+    "stores/userStore.js"
+  ],
+  "pages/NewBookPage.vue": [
+    "stores/bibliografiaStore.js",
+    "stores/userStore.js"
+  ],
+  "pages/RegistrationPage.vue": [
+    "boot/firebase.js",
+    "stores/authStore.js",
+    "stores/userStore.js"
+  ],
+  "pages/TablesEditPage.vue": [
+    "stores/authStore.js",
+    "stores/collaneStore.js",
+    "stores/coversStore.js",
+    "stores/editoriStore.js",
+    "stores/lingueStore.js",
+    "utils/firebaseDatabaseUtils.js"
+  ],
+  "pages/Trash.vue": [
+    "assets/placeholder.jpg",
+    "boot/firebase.js"
+  ],
+  "pages/UserManagementPage.vue": [
+    "stores/userStore.js",
+    "utils/firebaseDatabaseUtils.js"
+  ],
+  "router/index.js": [
+    "router/routes.js"
+  ],
+  "router/routes.js": [
+    "layouts/MainLayout.vue",
+    "pages/BibliografiaPage.vue",
+    "pages/ConfigurationPage.vue",
+    "pages/ErrorNotFound.vue",
+    "pages/ErrorPage.vue",
+    "pages/LoadingPage.vue",
+    "pages/LoginPage.vue",
+    "pages/NewBookPage.vue",
+    "pages/RegistrationPage.vue",
+    "pages/TablesEditPage.vue",
+    "pages/Trash.vue",
+    "pages/UserManagementPage.vue"
+  ],
+  "stores/authStore.js": [],
+  "stores/bibliografiaStore.js": [],
+  "stores/collaneStore.js": [],
+  "stores/coversStore.js": [],
+  "stores/editoriStore.js": [],
+  "stores/filtersStore.js": [],
+  "stores/lingueStore.js": [],
+  "stores/undoStore.js": [
+    "utils/firebaseDatabaseUtils.js"
+  ],
+  "stores/userStore.js": [],
+  "utils/deleteBookUtils.js": [
+    "stores/bibliografiaStore.js",
+    "utils/firebaseDatabaseUtils.js"
+  ],
+  "utils/edizioniUtils.js": [
+    "stores/bibliografiaStore.js",
+    "stores/userStore.js",
+    "utils/firebaseDatabaseUtils.js"
+  ],
+  "utils/firebaseDatabaseUtils.js": [
+    "boot/firebase.js",
+    "stores/bibliografiaStore.js",
+    "utils/firebaseStorageUtils.js"
+  ],
+  "utils/firebaseStorageUtils.js": [
+    "boot/firebase.js"
+  ],
+  "utils/imageUtils.js": [
+    "boot/firebase.js",
+    "stores/bibliografiaStore.js",
+    "stores/coversStore.js",
+    "stores/undoStore.js",
+    "utils/firebaseDatabaseUtils.js",
+    "utils/firebaseStorageUtils.js"
+  ],
+  "utils/theme.js": [
+    "stores/userStore.js"
+  ],
+  "utils/trash.js": [],
+  "watchers/appWatcher.js": [
+    "stores/bibliografiaStore.js",
+    "utils/theme.js"
+  ]
+}
