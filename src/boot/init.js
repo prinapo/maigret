@@ -12,7 +12,6 @@ export default boot((ctx = {}) => {
     const i18n = app?.config?.globalProperties?.$i18n;
     // Verifica che Firebase sia inizializzato
     if (!isFirebaseReady()) {
-      console.warn("Init boot skipped: Firebase not initialized");
       Notify.create({
         type: "warning",
         message: i18n?.global?.t
@@ -35,8 +34,6 @@ export default boot((ctx = {}) => {
       app.config.globalProperties.$appReady = true;
     }
   } catch (error) {
-    console.error("Errore di inizializzazione:", error);
-    const i18n = app?.config?.globalProperties?.$i18n;
     Notify.create({
       type: "negative",
       message: i18n?.global?.t

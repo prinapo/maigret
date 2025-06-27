@@ -92,10 +92,6 @@ describe("Init Boot File", () => {
 
     await initBoot({ app: quasarAppMock });
 
-    console.log(
-      "mockSetupRealtimeListeners call count after initBoot:",
-      mockSetupRealtimeListeners.mock.calls.length,
-    );
     expect(mockSetupRealtimeListeners).toHaveBeenCalledTimes(1);
     expect(mockSetupAppWatcher).toHaveBeenCalledTimes(1);
     expect(quasarAppMock.config.globalProperties.$appReady).toBe(true);
@@ -170,10 +166,6 @@ describe("Init Boot File", () => {
 
     await initBoot({ app: quasarAppMock });
 
-    console.log(
-      "mockSetupRealtimeListeners call count after error:",
-      mockSetupRealtimeListeners.mock.calls.length,
-    );
     expect(mockSetupRealtimeListeners).toHaveBeenCalledTimes(1);
     expect(mockSetupAppWatcher).not.toHaveBeenCalled(); // Should not be called if previous step fails
     expect(Notify.create).toHaveBeenCalledWith(
@@ -191,10 +183,6 @@ describe("Init Boot File", () => {
   // Data: 2024-06-10, v1.0.0
   it("should directly call setupRealtimeListeners and increment the spy", () => {
     setupRealtimeListeners({});
-    console.log(
-      "Direct call: mockSetupRealtimeListeners call count:",
-      mockSetupRealtimeListeners.mock.calls.length,
-    );
     expect(mockSetupRealtimeListeners).toHaveBeenCalledTimes(1);
   });
 

@@ -64,10 +64,7 @@ export default boot(async (ctx = {}) => {
     if (quasarApp?.config?.globalProperties) {
       delete quasarApp.config.globalProperties.$firebaseError;
     }
-    console.log(t("firebase.init_success"));
   } catch (error) {
-    console.error(t("firebase.init_failed", { message: error.message }), error);
-
     // Notifica utente dell'errore critico
     Notify.create({
       type: "negative",
