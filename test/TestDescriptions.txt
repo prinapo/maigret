@@ -1,10 +1,85 @@
+# Test Suite - Boot Sequence & Core Initialization
+
+**Ultimo aggiornamento:** 2024-06-11
+**Release:** v4.01 (committata su GitHub)
+**Esito:** TUTTI I TEST DI BOOT VERDI
+
+---
+
+## Riepilogo Test Boot
+
+| File di Test         | Copertura Principale                                                                 | Robustezza/Edge Case |
+|---------------------|-------------------------------------------------------------------------------------|----------------------|
+| auth.spec.js        | Auth listener, flag $authDisabled, error handling, skip se Firebase non pronto       | Sì                   |
+| firebase.spec.js    | Init Firebase, errori, readiness, partial service, timeout, config mancante         | Sì                   |
+| i18n.spec.js        | Inizializzazione i18n, global availability                                          | -                    |
+| init.spec.js        | Sequenza boot, listener, offline/degraded, idempotenza, recovery, notifiche         | Sì                   |
+| pinia.spec.js       | Inizializzazione Pinia, store availability                                          | -                    |
+
+---
+
+## Dettaglio Test File
+
+### auth.spec.js
+- Verifica stato autenticazione con Firebase pronto
+- Gestione errori autenticazione
+- Flag $authDisabled
+- Salta init se Firebase non pronto
+- Gestione robusta di input anomali e fallback
+- Logging warning/error
+
+### firebase.spec.js
+- Inizializzazione Firebase con config valida
+- Gestione errori di init
+- Verifica readiness
+- Partial service availability
+- Timeout servizi
+- Config mancante
+- Robustezza su input anomali e fallback
+- Logging errori
+
+### i18n.spec.js
+- Inizializzazione e globalità di i18n
+
+### init.spec.js
+- Setup watcher e listener
+- Modalità offline/degradata
+- Passaggio $i18n
+- Idempotenza boot e cleanup
+- Recovery dopo cleanup
+- Notifiche e fallback
+- Robustezza su input anomali e fallback
+- Logging warning/error
+- Chiamate multiple con stati diversi
+
+### pinia.spec.js
+- Inizializzazione plugin Pinia
+- Disponibilità store
+
+---
+
+## Stato avanzamento casi speciali
+- Network Conditions: [IMPLEMENTATO]
+- Firebase Service Availability: [IMPLEMENTATO]
+- Initialization Order: [IMPLEMENTATO]
+- State Management: [IMPLEMENTATO]
+- Error Recovery: [IMPLEMENTATO]
+
+**Note:**
+- Tutti i test di boot sono verdi alla release 4.01 (2024-06-11).
+- I test dei componenti (BookImages, ecc.) non sono inclusi in questa tabella.
+
 Test 0 - Boot Sequence Tests
+Ultimo aggiornamento: 2024-06-11
+Release: v4.01 (committata su GitHub)
+Esito: TUTTI I TEST DI BOOT VERDI
 
 auth.spec.js: Tests the Firebase authentication initialization.
 - Verifies authentication state when Firebase is ready
 - Handles authentication errors gracefully
 - Sets appropriate flags for auth disabled state
 - Ensures auth initialization is skipped if Firebase boot fails
+- Gestione robusta di input anomali e fallback
 
 firebase.spec.js: Tests the Firebase app initialization.
 - Initializes Firebase successfully with valid config
@@ -12,6 +87,7 @@ firebase.spec.js: Tests the Firebase app initialization.
 - Verifies Firebase readiness state
 - Handles partial Firebase service availability
 - Tests initialization timeout scenarios
+- Gestione robusta di input anomali e fallback
 
 i18n.spec.js: Tests the vue-i18n initialization and global availability.
 - Confirms i18n instance is properly initialized
@@ -26,6 +102,7 @@ init.spec.js: Tests the application's initial setup and listeners.
 - Tests boot sequence with no initial network connection
 - Tests recovery when network becomes available
 - Tests behavior when network connection is lost after initialization
+- Gestione robusta di input anomali e fallback
 
 pinia.spec.js: Tests the Pinia store initialization.
 - Verifies Pinia plugin installation
@@ -33,24 +110,21 @@ pinia.spec.js: Tests the Pinia store initialization.
 
 To be developed - Additional Boot Sequence Test Cases:
 1. Network Conditions: [IMPLEMENTED]
-
 2. Firebase Service Availability: [IMPLEMENTED]
-
 3. Initialization Order: [IMPLEMENTED]
    - Verify correct initialization order of dependent services
    - Test recovery from initialization failures at different stages
    - Test cleanup when initialization fails
-
 4. State Management: [IMPLEMENTED]
    - Verify state consistency across service interruptions
    - Test state recovery after service restoration
    - Verify proper error state propagation
-
 5. Error Recovery: [IMPLEMENTED]
    - Test automatic retry mechanisms
    - Verify error notification systems
    - Test graceful degradation of features
 
+Note: Tutti i test di boot sono verdi alla release 4.01 (2024-06-11).
 
 Test 1 - new image added, deleted and undo
 only admin with superadmin flag can access this feature
@@ -68,4 +142,20 @@ once I delete the image or any other image the image array of the book in Fireba
 if the image is the only one in the array the image array is not updated
 if is not the first one after delete a undo button appears on the notify, if is not pressed the  notify disappears after 5 sec, if it is pressed the image array is reverted to the original one but since image is placeholder.jpg the images are not updated on teh firebase storage 
 after delete a new row appears on a separate trash windows also visible only to adin
+
+---
+
+## Best practice e suggerimenti per la manutenzione futura dei test di boot
+
+- **Aggiungi sempre test per ogni nuova feature o flag di stato introdotta nel boot.**
+- **Mantieni la robustezza:** verifica che le funzioni di boot non lancino errori con input anomali (assenza di argomenti, proprietà parziali, fallback di traduzioni, ecc.).
+- **Testa i fallback:** se aggiungi nuove dipendenze (es. nuovi servizi, nuove traduzioni), aggiungi test per i casi in cui queste dipendenze non sono disponibili.
+- **Verifica notifiche e logging:** ogni volta che aggiungi una notifica o un log, aggiungi un test che ne verifica la presenza e il contenuto.
+- **Idempotenza:** se una funzione di boot può essere chiamata più volte, aggiungi test per garantire che lo stato resti coerente.
+- **Recovery e cleanup:** se aggiungi logiche di recovery o cleanup, assicurati che siano testate sia in condizioni normali che in condizioni di errore.
+- **Partial service:** se un servizio può essere parzialmente disponibile (es. solo Firestore, ma non Auth), aggiungi test specifici.
+- **Timeout e errori di rete:** se la logica di boot gestisce timeout o errori di rete, aggiungi test che simulano questi casi.
+- **Documenta sempre la data, la release e l'esito dei test dopo ogni modifica sostanziale.**
+
+Questa sezione va aggiornata ogni volta che si evolve la logica di boot o la strategia di test.
 

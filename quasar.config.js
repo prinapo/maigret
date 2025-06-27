@@ -53,8 +53,8 @@ export default configure((/* ctx */) => {
         node: "node20",
       },
       env: {
-        APP_VERSION: JSON.stringify("4.01"),
-        VERSION_CODE: JSON.stringify("401"),
+        APP_VERSION: JSON.stringify("4.02"),
+        VERSION_CODE: JSON.stringify("402"),
       },
       sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'
@@ -162,13 +162,13 @@ export default configure((/* ctx */) => {
 
     capacitor: {
       appName: "Maigret Collector",
-      version: process.env.APP_VERSION || "4.01",
+      version: process.env.APP_VERSION || "4.02",
       description:
         "Catalogo completo dei libri di Simenon con il commissario Maigret",
       author: "prinapo <giovanni.prinetti@gmail.com>",
       appId: "com.prinapo.maigret",
-      versionCode: parseInt(process.env.VERSION_CODE) || 401,
-      versionName: process.env.APP_VERSION || "4.01",
+      versionCode: parseInt(process.env.VERSION_CODE) || 402,
+      versionName: process.env.APP_VERSION || "4.02",
       plugins: {
         SplashScreen: {
           launchShowDuration: 3000,

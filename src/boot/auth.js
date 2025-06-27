@@ -7,15 +7,12 @@ export default boot(async (ctx = {}) => {
   try {
     // Verifica che Firebase sia inizializzato
     if (!isFirebaseReady()) {
-      console.warn("Auth boot skipped: Firebase not initialized");
       if (app?.config?.globalProperties) {
         app.config.globalProperties.$authDisabled = true;
       }
       return;
     }
   } catch (error) {
-    console.error("Errore inizializzazione auth:", error);
-
     Notify.create({
       type: "negative",
       message:
