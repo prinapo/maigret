@@ -1,0 +1,23 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "Bibliografia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "titolo",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collana",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lingua",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

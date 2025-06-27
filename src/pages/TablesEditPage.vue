@@ -1,308 +1,411 @@
 <template>
-  <q-toggle
-    v-model="expandedAll"
-    label="Expand all"
-    class="q-mb-md"
-    @click="toggleGlobalExpansion"
-  />
+  <div v-if="userStore.canManageBooks">
+    <q-toggle
+      v-model="expandedAll"
+      :label="$t('tablesEdit.expandAll')"
+      class="q-mb-md"
+      @click="toggleGlobalExpansion"
+    />
 
-  <q-list>
-    <q-expansion-item
-      v-model="expandedCovers"
-      icon="auto_stories"
-      label="Tipi di copertina"
-      caption="Copertina, quarta di copertina etc.."
-    >
-      <div class="q-pa-md" id="Covers">
-        <q-table
-          flat
-          bordered
-          title="Tipi di imaggine di copertina"
-          :rows="rows"
-          :columns="columns"
-          row-key="uuid"
-          binary-state-sort
-          :rows-per-page-options="[0]"
-        >
-          <template v-slot:top>
-            <q-btn
-              color="primary"
-              :disable="loading"
-              label="Add row"
-              @click="addRow"
-              unelevated
-              v-if="isAdmin"
-              style="min-height: 48dp"
-            />
-            <q-space />
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td key="uuid" :props="props" v-if="isAdmin">{{
-                props.row.value
-              }}</q-td>
-              <q-td key="tipo" :props="props">
-                {{ props.row.label }}
-                <q-popup-edit
-                  v-model="props.row.tipo"
-                  title="aggiorna il tipo"
-                  buttons
-                  v-slot="scope"
-                >
-                  <q-input
-                    v-model="scope.value"
-                    dense
-                    autofocus
-                    counter
-                    @keyup.enter="scope.set"
-                    style="min-height: 48dp"
-                  />
-                </q-popup-edit>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
+    <q-list>
+      <q-expansion-item
+        v-model="expandedCovers"
+        icon="auto_stories"
+        :label="$t('tablesEdit.coverTypes')"
+        caption="Copertina, quarta di copertina etc.."
+      >
+        <div class="q-pa-md" id="Covers">
+          <q-table
+            flat
+            bordered
+            :title="$t('tablesEdit.coverImageTypes')"
+            :rows="coversRows"
+            :columns="coversColumns"
+            row-key="value"
+            binary-state-sort
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:top>
+              <q-btn
+                color="primary"
+                :disable="loading"
+                :label="$t('tablesEdit.addRow')"
+                @click="addRow"
+                unelevated
+                style="min-height: 48dp"
+              />
+              <q-space />
+            </template>
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
+                <q-td key="label_it" :props="props">
+                  {{ props.row.label_it }}
+                  <q-popup-edit
+                    v-model="props.row.label_it"
+                    :title="$t('tablesEdit.updateTypeIt')"
+                    buttons
+                    v-slot="scope"
+                  >
+                    <q-input
+                      v-model="scope.value"
+                      dense
+                      autofocus
+                      counter
+                      @keyup.enter="scope.set"
+                      style="min-height: 48dp"
+                    />
+                  </q-popup-edit>
+                </q-td>
+                <q-td key="label_en" :props="props">
+                  {{ props.row.label_en }}
+                  <q-popup-edit
+                    v-model="props.row.label_en"
+                    :title="$t('tablesEdit.updateTypeEn')"
+                    buttons
+                    v-slot="scope"
+                  >
+                    <q-input
+                      v-model="scope.value"
+                      dense
+                      autofocus
+                      counter
+                      @keyup.enter="scope.set"
+                      style="min-height: 48dp"
+                    />
+                  </q-popup-edit>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
 
-        <!-- Confirmation dialog -->
-        <q-btn
-          color="secondary"
-          :disable="loading"
-          label="Save Copertine"
-          @click="saveData"
-          unelevated
-          v-if="isAdmin"
-          style="min-height: 48dp"
-        />
-        <q-space />
-      </div>
-    </q-expansion-item>
-    <q-expansion-item
-      v-model="expandedEditori"
-      icon="business"
-      label="Lista Editori"
-      caption="Adlephi, Mondadori, etc.."
-    >
-      <div class="q-pa-md" id="Editori">
-        <q-table
-          flat
-          bordered
-          title="Editori"
-          :rows="editoriRows"
-          :columns="editoriColumns"
-          row-key="id"
-          binary-state-sort
-          :rows-per-page-options="[0]"
-        >
-          <template v-slot:top>
-            <q-btn
-              color="primary"
-              :disable="loading"
-              label="Add row"
-              @click="addEditoriRow"
-              unelevated
-              v-if="isAdmin"
-              style="min-height: 48dp"
-            />
-            <q-space />
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td key="id" :props="props" v-if="isAdmin">{{
-                props.row.id
-              }}</q-td>
-              <q-td key="editore" :props="props">
-                {{ props.row.editore }}
-                <q-popup-edit
-                  v-model="props.row.editore"
-                  title="aggiorna l'editore"
-                  buttons
-                  v-slot="scope"
-                  dense
-                  unelevated
-                >
-                  <q-input
-                    v-model="scope.value"
-                    dense
-                    autofocus
-                    counter
-                    @keyup.enter="scope.set"
-                    style="min-height: 48dp"
-                  />
-                </q-popup-edit>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
+          <!-- Confirmation dialog -->
+          <q-btn
+            color="secondary"
+            :disable="loading"
+            :label="$t('tablesEdit.saveCovers')"
+            @click="saveCoverData"
+            unelevated
+            style="min-height: 48dp"
+          />
+          <q-space />
+        </div>
+      </q-expansion-item>
+      <q-expansion-item
+        v-model="expandedEditori"
+        icon="business"
+        :label="$t('tablesEdit.publishersList')"
+        caption="Adlephi, Mondadori, etc.."
+      >
+        <div class="q-pa-md" id="Editori">
+          <q-table
+            flat
+            bordered
+            :title="$t('tablesEdit.publishers')"
+            :rows="editoriRows"
+            :columns="editoriColumns"
+            row-key="value"
+            binary-state-sort
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:top>
+              <q-btn
+                color="primary"
+                :disable="loading"
+                :label="$t('tablesEdit.addRow')"
+                @click="addEditoriRow"
+                unelevated
+                style="min-height: 48dp"
+              />
+              <q-space />
+            </template>
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
 
-        <!-- Confirmation dialog -->
-        <q-btn
-          color="secondary"
-          :disable="loading"
-          label="Save Editori"
-          @click="saveEditoriData"
-          unelevated
-          style="min-height: 48dp"
-          v-if="isAdmin"
-        />
-        <q-space />
-      </div>
-    </q-expansion-item>
-    <q-expansion-item
-      v-model="expandedCollane"
-      icon="library_books"
-      label="Collane"
-      caption="I Maigret, etc.."
-    >
-      <div class="q-pa-md" id="Collane">
-        <q-table
-          flat
-          bordered
-          title="collane"
-          :rows="collaneRows"
-          :columns="collaneColumns"
-          row-key="id"
-          binary-state-sort
-          :rows-per-page-options="[0]"
-        >
-          <template v-slot:top>
-            <q-btn
-              color="primary"
-              :disable="loading"
-              label="Add row"
-              @click="addCollaneRow"
-              unelevated
-              style="min-height: 48dp"
-              v-if="isAdmin"
-            />
-            <q-space />
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td key="id" :props="props" v-if="isAdmin">{{
-                props.row.id
-              }}</q-td>
-              <q-td key="collana" :props="props">
-                {{ props.row.collana }}
-                <q-popup-edit
-                  v-model="props.row.collana"
-                  title="aggiorna la collana"
-                  buttons
-                  v-slot="scope"
-                  dense
-                  unelevated
-                >
-                  <q-input
-                    v-model="scope.value"
+                <q-td key="label" :props="props">
+                  {{ props.row.label }}
+                  <q-popup-edit
+                    v-model="props.row.label"
+                    :title="$t('tablesEdit.updatePublisher')"
+                    buttons
+                    v-slot="scope"
                     dense
-                    autofocus
-                    counter
-                    @keyup.enter="scope.set"
-                    style="min-height: 48dp"
-                  />
-                </q-popup-edit>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-        <!-- Confirmation dialog -->
-        <q-btn
-          color="secondary"
-          :disable="loading"
-          label="Save Collane"
-          @click="saveCollaneData"
-          unelevated
-          style="min-height: 48dp"
-          v-if="isAdmin"
-        />
-        <q-space />
-      </div>
-    </q-expansion-item>
-  </q-list>
+                    unelevated
+                  >
+                    <q-input
+                      v-model="scope.value"
+                      dense
+                      autofocus
+                      counter
+                      @keyup.enter="scope.set"
+                      style="min-height: 48dp"
+                    />
+                  </q-popup-edit>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+
+          <!-- Confirmation dialog -->
+          <q-btn
+            color="secondary"
+            :disable="loading"
+            :label="$t('tablesEdit.savePublishers')"
+            @click="saveEditoriData"
+            unelevated
+            style="min-height: 48dp"
+          />
+          <q-space />
+        </div>
+      </q-expansion-item>
+      <q-expansion-item
+        v-model="expandedCollane"
+        icon="library_books"
+        :label="$t('tablesEdit.series')"
+        caption="I Maigret, etc.."
+      >
+        <div class="q-pa-md" id="Collane">
+          <q-table
+            flat
+            bordered
+            :title="$t('tablesEdit.series')"
+            :rows="collaneRows"
+            :columns="collaneColumns"
+            row-key="value"
+            binary-state-sort
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:top>
+              <q-btn
+                color="primary"
+                :disable="loading"
+                :label="$t('tablesEdit.addRow')"
+                @click="addCollaneRow"
+                unelevated
+                style="min-height: 48dp"
+              />
+              <q-space />
+            </template>
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
+                <q-td key="label" :props="props">
+                  {{ props.row.label }}
+                  <q-popup-edit
+                    v-model="props.row.label"
+                    :title="$t('tablesEdit.updateSeries')"
+                    buttons
+                    v-slot="scope"
+                    dense
+                    unelevated
+                  >
+                    <q-input
+                      v-model="scope.value"
+                      dense
+                      autofocus
+                      counter
+                      @keyup.enter="scope.set"
+                      style="min-height: 48dp"
+                    />
+                  </q-popup-edit>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+          <!-- Confirmation dialog -->
+          <q-btn
+            color="secondary"
+            :disable="loading"
+            :label="$t('tablesEdit.saveSeries')"
+            @click="saveCollaneData"
+            unelevated
+            style="min-height: 48dp"
+          />
+          <q-space />
+        </div>
+      </q-expansion-item>
+      <q-expansion-item
+        v-model="expandedLingue"
+        icon="language"
+        :label="$t('tablesEdit.languages')"
+        caption="Italiano, Francese, etc.."
+      >
+        <div class="q-pa-md" id="Lingue">
+          <q-table
+            flat
+            bordered
+            :title="$t('tablesEdit.languages')"
+            :rows="lingueRows"
+            :columns="lingueColumns"
+            row-key="value"
+            binary-state-sort
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:top>
+              <q-btn
+                color="primary"
+                :disable="loading"
+                :label="$t('tablesEdit.addRow')"
+                @click="addLingueRow"
+                unelevated
+                style="min-height: 48dp"
+              />
+              <q-space />
+            </template>
+            <template v-slot:body="props">
+              <q-tr :props="props">
+                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
+                <q-td key="label" :props="props">
+                  {{ props.row.label }}
+                  <q-popup-edit
+                    v-model="props.row.label"
+                    :title="$t('tablesEdit.updateLanguage')"
+                    buttons
+                    v-slot="scope"
+                    dense
+                    unelevated
+                  >
+                    <q-input
+                      v-model="scope.value"
+                      dense
+                      autofocus
+                      counter
+                      @keyup.enter="scope.set"
+                      style="min-height: 48dp"
+                    />
+                  </q-popup-edit>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+          <!-- Confirmation dialog -->
+          <q-btn
+            color="secondary"
+            :disable="loading"
+            :label="$t('tablesEdit.saveLanguages')"
+            @click="saveLingueData"
+            unelevated
+            style="min-height: 48dp"
+          />
+          <q-space />
+        </div>
+      </q-expansion-item>
+    </q-list>
+  </div>
+  <div v-else class="q-pa-md text-center">
+    <q-icon name="lock" size="4em" color="grey-6" />
+    <div class="text-h6 q-mt-md">{{ $t("tablesEdit.accessDenied") }}</div>
+    <div class="text-body2 text-grey-6">
+      You don't have permission to manage tables.
+    </div>
+  </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import short from "short-uuid";
-import { doc, setDoc } from "firebase/firestore";
-import {
-  useCoversStore,
-  useEditoriStore,
-  useCollaneStore,
-} from "../store/database";
-import { db } from "../firebase/firebaseInit";
-import { useAuth } from "../composable/auth";
-import {
-  updateEditoriTimestamp,
-  updateCoversTimestamp,
-  updateCollaneTimestamp,
-} from "../utils/global";
+import { useI18n } from "vue-i18n";
 
+import { useEditoriStore } from "stores/editoriStore";
+import { useCollaneStore } from "stores/collaneStore";
+import { useLingueStore } from "stores/lingueStore";
+import { useCoversStore } from "stores/coversStore";
+import { useUserStore } from "stores/userStore";
+import { Notify } from "quasar";
+import { syncSingleDocCollection } from "utils/firebaseDatabaseUtils";
+
+import { storeToRefs } from "pinia";
 // UUID generator
 const translator = short();
-
-// Auth state
-const { isLoggedIn, userId, isAdmin, isCollector, checkAuthState } = useAuth();
-checkAuthState();
+const { t } = useI18n();
 
 // Data properties
-const titolo = ref("");
-const rows = ref([]);
+const coversRows = ref([]);
 const editoriRows = ref([]);
 const collaneRows = ref([]);
+const lingueRows = ref([]);
 const loading = ref(false);
-const selected = ref([]);
-const showDialog = ref(false);
 
 // Table columns
-const columns = [
+const coversColumns = [
   {
-    name: "uuid",
+    name: "value",
     required: true,
     label: "Reference ID",
     align: "left",
-    field: (row) => row.uuid,
+    field: (row) => row.value,
   },
   {
-    name: "tipo",
+    name: "label_it",
     required: true,
-    label: "Tipo di immagine",
+    label: "Tipo di immagine (IT)",
     align: "left",
-    field: (row) => row.tipo,
+    field: (row) => row.label_it,
+    sortable: true,
+  },
+  {
+    name: "label_en",
+    required: true,
+    label: "Tipo di immagine (EN)",
+    align: "left",
+    field: (row) => row.label_en,
     sortable: true,
   },
 ];
 
 const editoriColumns = [
   {
-    name: "id",
+    name: "value",
     required: true,
     label: "Reference ID",
     align: "left",
-    field: (row) => row.id,
+    field: (row) => row.value,
+    format: (val) => `${val}`,
   },
   {
-    name: "editore",
+    name: "label",
     required: true,
     label: "Editore",
     align: "left",
-    field: (row) => row.editore,
+    field: (row) => row.label,
+    format: (val) => `${val}`,
     sortable: true,
   },
 ];
 
 const collaneColumns = [
   {
-    name: "id",
+    name: "value",
     required: true,
     label: "Reference ID",
     align: "left",
-    field: (row) => row.id,
+    field: (row) => row.value,
   },
   {
-    name: "collana",
+    name: "label",
     required: true,
     label: "Collane",
     align: "left",
-    field: (row) => row.collana,
+    field: (row) => row.label,
+    sortable: true,
+  },
+];
+
+const lingueColumns = [
+  {
+    name: "value",
+    required: true,
+    label: "Reference ID",
+    align: "left",
+    field: (row) => row.value,
+  },
+  {
+    name: "label",
+    required: true,
+    label: "Lingua",
+    align: "left",
+    field: (row) => row.label,
     sortable: true,
   },
 ];
@@ -311,85 +414,183 @@ const collaneColumns = [
 const coversStore = useCoversStore();
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
-const covers = computed(() => coversStore.covers);
-const editori = computed(() => editoriStore.editori);
-const collane = computed(() => collaneStore.collane);
+const lingueStore = useLingueStore();
+const { covers } = storeToRefs(coversStore);
+const { editori } = storeToRefs(editoriStore);
+const { collane } = storeToRefs(collaneStore);
+const { lingue } = storeToRefs(lingueStore);
 
 onMounted(() => {
-  rows.value = covers.value.cover || [];
-  editoriRows.value = editori.value.editore || [];
-  collaneRows.value = collane.value.collana || [];
+  coversRows.value = covers.value || [];
+  editoriRows.value = editori.value || [];
+  collaneRows.value = collane.value || [];
+  lingueRows.value = lingue.value || [];
 });
+
 // Functions
 const addRow = () => {
   loading.value = true;
   const shortUUID = translator.new();
-  rows.value.push({ tipo: "insert tipo", uuid: shortUUID });
+  coversRows.value.push({
+    value: shortUUID,
+    label_it: "nuovo tipo",
+    label_en: "new type",
+  });
   loading.value = false;
 };
 
 const addEditoriRow = () => {
   loading.value = true;
   const shortUUID = translator.new();
-  editoriRows.value.push({ editore: "insert editore", id: shortUUID });
+  editoriRows.value.push({ label: "insert editore", value: shortUUID });
   loading.value = false;
 };
 
 const addCollaneRow = () => {
   loading.value = true;
   const shortUUID = translator.new();
-  collaneRows.value.push({ collana: "insert collana", id: shortUUID });
+  collaneRows.value.push({ label: "insert collana", value: shortUUID });
   loading.value = false;
 };
 
-const saveData = async () => {
-  coversStore.updateCovers(rows.value);
+const addLingueRow = () => {
+  loading.value = true;
+  const shortUUID = translator.new();
+  lingueRows.value.push({ label: "insert lingua", value: shortUUID });
+  loading.value = false;
+};
+
+const saveCoverData = async () => {
   try {
-    const coversRef = doc(db, "Covers", "default");
-    await setDoc(coversRef, { cover: rows.value });
-    const timestamp = new Date().valueOf();
-    await updateCoversTimestamp(timestamp);
-    localStorage.setItem("covers", JSON.stringify(covers.value));
+    // Convert to plain objects to ensure serializability
+    const serializableData = coversRows.value.map((row) => ({
+      value: row.value,
+      label_it: row.label_it,
+      label_en: row.label_en,
+    }));
+
+    await syncSingleDocCollection({
+      collectionName: "Covers",
+      fieldName: "cover",
+      data: serializableData,
+      storeUpdateFn: (data) => coversStore.updateCovers(data),
+      indexedDBUpdateFn: async () => {
+        // IndexedDB update is handled automatically by syncSingleDocCollection
+        // No need for direct IndexedDB calls
+      },
+    });
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
+    Notify.create({
+      message: `Failed to save covers: ${error.message}`,
+      type: "negative",
+      timeout: 3000,
+    });
   }
 };
 
 const saveEditoriData = async () => {
-  editoriStore.updateEditori(editoriRows.value);
   try {
-    const editoriRef = doc(db, "Editori", "default");
-    await setDoc(editoriRef, { editore: editoriRows.value });
-    const timestamp = new Date().valueOf();
-    await updateEditoriTimestamp(timestamp);
-    localStorage.setItem("editori", JSON.stringify(editori.value));
+    // Convert to plain objects to ensure serializability
+    const serializableData = editoriRows.value.map((row) => ({
+      value: row.value,
+      label: row.label,
+    }));
+
+    await syncSingleDocCollection({
+      collectionName: "Editori",
+      fieldName: "editore",
+      data: serializableData,
+      storeUpdateFn: (data) => editoriStore.updateEditori(data),
+      indexedDBUpdateFn: async () => {
+        // IndexedDB update is handled automatically by syncSingleDocCollection
+        // No need for direct IndexedDB calls
+      },
+    });
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
+    Notify.create({
+      message: `Failed to save editori: ${error.message}`,
+      type: "negative",
+      timeout: 3000,
+    });
   }
 };
 
 const saveCollaneData = async () => {
-  collaneStore.updateCollane(collaneRows.value);
   try {
-    const collaneRef = doc(db, "Collane", "default");
-    await setDoc(collaneRef, { collana: collaneRows.value });
-    const timestamp = new Date().valueOf();
-    await updateCollaneTimestamp(timestamp);
-    localStorage.setItem("collane", JSON.stringify(collane.value));
+    // Convert to plain objects to ensure serializability
+    const serializableData = collaneRows.value.map((row) => ({
+      value: row.value,
+      label: row.label,
+    }));
+
+    await syncSingleDocCollection({
+      collectionName: "Collane",
+      fieldName: "collana",
+      data: serializableData,
+      storeUpdateFn: (data) => collaneStore.updateCollane(data),
+      indexedDBUpdateFn: async () => {
+        // IndexedDB update is handled automatically by syncSingleDocCollection
+        // No need for direct IndexedDB calls
+      },
+    });
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
+    Notify.create({
+      message: `Failed to save collane: ${error.message}`,
+      type: "negative",
+      timeout: 3000,
+    });
   }
 };
 
-const confirm = ref(false);
+const saveLingueData = async () => {
+  try {
+    // Convert to plain objects to ensure serializability
+    const serializableData = lingueRows.value.map((row) => ({
+      value: row.value,
+      label: row.label,
+    }));
+
+    await syncSingleDocCollection({
+      collectionName: "Lingue",
+      fieldName: "lingua",
+      data: serializableData,
+      storeUpdateFn: (data) => lingueStore.updateLingue(data),
+      indexedDBUpdateFn: async () => {
+        // IndexedDB update is handled automatically by syncSingleDocCollection
+        // No need for direct IndexedDB calls
+      },
+    });
+  } catch (error) {
+    console.error("Error saving array to Firestore:", error);
+    Notify.create({
+      message: `Failed to save lingue: ${error.message}`,
+      type: "negative",
+      timeout: 3000,
+    });
+  }
+};
+
 const expandedAll = ref(false);
 const expandedCovers = ref(false);
 const expandedEditori = ref(false);
 const expandedCollane = ref(false);
+const expandedLingue = ref(false);
 
 const toggleGlobalExpansion = () => {
   expandedCovers.value = expandedAll.value;
   expandedEditori.value = expandedAll.value;
   expandedCollane.value = expandedAll.value;
+  expandedLingue.value = expandedAll.value;
 };
+
+const userStore = useUserStore();
+
+// Aggiungere controllo di accesso all'inizio:
+if (!userStore.canManageBooks) {
+  // Redirect o mostra messaggio di errore
+  console.warn("User does not have permission to access this page");
+}
 </script>

@@ -1,73 +1,88 @@
+// src/router/routes.js
 const routes = [
   {
     path: "/",
     component: () => import("layouts/MainLayout.vue"),
     children: [
       {
-        path: "/",
+        path: "/", // → corrisponde a "/"
         name: "bibliografia",
         component: () => import("pages/BibliografiaPage.vue"),
-        meta: {
-          keepAlive: true,
-          title: "Bibliografia",
-        },
+        meta: { keepAlive: true, title: "Bibliografia" },
       },
 
       {
-        path: "/login",
+        path: "login", // → "/login"
         name: "LoginPage",
         component: () => import("pages/LoginPage.vue"),
-        meta: {
-          keepAlive: false,
-          title: "Login",
-        },
+        meta: { keepAlive: false, title: "Login" },
       },
+
       {
-        path: "/home",
+        path: "home", // → "/home" ma ridiretta a "/"
         redirect: "/",
       },
+
       {
-        path: "/configuration",
+        path: "configuration", // → "/configuration"
         name: "Configuration",
         component: () => import("pages/ConfigurationPage.vue"),
       },
+
       {
-        path: "/newbook",
+        path: "users", // → "/users"
+        name: "UserManagement",
+        component: () => import("pages/UserManagementPage.vue"),
+        meta: { keepAlive: false, title: "User Management" },
+      },
+
+      {
+        path: "newbook", // → "/newbook"
         name: "NewBook",
         component: () => import("pages/NewBookPage.vue"),
       },
+
       {
-        path: "/error",
+        path: "error", // → "/error"
         name: "ErrorPage",
         component: () => import("pages/ErrorPage.vue"),
       },
+
       {
-        path: "/registration",
+        path: "registration", // → "/registration"
         name: "registration",
         component: () => import("pages/RegistrationPage.vue"),
       },
+
       {
-        path: "tables",
+        path: "tables", // → "/tables"
         name: "tables",
         component: () => import("pages/TablesEditPage.vue"),
-        meta: {
-          keepAlive: false, // Don't cache tables page due to data requirements
-        },
+        meta: { keepAlive: false },
       },
+
       {
-        path: "/loading",
+        path: "loading", // → "/loading"
         name: "loading",
         component: () => import("pages/LoadingPage.vue"),
-        meta: {
-          keepAlive: false,
-          title: "Loading",
-        },
+        meta: { keepAlive: false, title: "Loading" },
+      },
+      {
+        path: "trash", // → "/loading"
+        name: "trash",
+        component: () => import("pages/Trash.vue"),
+        meta: { keepAlive: false, title: "Trash" },
+      },
+      {
+        path: "analytics", // → "/loading"
+        name: "analytics",
+        component: () => import("pages/Analytics.vue"),
+        meta: { keepAlive: false, title: "Trash" },
       },
     ],
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  // catch-all 404
   {
     path: "/:catchAll(.*)*",
     component: () => import("pages/ErrorNotFound.vue"),

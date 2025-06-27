@@ -1,0 +1,127 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="ortho" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true" bgcolor="white" concentrate="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    subgraph "cluster_src" {label="src" "src/App.vue" [label=<App.vue> tooltip="App.vue" URL="src/App.vue" fillcolor="#42b883"] }
+    "src/App.vue" -> "src/listeners/realtimeListeners" [xlabel="not-to-unresolvable" tooltip="not-to-unresolvable" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/assets" {label="assets" "src/assets/placeholder.jpg" [label=<placeholder.jpg> tooltip="placeholder.jpg" URL="src/assets/placeholder.jpg" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/boot" {label="boot" "src/boot/auth.js" [label=<auth.js> tooltip="auth.js" URL="src/boot/auth.js" fillcolor="#42b883"] } }
+    "src/boot/auth.js" -> "src/boot/firebase.js"
+    "src/boot/auth.js" -> "src/listeners/realtimeListeners" [xlabel="not-to-unresolvable" tooltip="not-to-unresolvable" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/boot" {label="boot" "src/boot/firebase" [label=<firebase> tooltip="firebase" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/boot" {label="boot" "src/boot/firebase.js" [label=<firebase.js> tooltip="firebase.js" URL="src/boot/firebase.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/boot" {label="boot" "src/boot/init.js" [label=<init.js> tooltip="init.js" URL="src/boot/init.js" fillcolor="#42b883"] } }
+    "src/boot/init.js" -> "src/listeners/realtimeListeners.js"
+    "src/boot/init.js" -> "src/watchers/appWatcher.js"
+    "src/boot/init.js" -> "src/boot/firebase.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/boot" {label="boot" "src/boot/pinia.js" [label=<pinia.js> tooltip="pinia.js" URL="src/boot/pinia.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/BookDetailContent.vue" [label=<BookDetailContent.vue> tooltip="BookDetailContent.vue" URL="src/components/BookDetailContent.vue" fillcolor="#42b883"] } }
+    "src/components/BookDetailContent.vue" -> "src/components/BookDetails.vue"
+    "src/components/BookDetailContent.vue" -> "src/components/BookEditions.vue"
+    "src/components/BookDetailContent.vue" -> "src/components/BookImages.vue"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/BookDetails.vue" [label=<BookDetails.vue> tooltip="BookDetails.vue" URL="src/components/BookDetails.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/BookEditions.vue" [label=<BookEditions.vue> tooltip="BookEditions.vue" URL="src/components/BookEditions.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/BookImages.vue" [label=<BookImages.vue> tooltip="BookImages.vue" URL="src/components/BookImages.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/Filter.vue" [label=<Filter.vue> tooltip="Filter.vue" URL="src/components/Filter.vue" fillcolor="#42b883"] } }
+    "src/components/Filter.vue" -> "src/stores/collaneStore.js"
+    "src/components/Filter.vue" -> "src/stores/editoriStore.js"
+    "src/components/Filter.vue" -> "src/stores/filtersStore.js"
+    "src/components/Filter.vue" -> "src/stores/lingueStore.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/components" {label="components" "src/components/InitializationProgress.vue" [label=<InitializationProgress.vue> tooltip="InitializationProgress.vue" URL="src/components/InitializationProgress.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/composables" {label="composables" "src/composables/version.js" [label=<version.js> tooltip="version.js" URL="src/composables/version.js" fillcolor="#42b883"] } }
+    "src/composables/version.js" -> "src/boot/firebase" [xlabel="not-to-unresolvable" tooltip="not-to-unresolvable" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/config" {label="config" "src/config/bookDetailsConfig.js" [label=<bookDetailsConfig.js> tooltip="bookDetailsConfig.js" URL="src/config/bookDetailsConfig.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/firebase" {label="firebase" "src/firebase/config.js" [label=<config.js> tooltip="config.js" URL="src/firebase/config.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/layouts" {label="layouts" "src/layouts/MainLayout.vue" [label=<MainLayout.vue> tooltip="MainLayout.vue" URL="src/layouts/MainLayout.vue" fillcolor="#42b883"] } }
+    "src/layouts/MainLayout.vue" -> "src/boot/firebase.js"
+    "src/layouts/MainLayout.vue" -> "src/components/Filter.vue"
+    "src/layouts/MainLayout.vue" -> "src/stores/authStore.js"
+    "src/layouts/MainLayout.vue" -> "src/stores/userStore.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/listeners" {label="listeners" "src/listeners/realtimeListeners" [label=<realtimeListeners> tooltip="realtimeListeners" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/listeners" {label="listeners" "src/listeners/realtimeListeners.js" [label=<realtimeListeners.js> tooltip="realtimeListeners.js" URL="src/listeners/realtimeListeners.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/BibliografiaPage.vue" [label=<BibliografiaPage.vue> tooltip="BibliografiaPage.vue" URL="src/pages/BibliografiaPage.vue" fillcolor="#42b883"] } }
+    "src/pages/BibliografiaPage.vue" -> "src/assets/placeholder.jpg"
+    "src/pages/BibliografiaPage.vue" -> "src/boot/firebase.js"
+    "src/pages/BibliografiaPage.vue" -> "src/components/BookDetailContent.vue"
+    "src/pages/BibliografiaPage.vue" -> "src/components/InitializationProgress.vue"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/bibliografiaStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/collaneStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/editoriStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/filtersStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/lingueStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/stores/userStore.js"
+    "src/pages/BibliografiaPage.vue" -> "src/utils/theme.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/ConfigurationPage.vue" [label=<ConfigurationPage.vue> tooltip="ConfigurationPage.vue" URL="src/pages/ConfigurationPage.vue" fillcolor="#42b883"] } }
+    "src/pages/ConfigurationPage.vue" -> "src/config/bookDetailsConfig.js"
+    "src/pages/ConfigurationPage.vue" -> "src/stores/bibliografiaStore.js"
+    "src/pages/ConfigurationPage.vue" -> "src/stores/collaneStore.js"
+    "src/pages/ConfigurationPage.vue" -> "src/stores/editoriStore.js"
+    "src/pages/ConfigurationPage.vue" -> "src/stores/userStore.js"
+    "src/pages/ConfigurationPage.vue" -> "src/utils/firebaseDatabaseUtils.js"
+    "src/pages/ConfigurationPage.vue" -> "src/utils/theme.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/ErrorNotFound.vue" [label=<ErrorNotFound.vue> tooltip="ErrorNotFound.vue" URL="src/pages/ErrorNotFound.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/ErrorPage.vue" [label=<ErrorPage.vue> tooltip="ErrorPage.vue" URL="src/pages/ErrorPage.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/LoadingPage.vue" [label=<LoadingPage.vue> tooltip="LoadingPage.vue" URL="src/pages/LoadingPage.vue" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/LoginPage.vue" [label=<LoginPage.vue> tooltip="LoginPage.vue" URL="src/pages/LoginPage.vue" fillcolor="#42b883"] } }
+    "src/pages/LoginPage.vue" -> "src/boot/firebase.js"
+    "src/pages/LoginPage.vue" -> "src/stores/authStore.js"
+    "src/pages/LoginPage.vue" -> "src/stores/userStore.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/NewBookPage.vue" [label=<NewBookPage.vue> tooltip="NewBookPage.vue" URL="src/pages/NewBookPage.vue" fillcolor="#42b883"] } }
+    "src/pages/NewBookPage.vue" -> "src/stores/bibliografiaStore.js"
+    "src/pages/NewBookPage.vue" -> "src/stores/userStore.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/RegistrationPage.vue" [label=<RegistrationPage.vue> tooltip="RegistrationPage.vue" URL="src/pages/RegistrationPage.vue" fillcolor="#42b883"] } }
+    "src/pages/RegistrationPage.vue" -> "src/boot/firebase.js"
+    "src/pages/RegistrationPage.vue" -> "src/stores/authStore.js"
+    "src/pages/RegistrationPage.vue" -> "src/stores/userStore.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/TablesEditPage.vue" [label=<TablesEditPage.vue> tooltip="TablesEditPage.vue" URL="src/pages/TablesEditPage.vue" fillcolor="#42b883"] } }
+    "src/pages/TablesEditPage.vue" -> "src/stores/authStore.js"
+    "src/pages/TablesEditPage.vue" -> "src/stores/collaneStore.js"
+    "src/pages/TablesEditPage.vue" -> "src/stores/coversStore.js"
+    "src/pages/TablesEditPage.vue" -> "src/stores/editoriStore.js"
+    "src/pages/TablesEditPage.vue" -> "src/stores/lingueStore.js"
+    "src/pages/TablesEditPage.vue" -> "src/utils/firebaseDatabaseUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/Trash.vue" [label=<Trash.vue> tooltip="Trash.vue" URL="src/pages/Trash.vue" fillcolor="#42b883"] } }
+    "src/pages/Trash.vue" -> "src/assets/placeholder.jpg"
+    "src/pages/Trash.vue" -> "src/boot/firebase.js"
+    "src/pages/Trash.vue" -> "src/utils/firebaseDatabaseUtils" [xlabel="not-to-unresolvable" tooltip="not-to-unresolvable" fontcolor="red" color="red"]
+    "src/pages/Trash.vue" -> "src/utils/firebaseStorageUtils" [xlabel="not-to-unresolvable" tooltip="not-to-unresolvable" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/pages" {label="pages" "src/pages/UserManagementPage.vue" [label=<UserManagementPage.vue> tooltip="UserManagementPage.vue" URL="src/pages/UserManagementPage.vue" fillcolor="#42b883"] } }
+    "src/pages/UserManagementPage.vue" -> "src/stores/userStore.js"
+    "src/pages/UserManagementPage.vue" -> "src/utils/firebaseDatabaseUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/router" {label="router" "src/router/index.js" [label=<index.js> tooltip="index.js" URL="src/router/index.js" fillcolor="#42b883"] } }
+    "src/router/index.js" -> "src/router/routes.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/router" {label="router" "src/router/routes.js" [label=<routes.js> tooltip="routes.js" URL="src/router/routes.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/authStore.js" [label=<authStore.js> tooltip="authStore.js" URL="src/stores/authStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/bibliografiaStore.js" [label=<bibliografiaStore.js> tooltip="bibliografiaStore.js" URL="src/stores/bibliografiaStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/collaneStore.js" [label=<collaneStore.js> tooltip="collaneStore.js" URL="src/stores/collaneStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/coversStore.js" [label=<coversStore.js> tooltip="coversStore.js" URL="src/stores/coversStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/editoriStore.js" [label=<editoriStore.js> tooltip="editoriStore.js" URL="src/stores/editoriStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/filtersStore.js" [label=<filtersStore.js> tooltip="filtersStore.js" URL="src/stores/filtersStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/lingueStore.js" [label=<lingueStore.js> tooltip="lingueStore.js" URL="src/stores/lingueStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/undoStore.js" [label=<undoStore.js> tooltip="undoStore.js" URL="src/stores/undoStore.js" fillcolor="#42b883"] } }
+    "src/stores/undoStore.js" -> "src/utils/firebaseDatabaseUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/stores" {label="stores" "src/stores/userStore.js" [label=<userStore.js> tooltip="userStore.js" URL="src/stores/userStore.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/deleteBookUtils.js" [label=<deleteBookUtils.js> tooltip="deleteBookUtils.js" URL="src/utils/deleteBookUtils.js" fillcolor="#42b883"] } }
+    "src/utils/deleteBookUtils.js" -> "src/stores/bibliografiaStore.js"
+    "src/utils/deleteBookUtils.js" -> "src/utils/firebaseDatabaseUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/edizioniUtils.js" [label=<edizioniUtils.js> tooltip="edizioniUtils.js" URL="src/utils/edizioniUtils.js" fillcolor="#42b883"] } }
+    "src/utils/edizioniUtils.js" -> "src/stores/bibliografiaStore.js"
+    "src/utils/edizioniUtils.js" -> "src/stores/userStore.js"
+    "src/utils/edizioniUtils.js" -> "src/utils/firebaseDatabaseUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/firebaseDatabaseUtils" [label=<firebaseDatabaseUtils> tooltip="firebaseDatabaseUtils" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/firebaseDatabaseUtils.js" [label=<firebaseDatabaseUtils.js> tooltip="firebaseDatabaseUtils.js" URL="src/utils/firebaseDatabaseUtils.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/firebaseStorageUtils" [label=<firebaseStorageUtils> tooltip="firebaseStorageUtils" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/firebaseStorageUtils.js" [label=<firebaseStorageUtils.js> tooltip="firebaseStorageUtils.js" URL="src/utils/firebaseStorageUtils.js" fillcolor="#42b883"] } }
+    "src/utils/firebaseStorageUtils.js" -> "src/boot/firebase.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/imageUtils.js" [label=<imageUtils.js> tooltip="imageUtils.js" URL="src/utils/imageUtils.js" fillcolor="#42b883"] } }
+    "src/utils/imageUtils.js" -> "src/boot/firebase.js"
+    "src/utils/imageUtils.js" -> "src/stores/bibliografiaStore.js"
+    "src/utils/imageUtils.js" -> "src/stores/coversStore.js"
+    "src/utils/imageUtils.js" -> "src/stores/undoStore.js"
+    "src/utils/imageUtils.js" -> "src/utils/firebaseDatabaseUtils.js"
+    "src/utils/imageUtils.js" -> "src/utils/firebaseStorageUtils.js"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/theme.js" [label=<theme.js> tooltip="theme.js" URL="src/utils/theme.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/utils" {label="utils" "src/utils/trash.js" [label=<trash.js> tooltip="trash.js" URL="src/utils/trash.js" fillcolor="#42b883"] } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/watchers" {label="watchers" "src/watchers/appWatcher.js" [label=<appWatcher.js> tooltip="appWatcher.js" URL="src/watchers/appWatcher.js" fillcolor="#42b883"] } }
+}

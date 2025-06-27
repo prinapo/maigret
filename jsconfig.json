@@ -10,6 +10,11 @@
       "assets/*": ["src/assets/*"],
       "boot/*": ["src/boot/*"],
       "stores/*": ["src/stores/*"],
+      "watchers/*": ["src/watchers/*"],
+      "listeners/*": ["src/listeners/*"],
+      "utils/*": ["src/utils/*"],
+      "config/*": ["src/config/*"],
+      "firebaseConfig/*": ["src/firebaseConfig/*"],
       "vue$": ["node_modules/vue/dist/vue.runtime.esm-bundler.js"]
     }
   },

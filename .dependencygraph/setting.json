@@ -1,0 +1,29 @@
+{
+  "entryFilePath": "src/App.vue",
+  "resolveExtensions": [
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".vue",
+    ".scss",
+    ".less",
+    ".sass",
+    ".py",
+    ".php",
+    ".go"
+  ],
+  "resolveAlias": {
+    "components": "./src/components",
+    "layouts": "./src/layouts",
+    "pages": "./src/pages",
+    "assets": "./src/assets",
+    "boot": "./src/boot",
+    "stores": "./src/stores",
+    "watchers": "./src/watchers",
+    "listeners": "./src/listeners",
+    "utils": "./src/utils",
+    "config": "./src/config",
+    "src": "./src"
+  }
+}

@@ -1,0 +1,71 @@
+Test 0 - Boot Sequence Tests
+
+auth.spec.js: Tests the Firebase authentication initialization.
+- Verifies authentication state when Firebase is ready
+- Handles authentication errors gracefully
+- Sets appropriate flags for auth disabled state
+- Ensures auth initialization is skipped if Firebase boot fails
+
+firebase.spec.js: Tests the Firebase app initialization.
+- Initializes Firebase successfully with valid config
+- Handles initialization errors appropriately
+- Verifies Firebase readiness state
+- Handles partial Firebase service availability
+- Tests initialization timeout scenarios
+
+i18n.spec.js: Tests the vue-i18n initialization and global availability.
+- Confirms i18n instance is properly initialized
+- Verifies global availability of i18n instance
+
+init.spec.js: Tests the application's initial setup and listeners.
+- Sets up app watchers correctly
+- Handles Firebase not ready state
+- Initializes realtime listeners with i18n instance
+- Handles initialization errors gracefully
+- Simulates network disconnection after initialization
+- Tests boot sequence with no initial network connection
+- Tests recovery when network becomes available
+- Tests behavior when network connection is lost after initialization
+
+pinia.spec.js: Tests the Pinia store initialization.
+- Verifies Pinia plugin installation
+- Confirms store availability
+
+To be developed - Additional Boot Sequence Test Cases:
+1. Network Conditions: [IMPLEMENTED]
+
+2. Firebase Service Availability: [IMPLEMENTED]
+
+3. Initialization Order: [IMPLEMENTED]
+   - Verify correct initialization order of dependent services
+   - Test recovery from initialization failures at different stages
+   - Test cleanup when initialization fails
+
+4. State Management: [IMPLEMENTED]
+   - Verify state consistency across service interruptions
+   - Test state recovery after service restoration
+   - Verify proper error state propagation
+
+5. Error Recovery: [IMPLEMENTED]
+   - Test automatic retry mechanisms
+   - Verify error notification systems
+   - Test graceful degradation of features
+
+
+Test 1 - new image added, deleted and undo
+only admin with superadmin flag can access this feature
+other users level or admin without superadmin do not have access to the add icon
+once a new image is created a record in the image array of the book is create in Firebase, indexDB and PINIA with image name placeholder.jpg, no record should be created on firebase Storage, the image coverId is set to undefined
+once I delete the image just created with the plalceholder.jpg the image array of the book in Firebase, indexDB and PINIA and q new entry in undoTrash is created only on Firebase is updated removing the entry and the image delete from storage is skipped
+if the image is the only one in the array the image array is not updated
+if is not the first one after delete a undo button appears on the notify, if is not pressed the  notify disappears after 5 sec, if it is pressed the image array is reverted to the original one but since image is placeholder.jpg the images are not updated on teh firebase storage 
+after delete a new row appears on a separate trash windows also visible only to adin 
+
+Test 2 image changed, deleted an undo
+once a image is changned the interface open a file navigator and open a file, only jpg jpeg and png are accepted.
+the image is automatically uploaded, resized if it is to big, converted to jpg if not jpg, create a thumbnail and saved with the uuid.jpg fromat on firebase storage on images and thumbnail, image array of the book is updated on firebase, indexDB and PINIA
+once I delete the image or any other image the image array of the book in Firebase, indexDB and PINIA is updated removing the entry and the image delete from storage is skipped
+if the image is the only one in the array the image array is not updated
+if is not the first one after delete a undo button appears on the notify, if is not pressed the  notify disappears after 5 sec, if it is pressed the image array is reverted to the original one but since image is placeholder.jpg the images are not updated on teh firebase storage 
+after delete a new row appears on a separate trash windows also visible only to adin
+

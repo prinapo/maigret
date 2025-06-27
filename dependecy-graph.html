@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dependency Graph Visualization</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      svg {
+        width: 100vw;
+        height: 100vh;
+      }
+      .link {
+        stroke: #999;
+        stroke-opacity: 0.6;
+      }
+      .node circle {
+        stroke: #fff;
+        stroke-width: 1.5px;
+        fill: #69b3a2;
+      }
+      .node text {
+        pointer-events: none;
+        font: 10px sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+  Usage:
+  1. Run in your project root: npx madge --json src > deps.json
+  2. Open this HTML file in a text editor and paste the contents of deps.json into the `dependencyData` variable below, replacing the placeholder.
+  3. Save the HTML file and open it in a browser (e.g., via a local HTTP server if needed).
+
+  The expected format is:
+  {
+    "src/fileA.js": ["src/fileB.js", "src/fileC.js"],
+    ...
+  }
+-->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+      // Paste your dependency JSON here:
+      const dependencyData = {
+        "assets/placeholder.jpg": [],
+        "boot/auth.js": ["boot/firebase.js"],
+        "boot/firebase.js": [],
+        "boot/init.js": [
+          "boot/firebase.js",
+          "listeners/realtimeListeners.js",
+          "watchers/appWatcher.js",
+        ],
+        "boot/pinia.js": [],
+        "components/BookDetailContent.vue": [
+          "components/BookDetails.vue",
+          "components/BookEditions.vue",
+          "components/BookImages.vue",
+        ],
+        "components/BookDetails.vue": [
+          "config/bookDetailsConfig.js",
+          "stores/authStore.js",
+          "stores/bibliografiaStore.js",
+          "stores/collaneStore.js",
+          "stores/editoriStore.js",
+          "stores/lingueStore.js",
+          "stores/userStore.js",
+          "utils/deleteBookUtils.js",
+        ],
+        "components/BookEditions.vue": [
+          "stores/authStore.js",
+          "stores/userStore.js",
+          "utils/edizioniUtils.js",
+        ],
+        "components/BookImages.vue": [
+          "assets/placeholder.jpg",
+          "boot/firebase.js",
+          "stores/authStore.js",
+          "stores/bibliografiaStore.js",
+          "stores/collaneStore.js",
+          "stores/coversStore.js",
+          "stores/editoriStore.js",
+          "stores/lingueStore.js",
+          "stores/undoStore.js",
+          "stores/userStore.js",
+          "utils/firebaseDatabaseUtils.js",
+          "utils/imageUtils.js",
+        ],
+        "components/Filter.vue": [
+          "stores/collaneStore.js",
+          "stores/editoriStore.js",
+          "stores/filtersStore.js",
+          "stores/lingueStore.js",
+        ],
+        "components/InitializationProgress.vue": [],
+        "composables/version.js": [],
+        "config/bookDetailsConfig.js": [],
+        "firebase/config.js": [],
+        "layouts/MainLayout.vue": [
+          "boot/firebase.js",
+          "components/Filter.vue",
+          "stores/authStore.js",
+          "stores/userStore.js",
+        ],
+        "listeners/realtimeListeners.js": ["utils/theme.js"],
+        "pages/BibliografiaPage.vue": [
+          "assets/placeholder.jpg",
+          "boot/firebase.js",
+          "components/BookDetailContent.vue",
+          "components/InitializationProgress.vue",
+          "stores/bibliografiaStore.js",
+          "stores/collaneStore.js",
+          "stores/editoriStore.js",
+          "stores/filtersStore.js",
+          "stores/lingueStore.js",
+          "stores/userStore.js",
+          "utils/theme.js",
+        ],
+        "pages/ConfigurationPage.vue": [
+          "config/bookDetailsConfig.js",
+          "stores/bibliografiaStore.js",
+          "stores/collaneStore.js",
+          "stores/editoriStore.js",
+          "stores/userStore.js",
+          "utils/firebaseDatabaseUtils.js",
+          "utils/theme.js",
+        ],
+        "pages/ErrorNotFound.vue": [],
+        "pages/ErrorPage.vue": [],
+        "pages/LoadingPage.vue": [],
+        "pages/LoginPage.vue": [
+          "boot/firebase.js",
+          "stores/authStore.js",
+          "stores/userStore.js",
+        ],
+        "pages/NewBookPage.vue": [
+          "stores/bibliografiaStore.js",
+          "stores/userStore.js",
+        ],
+        "pages/RegistrationPage.vue": [
+          "boot/firebase.js",
+          "stores/authStore.js",
+          "stores/userStore.js",
+        ],
+        "pages/TablesEditPage.vue": [
+          "stores/authStore.js",
+          "stores/collaneStore.js",
+          "stores/coversStore.js",
+          "stores/editoriStore.js",
+          "stores/lingueStore.js",
+          "utils/firebaseDatabaseUtils.js",
+        ],
+        "pages/Trash.vue": ["assets/placeholder.jpg", "boot/firebase.js"],
+        "pages/UserManagementPage.vue": [
+          "stores/userStore.js",
+          "utils/firebaseDatabaseUtils.js",
+        ],
+        "router/index.js": ["router/routes.js"],
+        "router/routes.js": [
+          "layouts/MainLayout.vue",
+          "pages/BibliografiaPage.vue",
+          "pages/ConfigurationPage.vue",
+          "pages/ErrorNotFound.vue",
+          "pages/ErrorPage.vue",
+          "pages/LoadingPage.vue",
+          "pages/LoginPage.vue",
+          "pages/NewBookPage.vue",
+          "pages/RegistrationPage.vue",
+          "pages/TablesEditPage.vue",
+          "pages/Trash.vue",
+          "pages/UserManagementPage.vue",
+        ],
+        "stores/authStore.js": [],
+        "stores/bibliografiaStore.js": [],
+        "stores/collaneStore.js": [],
+        "stores/coversStore.js": [],
+        "stores/editoriStore.js": [],
+        "stores/filtersStore.js": [],
+        "stores/lingueStore.js": [],
+        "stores/undoStore.js": ["utils/firebaseDatabaseUtils.js"],
+        "stores/userStore.js": [],
+        "utils/deleteBookUtils.js": [
+          "stores/bibliografiaStore.js",
+          "utils/firebaseDatabaseUtils.js",
+        ],
+        "utils/edizioniUtils.js": [
+          "stores/bibliografiaStore.js",
+          "stores/userStore.js",
+          "utils/firebaseDatabaseUtils.js",
+        ],
+        "utils/firebaseDatabaseUtils.js": [
+          "boot/firebase.js",
+          "stores/bibliografiaStore.js",
+          "utils/firebaseStorageUtils.js",
+        ],
+        "utils/firebaseStorageUtils.js": ["boot/firebase.js"],
+        "utils/imageUtils.js": [
+          "boot/firebase.js",
+          "stores/bibliografiaStore.js",
+          "stores/coversStore.js",
+          "stores/undoStore.js",
+          "utils/firebaseDatabaseUtils.js",
+          "utils/firebaseStorageUtils.js",
+        ],
+        "utils/theme.js": ["stores/userStore.js"],
+        "utils/trash.js": [],
+        "watchers/appWatcher.js": [
+          "stores/bibliografiaStore.js",
+          "utils/theme.js",
+        ],
+      };
+      // Transform dependencyData into nodes and links arrays
+      const nodes = [];
+      const nodeIndex = {};
+      const links = [];
+
+      function buildGraph(data) {
+        // Get unique node names
+        Object.keys(data).forEach((key) => {
+          if (!(key in nodeIndex)) {
+            nodeIndex[key] = nodes.length;
+            nodes.push({ id: key });
+          }
+          data[key].forEach((dep) => {
+            if (!(dep in nodeIndex)) {
+              nodeIndex[dep] = nodes.length;
+              nodes.push({ id: dep });
+            }
+            // Add link from key to dep
+            links.push({ source: key, target: dep });
+          });
+        });
+      }
+
+      buildGraph(dependencyData);
+
+      // Setup SVG and simulation
+      const svg = d3.select("body").append("svg");
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      const simulation = d3
+        .forceSimulation(nodes)
+        .force(
+          "link",
+          d3
+            .forceLink(links)
+            .id((d) => d.id)
+            .distance(100)
+            .strength(1),
+        )
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide(50));
+
+      const link = svg
+        .append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(links)
+        .enter()
+        .append("line")
+        .attr("class", "link");
+
+      const node = svg
+        .append("g")
+        .attr("class", "nodes")
+        .selectAll("g")
+        .data(nodes)
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .call(
+          d3
+            .drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended),
+        );
+
+      node.append("circle").attr("r", 10);
+
+      node
+        .append("text")
+        .attr("dx", 12)
+        .attr("dy", ".35em")
+        .text((d) => d.id.split("/").pop());
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", (d) => d.source.x)
+          .attr("y1", (d) => d.source.y)
+          .attr("x2", (d) => d.target.x)
+          .attr("y2", (d) => d.target.y);
+
+        node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      });
+
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        // Keep node fixed at position after drag; comment out to let it float again
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+    </script>
+  </body>
+</html>

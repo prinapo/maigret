@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regole per la collezione Users
+    match /Users/{userId} {
+      // Lettura: utente può leggere il proprio documento, o utenti con manage_users possono leggere tutti
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId ||
+         get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'superadmin' ||
+         'manage_users' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+
+      // Scrittura: utente può scrivere il proprio documento, o superadmin può scrivere qualsiasi documento
+      allow write: if request.auth != null &&
+        (request.auth.uid == userId ||
+         get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'superadmin');
+    }
+
+    // Regole per le altre collezioni
+    match /Bibliografia/{document} {
+      allow read;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+
+    match /Editori/{document} {
+      allow read;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+
+    match /Collane/{document} {
+      allow read;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+
+    match /Lingue/{document} {
+      allow read;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+
+    match /Covers/{document} {
+      allow read;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+
+    // Regole per altre collezioni (Updates, undoTrash, etc.)
+    match /{collection}/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        (get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in ['admin', 'superadmin'] ||
+         'manage_books' in get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.permissions);
+    }
+  }
+}

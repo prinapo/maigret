@@ -1,161 +1,198 @@
 <template>
-  <div>
-    <section class="error-container">
-      <span>E</span>
-      <span>R</span>
-      <span>R</span>
-      <span>O</span>
-      <span>R</span>
-    </section>
-    <div class="link-container">
-      <!-- Add a router-link to the home page -->
-      <router-link to="/">
-        <q-btn color="primary" label="Back Home" />
-      </router-link>
+  <q-page class="column items-center justify-center">
+    <div class="text-center">
+      <q-icon
+        name="error_outline"
+        color="negative"
+        size="5rem"
+        class="q-mb-md"
+      />
+      <h4 class="text-h4 text-negative q-mt-none q-mb-md">
+        {{ title }}
+      </h4>
+      <p class="text-body1 q-mb-lg">{{ message }}</p>
+      <div class="text-body2 text-grey q-mb-md" v-if="errorDetails">
+        Error details: {{ errorDetails }}
+      </div>
+      <div class="row q-gutter-sm justify-center">
+        <q-btn
+          v-if="canRetry"
+          color="primary"
+          label="Retry"
+          @click="handleRetry"
+          :loading="isRetrying"
+        />
+        <q-btn
+          color="secondary"
+          label="Go Back"
+          @click="$router.back()"
+          :disable="isRetrying"
+        />
+        <q-btn
+          color="purple-4"
+          label="Go Home"
+          @click="goHome"
+          :disable="isRetrying"
+        />
+      </div>
     </div>
-  </div>
+
+    <!-- Technical Details Dialog -->
+    <q-dialog v-model="showTechnicalDetails">
+      <q-card style="min-width: 350px">
+        <q-card-section>
+          <div class="text-h6">Technical Details</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <pre class="technical-details">{{ technicalDetails }}</pre>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Copy"
+            color="primary"
+            @click="copyTechnicalDetails"
+          />
+          <q-btn flat label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </q-page>
 </template>
-<script></script>
+
+<script setup>
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useQuasar } from "quasar";
+
+const router = useRouter();
+const route = useRoute();
+const $q = useQuasar();
+
+// State
+const title = ref("An Error Occurred");
+const message = ref("We encountered an unexpected error");
+const errorDetails = ref("");
+const technicalDetails = ref({});
+const showTechnicalDetails = ref(false);
+const isRetrying = ref(false);
+const canRetry = ref(false);
+
+// Methods
+const initializeError = () => {
+  const error = route.params.error || route.query.error;
+  const errorType = route.query.type || "UNKNOWN";
+
+  if (error) {
+    try {
+      const parsedError = typeof error === "string" ? JSON.parse(error) : error;
+
+      switch (errorType) {
+        case "AUTH":
+          title.value = "Authentication Error";
+          message.value = "There was a problem with authentication";
+          canRetry.value = true;
+          break;
+        case "NETWORK":
+          title.value = "Network Error";
+          message.value = "Unable to connect to the server";
+          canRetry.value = true;
+          break;
+        case "NOT_FOUND":
+          title.value = "Not Found";
+          message.value = "The requested resource was not found";
+          canRetry.value = false;
+          break;
+        case "PERMISSION":
+          title.value = "Permission Denied";
+          message.value = "You do not have permission to access this resource";
+          canRetry.value = false;
+          break;
+        case "SERVER":
+          title.value = "Server Error";
+          message.value = "An internal server error occurred";
+          canRetry.value = true;
+          break;
+        default:
+          title.value = "Unexpected Error";
+          message.value = "An unexpected error occurred";
+          canRetry.value = true;
+      }
+
+      errorDetails.value =
+        parsedError.message || "No additional details available";
+      technicalDetails.value = {
+        type: errorType,
+        timestamp: new Date().toISOString(),
+        error: parsedError,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+      };
+    } catch (e) {
+      console.error("Error parsing error details:", e);
+      errorDetails.value = String(error);
+    }
+  }
+};
+
+const handleRetry = async () => {
+  try {
+    isRetrying.value = true;
+    const targetPath = route.query.redirect || "/";
+    await router.replace(targetPath);
+  } catch (error) {
+    console.error("Retry failed:", error);
+    $q.notify({
+      type: "negative",
+      message: "Retry failed. Please try again later.",
+      timeout: 3000,
+    });
+  } finally {
+    isRetrying.value = false;
+  }
+};
+
+const goHome = () => {
+  router.push("/");
+};
+
+const copyTechnicalDetails = () => {
+  try {
+    const details = JSON.stringify(technicalDetails.value, null, 2);
+    navigator.clipboard.writeText(details);
+    $q.notify({
+      type: "positive",
+      message: "Technical details copied to clipboard",
+      timeout: 2000,
+    });
+  } catch (error) {
+    console.error("Error copying technical details:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to copy technical details",
+      timeout: 2000,
+    });
+  }
+};
+
+// Lifecycle
+onMounted(() => {
+  initializeError();
+});
+</script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css?family=Montserrat:400,600,700");
-@import url("https://fonts.googleapis.com/css?family=Catamaran:400,800");
-.error-container {
-  text-align: center;
-  font-size: 180px;
-  font-family: "Catamaran", sans-serif;
-  font-weight: 800;
-  margin: 20px 15px;
-}
-.error-container > span {
-  display: inline-block;
-  line-height: 0.7;
-  position: relative;
-  color: #ffb485;
-}
-.error-container > span {
-  display: inline-block;
-  position: relative;
-  vertical-align: middle;
-}
-.error-container > span:nth-of-type(1) {
-  color: #d1f2a5;
-  animation: colordancing 4s infinite;
-}
-.error-container > span:nth-of-type(3) {
-  color: #f56991;
-  animation: colordancing2 4s infinite;
-}
-.error-container > span:nth-of-type(5) {
-  color: #f56991;
-  animation: colordancing2 4s infinite;
-}
-.error-container > span:nth-of-type(2) {
-  width: 120px;
-  height: 120px;
-  border-radius: 999px;
-}
-.error-container > span:nth-of-type(2):before,
-.error-container > span:nth-of-type(2):after {
-  border-radius: 0%;
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: inherit;
-  height: inherit;
-  border-radius: 999px;
-  box-shadow:
-    inset 30px 0 0 rgba(209, 242, 165, 0.4),
-    inset 0 30px 0 rgba(239, 250, 180, 0.4),
-    inset -30px 0 0 rgba(255, 196, 140, 0.4),
-    inset 0 -30px 0 rgba(245, 105, 145, 0.4);
-  animation: shadowsdancing 4s infinite;
-}
-.error-container > span:nth-of-type(2):before {
-  -webkit-transform: rotate(45deg);
-  -moz-transform: rotate(45deg);
-  transform: rotate(45deg);
-}
-
-.screen-reader-text {
-  position: absolute;
-  top: -9999em;
-  left: -9999em;
-}
-@keyframes shadowsdancing {
-  0% {
-    box-shadow:
-      inset 30px 0 0 rgba(209, 242, 165, 0.4),
-      inset 0 30px 0 rgba(239, 250, 180, 0.4),
-      inset -30px 0 0 rgba(255, 196, 140, 0.4),
-      inset 0 -30px 0 rgba(245, 105, 145, 0.4);
-  }
-  25% {
-    box-shadow:
-      inset 30px 0 0 rgba(245, 105, 145, 0.4),
-      inset 0 30px 0 rgba(209, 242, 165, 0.4),
-      inset -30px 0 0 rgba(239, 250, 180, 0.4),
-      inset 0 -30px 0 rgba(255, 196, 140, 0.4);
-  }
-  50% {
-    box-shadow:
-      inset 30px 0 0 rgba(255, 196, 140, 0.4),
-      inset 0 30px 0 rgba(245, 105, 145, 0.4),
-      inset -30px 0 0 rgba(209, 242, 165, 0.4),
-      inset 0 -30px 0 rgba(239, 250, 180, 0.4);
-  }
-  75% {
-    box-shadow:
-      inset 30px 0 0 rgba(239, 250, 180, 0.4),
-      inset 0 30px 0 rgba(255, 196, 140, 0.4),
-      inset -30px 0 0 rgba(245, 105, 145, 0.4),
-      inset 0 -30px 0 rgba(209, 242, 165, 0.4);
-  }
-  100% {
-    box-shadow:
-      inset 30px 0 0 rgba(209, 242, 165, 0.4),
-      inset 0 30px 0 rgba(239, 250, 180, 0.4),
-      inset -30px 0 0 rgba(255, 196, 140, 0.4),
-      inset 0 -30px 0 rgba(245, 105, 145, 0.4);
-  }
-}
-@keyframes colordancing {
-  0% {
-    color: #d1f2a5;
-  }
-  25% {
-    color: #f56991;
-  }
-  50% {
-    color: #ffc48c;
-  }
-  75% {
-    color: #effab4;
-  }
-  100% {
-    color: #d1f2a5;
-  }
-}
-@keyframes colordancing2 {
-  0% {
-    color: #ffc48c;
-  }
-  25% {
-    color: #effab4;
-  }
-  50% {
-    color: #d1f2a5;
-  }
-  75% {
-    color: #f56991;
-  }
-  100% {
-    color: #ffc48c;
-  }
-}
-
-.link-container {
-  text-align: center;
+.technical-details {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  font-size: 0.9em;
+  background: $light-background;
+  padding: 1rem;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

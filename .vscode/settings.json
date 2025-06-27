@@ -6,5 +6,6 @@
   "editor.codeActionsOnSave": ["source.fixAll.eslint"],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"],
   "java.configuration.updateBuildConfiguration": "disabled",
-  "bitoAI.codeCompletion.enableAutoCompletion": false
+  "bitoAI.codeCompletion.enableAutoCompletion": false,
+  "CodeGPT.apiKey": "CodeGPT Plus Beta"
 }

@@ -22,7 +22,7 @@
           icon="account_circle"
           @click="goToLogin"
         />
-        <q-btn dense flat round v-else icon="logout" @click="logout" />
+        <q-btn dense flat round v-else icon="logout" @click="goToLogin" />
       </q-toolbar>
       <q-dialog v-model="mostraFiltro">
         <FiltroComponent />
@@ -40,12 +40,24 @@
           </q-item-section>
         </q-item>
         <q-separator />
-        <q-item clickable to="/configuration" v-if="isAdmin">
+        <q-item
+          clickable
+          to="/configuration"
+          v-if="userStore.isAdmin || userStore.isSuperAdmin"
+        >
           <q-item-section>
             <q-item-label>Configurations</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="settings" />
+          </q-item-section>
+        </q-item>
+        <q-item clickable to="/users" v-if="userStore.canManageUsers">
+          <q-item-section>
+            <q-item-label>User Management</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="people" />
           </q-item-section>
         </q-item>
         <q-item clickable to="/login">
@@ -56,7 +68,7 @@
             <q-icon name="login" />
           </q-item-section>
         </q-item>
-        <q-item clickable to="/tables" v-if="isAdmin">
+        <q-item clickable to="/tables" v-if="userStore.canManageBooks">
           <q-item-section>
             <q-item-label>Tables</q-item-label>
           </q-item-section>
@@ -65,7 +77,7 @@
           </q-item-section>
         </q-item>
         <q-separator />
-        <q-item clickable to="/newbook" v-if="isAdmin">
+        <q-item clickable to="/newbook" v-if="userStore.canManageBooks">
           <q-item-section>
             <q-item-label>New Book</q-item-label>
           </q-item-section>
@@ -74,6 +86,14 @@
           </q-item-section>
         </q-item>
         <q-separator />
+        <q-item clickable to="/trash" v-if="userStore.canManageBooks">
+          <q-item-section>
+            <q-item-label>Trash</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="delete" />
+          </q-item-section>
+        </q-item>
         <q-item clickable @click="showAboutDialog = true">
           <q-item-section>
             <q-item-label>About</q-item-label>
@@ -112,17 +132,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../firebase/firebaseInit";
-import { useAuth } from "../composable/auth";
-import FiltroComponent from "../components/Filter.vue";
+import { signOut } from "firebase/auth";
+import { auth } from "boot/firebase";
+import { useAuthStore } from "stores/authStore";
+import FiltroComponent from "components/Filter.vue";
+import { useUserStore } from "stores/userStore";
 
 const router = useRouter();
 const route = useRoute();
 const isHome = computed(() => route.path === "/");
-const { isLoggedIn, isAdmin, checkAuthState } = useAuth();
+const { isLoggedIn } = useAuthStore();
+const userStore = useUserStore();
 
 const leftDrawerOpen = ref(false);
 const mostraFiltro = ref(false);
@@ -130,14 +152,6 @@ const showAboutDialog = ref(false);
 const versionCode = ref(process.env.VERSION_CODE);
 const versionName = ref(process.env.VERSION_NAME);
 const version = process.env.APP_VERSION;
-
-onMounted(async () => {
-  try {
-    await checkAuthState();
-  } catch (error) {
-    console.error("Error initializing:", error);
-  }
-});
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -147,12 +161,13 @@ const goToLogin = () => {
   router.push("/login");
 };
 
-const logout = async () => {
-  try {
-    await signOut(auth);
-    router.push("/login");
-  } catch (error) {
-    console.error("Error logging out:", error);
-  }
-};
+// Rimuovi la funzione logout e sostituiscila con goToLogin
+// const logout = async () => {
+//   try {
+//     await signOut(auth);
+//     router.push("/login");
+//   } catch (error) {
+//     console.error("Error logging out:", error);
+//   }
+// };
 </script>

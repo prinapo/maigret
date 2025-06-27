@@ -1,18 +1,20 @@
-import { db } from "../firebase/firebaseInit";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { useBibliografiaStore, useCoversStore } from "../store/database";
-import { updateTimestamp } from "../utils/global";
+import { storage, fireStoreTrashTmblUrl } from "../boot/firebase";
+import { ref as storageRef, uploadString } from "firebase/storage";
+import { useBibliografiaStore } from "../stores/bibliografiaStore";
 import short from "short-uuid";
-import { setBibliografia } from "./indexedDB";
-import { reactive } from "vue";
 import { Notify } from "quasar";
-import { ref as storageRef, uploadBytes } from "firebase/storage";
-import { storage, fireStoreUrl } from "../firebase/firebaseInit";
+import {
+  syncBook,
+  moveImageToTrashAndLogUndo,
+  deleteTrashEntry,
+} from "./firebaseDatabaseUtils";
+import { moveStorageObject, generateThumbnail } from "./firebaseStorageUtils";
+import { useUndoStore } from "../stores/undoStore"; // path relativo al tuo store
+import { useCoversStore } from "../stores/coversStore";
 
 const bookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
 
 const shortUuidGenerator = short();
-const bibliografiaStore = useBibliografiaStore();
 
 const notifySuccess = (message) => {
   Notify.create({ message, type: "positive", color: "green" });
@@ -22,243 +24,166 @@ const notifyError = (message) => {
   Notify.create({ message, type: "negative", color: "red" });
 };
 
-export const deleteImage = async (bookId, index) => {
+// At the top of the file
+export const deleteImage = async (bookId, imageIndex) => {
+  const bibliografiaStore = useBibliografiaStore();
+  const undoStore = useUndoStore();
+  // prendi il libro da Pinia (se non c’è bookId, puoi anche usarlo da store)
+  const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
+  if (!book) throw new Error("Libro non trovato");
+
+  const imageToDelete = book.images[imageIndex];
+  if (!imageToDelete) throw new Error("Immagine non trovata");
+
   try {
-    const timestamp = new Date().valueOf();
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const dataSnapshot = await getDoc(bookRef);
-    const book = dataSnapshot.data();
-    const imagesArray = book.images || [];
-
-    if (index >= 0 && index < imagesArray.length) {
-      imagesArray.splice(index, 1);
-    } else {
-      console.error("Index is out of bounds:", index);
-    }
-
-    const { imagesArray: updatedImages } = await processImageUpdate(
+    const undoData = await moveImageToTrashAndLogUndo(
       bookId,
-      imagesArray,
-      timestamp,
+      imageToDelete,
+      imageIndex,
+      book,
     );
-    notifySuccess("Image deleted successfully");
-    return updatedImages;
+
+    undoStore.setLastUndo(undoData);
+
+    Notify.create({
+      html: true,
+      position: "bottom",
+      timeout: 5000, // si chiude automaticamente dopo 5 secondi
+      color: "primary",
+      message: `
+        <div style="display:flex;align-items:center">
+          <img
+            src="${fireStoreTrashTmblUrl + encodeURIComponent(imageToDelete.name)}?alt=media"
+            style="width:32px;height:64px;margin-right:8px;object-fit:contain"
+          />
+          <span>Immagine cancellata:
+            <strong>${imageToDelete.name}</strong>
+            (<em>${imageToDelete.coverType}</em>)
+          </span>
+        </div>
+      `,
+      actions: [
+        {
+          label: "Undo",
+          color: "white",
+          handler: async () => {
+            try {
+              const { trashEntryId } = undoData;
+              await undoStore.undoLastOperation();
+
+              if (trashEntryId) {
+                await deleteTrashEntry(trashEntryId);
+                // Aggiorna la UI se serve
+              }
+            } catch (err) {
+              console.error("Errore undo:", err);
+              Notify.create({ type: "negative", message: "Undo fallito" });
+            }
+          },
+        },
+      ],
+    });
   } catch (error) {
-    console.error("Error deleting image:", error);
-    notifyError("Problem in deleting image");
+    console.error("Errore cancellazione immagine:", error);
+    throw error;
   }
 };
 
 export const saveImageDetail = async (bookId, coverTypeId, index) => {
-  try {
-    const timestamp = new Date().valueOf();
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const dataSnapshot = await getDoc(bookRef);
-    const book = dataSnapshot.data();
-    const imagesArray = book.images || [];
+  const bibliografiaStore = useBibliografiaStore();
+  const coversStore = useCoversStore();
 
-    if (index >= 0 && index < imagesArray.length) {
-      imagesArray[index].coverTypeId = coverTypeId;
-    } else {
-      console.error("Index is out of bounds:", index);
+  if (!bookId || !coverTypeId || index === undefined) {
+    throw new Error("Missing required parameters");
+  }
+
+  try {
+    const coverExists = coversStore.covers.some(
+      (cover) => cover.value === coverTypeId,
+    );
+    if (!coverExists) {
+      throw new Error("Invalid cover type");
     }
 
-    await processImageUpdate(bookId, imagesArray, timestamp);
-    notifySuccess("Detail saved successfully");
+    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
+
+    if (!book) {
+      throw new Error("Book not found");
+    }
+
+    const imagesArray = book.images || [];
+    if (index < 0 || index >= imagesArray.length) {
+      throw new Error("Invalid image index");
+    }
+
+    imagesArray[index].coverTypeId = coverTypeId;
+
+    const updatedBook = {
+      ...book,
+      images: imagesArray,
+    };
+
+    // ✅ Sincronizza il libro aggiornato
+    await syncBook({ bookId, book: updatedBook });
+
+    notifySuccess("Cover type updated successfully");
   } catch (error) {
-    console.error("Error saving detail:", error);
-    notifyError("Detail not saved");
+    console.error("Error updating cover type:", error);
+    notifyError(`Failed to update cover type: ${error.message}`);
+    throw error;
   }
 };
-export const addImage = async (bookId, idValue) => {
+
+export const addImage = async (bookId) => {
+  const bibliografiaStore = useBibliografiaStore();
+
   try {
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const bookDocSnap = await getDoc(bookRef);
-    const shortUuid = shortUuidGenerator.new();
-    const timestamp = new Date().valueOf();
+    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
 
-    if (bookDocSnap.exists()) {
-      let existingImages = bookDocSnap.data().images || [];
-      const defaultImage = {
-        id: shortUuid,
-        name: "placeholder.jpg",
-        coverType: "Unknown",
-        timestamp: new Date().valueOf(),
-      };
-
-      await updateDoc(bookRef, {
-        images: [...existingImages, defaultImage],
-      });
-      const images = [...existingImages, defaultImage];
-      await updateTimestamp(timestamp);
-
-      const updatedBibliografia = bibliografiaStore.bibliografia.map((book) =>
-        book.id === bookId ? reactive({ ...book, images }) : book,
-      );
-      bibliografiaStore.updateBibliografia(updatedBibliografia);
-      await setBibliografia(updatedBibliografia);
-      notifySuccess("Image added successfully");
-      return images;
-    } else {
-      console.error("No such document!");
+    if (!book) {
+      console.error("Libro non trovato nello store!");
+      notifyError("Libro non trovato");
       return [];
     }
+
+    const shortUuid = shortUuidGenerator.new();
+    const defaultImage = {
+      id: shortUuid,
+      name: `placeholder.jpg`,
+      coverTypeId: "Unknown",
+      timestamp: new Date().valueOf(),
+    };
+
+    const updatedBook = {
+      ...book,
+      images: [...(book.images || []), defaultImage],
+    };
+
+    // ✅ Sincronizza il libro aggiornato ovunque
+    await syncBook({ bookId, book: updatedBook });
+
+    return updatedBook.images;
   } catch (error) {
-    console.error("Error adding new image:", error);
-    notifyError("Error adding image");
+    console.error("Errore aggiungendo nuova immagine:", error);
+    notifyError("Errore aggiungendo immagine");
     throw error;
   }
-};
-export const handleFileUploaded = async (
-  bookId,
-  originalFileName,
-  imageUuid,
-  imageIndex,
-) => {
-  try {
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const bookDoc = await getDoc(bookRef);
-    const timestamp = new Date().valueOf();
-
-    if (!bookDoc.exists()) {
-      throw new Error("Document does not exist");
-    }
-
-    const book = bookDoc.data();
-    const imagesArray = book.images || [];
-
-    if (!imagesArray[imageIndex]) {
-      imagesArray[imageIndex] = {};
-    }
-
-    const fileExtension = originalFileName.split(".").pop();
-    const filename = `${imageUuid}.${fileExtension}`;
-    imagesArray[imageIndex].name = filename;
-    imagesArray[imageIndex].timestamp = timestamp;
-
-    // Generate thumbnail using your existing function
-    await generateThumbnail(filename);
-
-    const { imagesArray: updatedImages } = await processImageUpdate(
-      bookId,
-      imagesArray,
-      timestamp,
-    );
-    return updatedImages;
-  } catch (error) {
-    console.error("Error handling file upload:", error);
-    throw error;
-  }
-};
-
-const generateThumbnail = async (imageName) => {
-  if (imageName === "placeholder.jpg") return;
-  try {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    const imageUrl = `${fireStoreUrl}${encodeURIComponent(imageName)}?alt=media`;
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error("Image load timeout"));
-      }, 30000); // 30 second timeout
-
-      img.onload = () => {
-        clearTimeout(timeoutId);
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        const width = 300;
-        const height = (width / img.width) * img.height;
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          async (blob) => {
-            try {
-              const thumbnailRef = storageRef(
-                storage,
-                `thumbnails/${imageName}`,
-              );
-              await uploadBytes(thumbnailRef, blob);
-              resolve();
-            } catch (uploadError) {
-              reject(uploadError);
-            }
-          },
-          "image/jpeg",
-          0.8,
-        );
-      };
-
-      img.onerror = (error) => {
-        clearTimeout(timeoutId);
-        reject(new Error(`Failed to load image: ${imageName}`));
-      };
-
-      img.src = imageUrl;
-    });
-  } catch (error) {
-    console.warn(`Thumbnail generation failed for ${imageName}:`, error);
-    // Continue execution even if thumbnail generation fails
-  }
-};
-const processImageUpdate = async (bookId, imagesArray, timestamp) => {
-  const imageEntry = imagesArray.find(
-    (image) => image.coverTypeId === bookCoverTypeId,
-  );
-  const firstImageEntry = imagesArray[0];
-
-  let defaultImageName = "placeholder.jpg";
-  let defaultImageTimestamp = 0;
-
-  if (imageEntry) {
-    defaultImageName = imageEntry.name;
-    defaultImageTimestamp = imageEntry.timestamp;
-  } else if (firstImageEntry) {
-    defaultImageName = firstImageEntry.name;
-    defaultImageTimestamp = firstImageEntry.timestamp;
-  }
-  await generateThumbnail(defaultImageName);
-
-  const updateData = {
-    images: imagesArray,
-    timestamp: timestamp,
-    defaultImageName,
-    defaultImageTimestamp,
-  };
-
-  const bookRef = doc(db, "Bibliografia", bookId);
-  await updateDoc(bookRef, updateData);
-
-  const updatedBibliografia = bibliografiaStore.bibliografia.map((book) =>
-    book.id === bookId ? reactive({ ...book, ...updateData }) : book,
-  );
-
-  bibliografiaStore.updateBibliografia(updatedBibliografia);
-  await setBibliografia(updatedBibliografia);
-  await updateTimestamp(timestamp);
-
-  return { imagesArray, updateData };
 };
 
 export const fetchImages = async (bookId) => {
-  try {
-    const bookRef = doc(db, "Bibliografia", bookId);
-    const bookDocSnap = await getDoc(bookRef);
+  const coversStore = useCoversStore();
+  const bibliografiaStore = useBibliografiaStore();
 
-    if (!bookDocSnap.exists()) {
-      console.error("No such document!");
+  try {
+    // Usa lo store Pinia invece di accedere direttamente a Firestore
+    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
+
+    if (!book) {
+      console.error("Book not found in store!");
       return [];
     }
 
-    const bookData = bookDocSnap.data();
-    const images = bookData.images || [];
-
-    // Fetch the list of covers from Pinia
-    const coversStore = useCoversStore();
+    const images = book.images || [];
     const covers = coversStore.covers;
 
     // Add coverType to each image based on the id
@@ -266,7 +191,7 @@ export const fetchImages = async (bookId) => {
       const cover = covers.find((cover) => cover.id === image.coverTypeId);
       return {
         ...image,
-        coverType: cover ? cover.label : "Unknown", // Default to "Unknown" if no match is found
+        coverType: cover ? cover.label : "Unknown",
       };
     });
 
@@ -275,4 +200,142 @@ export const fetchImages = async (bookId) => {
     console.error("Error fetching images:", error);
     throw error;
   }
+};
+
+export const convertAndUploadImage = async (file, bookId, innerIndex) => {
+  const bibliografiaStore = useBibliografiaStore();
+
+  try {
+    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
+    if (!book) throw new Error("Libro non trovato nello store");
+
+    const oldImage = book.images?.[innerIndex];
+    console.log("Old image", oldImage);
+    const reader = new FileReader();
+
+    // Lettura file come dataURL
+    const dataUrl = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Errore nel leggere il file"));
+      reader.readAsDataURL(file);
+    });
+    const img = new Image();
+    // Attendi il caricamento dell'immagine
+    await new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Errore caricando l'immagine"));
+      img.src = dataUrl;
+    });
+
+    // Sposta vecchie immagini se non placeholder
+    if (oldImage && oldImage.name && oldImage.name !== "placeholder.jpg") {
+      await moveStorageObject(
+        `images/${oldImage.name}`,
+        `trash/${oldImage.name}`,
+      );
+      await moveStorageObject(
+        `thumbnails/${oldImage.name}`,
+        `trash-thumbnails/${oldImage.name}`,
+      );
+    }
+
+    const imageUuid = shortUuidGenerator.new();
+    const newFileName = `${imageUuid}.jpg`;
+    const contentType = "image/jpeg";
+
+    // Crea blob immagine principale e caricala
+    const mainImageBlob = await createImageBlob(img, "main", contentType);
+    await uploadImageToStorage(
+      mainImageBlob,
+      `images/${newFileName}`,
+      contentType,
+    );
+
+    // Genera e carica il thumbnail (assumo che questa funzione lo faccia)
+    const thumbnailBlob = await generateThumbnail(newFileName);
+    if (thumbnailBlob) {
+      const thumbnailPath = `thumbnails/${newFileName}`;
+      await uploadImageToStorage(thumbnailBlob, thumbnailPath, "image/jpeg");
+    }
+
+    const updatedImages = [...book.images];
+    updatedImages[innerIndex] = {
+      ...updatedImages[innerIndex],
+      id: imageUuid,
+      name: newFileName,
+      timestamp: new Date().valueOf(),
+    };
+
+    const updatedBook = { ...book, images: updatedImages };
+    await syncBook({ bookId, book: updatedBook });
+
+    return updatedImages;
+  } catch (error) {
+    console.error("Errore generale in convertAndUploadImageAndSync:", error);
+    throw error;
+  }
+};
+
+// Aggiorna questa funzione per accettare il contentType
+const createImageBlob = (img, type, contentType) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let width = img.width;
+    let height = img.height;
+
+    if (type === "thumbnail") {
+      const MAX_SIZE = 300;
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+      }
+    } else {
+      const MAX_WIDTH = 1920;
+      const MAX_HEIGHT = 1080;
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        const widthRatio = MAX_WIDTH / width;
+        const heightRatio = MAX_HEIGHT / height;
+        const ratio = Math.min(widthRatio, heightRatio);
+        width *= ratio;
+        height *= ratio;
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+
+    canvas.toBlob(
+      (blob) => resolve(blob),
+      contentType,
+      type === "thumbnail" ? 0.8 : 0.9, // puoi anche mettere 0.8 fisso
+    );
+  });
+};
+
+// Aggiorna questa funzione per accettare il contentType
+const uploadImageToStorage = async (blob, path, contentType) => {
+  const storageReference = storageRef(storage, path);
+  const base64data = await blobToBase64(blob);
+  await uploadString(storageReference, base64data, "base64", {
+    contentType: contentType,
+  });
+};
+
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 };
