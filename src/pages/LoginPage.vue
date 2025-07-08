@@ -10,7 +10,7 @@
           {{ isAdmin ? "(Admin) " : "" }}Maigret Collectors
         </div>
         <div class="text-caption text-center q-mt-xs">
-          {{ user ? user.email : "Please login to continue" }}
+          {{ user ? user.email : t("login.pleaseLogin") }}
         </div>
       </q-card-section>
 
@@ -22,17 +22,18 @@
             filled
             v-model="email"
             type="email"
-            :label="$t('login.email')"
+            :label="t('login.email')"
             color="primary"
             :rules="[
-              (val) => !!val || 'Email is required',
-              (val) => isValidEmail(val) || 'Invalid email format',
+              (val) => !!val || t('login.emailRequired'),
+              (val) => isValidEmail(val) || t('login.invalidEmailFormat'),
             ]"
             :error="!!formErrors.email"
             :error-message="formErrors.email"
             :disable="isLoading || loading"
             @update:model-value="clearError('email')"
             dense
+            autocomplete="username"
           >
             <template v-slot:prepend>
               <q-icon name="email" />
@@ -43,14 +44,15 @@
             filled
             v-model="password"
             :type="isPasswordVisible ? 'text' : 'password'"
-            :label="$t('login.password')"
+            :label="t('login.password')"
             color="primary"
-            :rules="[(val) => !!val || 'Password is required']"
+            :rules="[(val) => !!val || t('login.passwordRequired')]"
             :error="!!formErrors.password"
             :error-message="formErrors.password"
             :disable="isLoading || loading"
             @update:model-value="clearError('password')"
             dense
+            autocomplete="current-password"
           >
             <template v-slot:prepend>
               <q-icon name="lock" />
@@ -72,33 +74,39 @@
             size="lg"
             :loading="isLoading"
             :disable="!isFormValid || isLoading || loading"
-            :label="$t('login.loginButton')"
+            :label="t('login.loginButton')"
           />
 
           <div class="text-center text-caption text-grey-6">
-            Forgot your password?
+            {{ t("login.forgotPassword") }}
             <a
               href="#"
               @click.prevent="forgotPassword"
               :class="{ disabled: isLoading || loading }"
             >
-              Reset it
+              {{ t("login.resetIt") }}
             </a>
           </div>
         </q-form>
       </template>
 
       <template v-else>
-        <q-card-section>
+        <q-card-section class="text-center">
+          <div class="q-mb-md">
+            <q-icon name="person" size="2em" color="primary" />
+          </div>
+          <div class="text-subtitle1 q-mb-sm">
+            {{ t("login.alreadyLoggedIn") }} <b>{{ user.email }}</b>
+          </div>
           <q-btn
             unelevated
-            color="secondary"
-            class="full-width"
+            color="negative"
+            class="full-width q-mt-md"
             size="lg"
             @click="handleLogout"
             :loading="isLoading"
             :disable="loading"
-            :label="$t('login.logoutButton')"
+            :label="t('login.logoutButton')"
           />
         </q-card-section>
       </template>
@@ -118,41 +126,14 @@
       </div>
     </q-card>
 
-    <!-- Dialog e Loading restano invariati -->
-    <q-dialog v-model="showErrorDialog" persistent>
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">{{ $t(errorDialog.title) }}</div>
-        </q-card-section>
-        <q-card-section class="q-pt-none">
-          {{ errorDialog.message }}
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn
-            flat
-            :label="$t('common.close')"
-            color="primary"
-            v-close-popup
-          />
-          <q-btn
-            v-if="errorDialog.action"
-            flat
-            :label="$t(errorDialog.actionLabel)"
-            color="primary"
-            @click="errorDialog.action"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <q-inner-loading :showing="loading" color="secondary">
+    <q-inner-loading :showing="loading && !user" color="secondary">
       <q-spinner-dots size="50px" />
     </q-inner-loading>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onUnmounted, onMounted } from "vue";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -162,27 +143,21 @@ import { useAuthStore } from "stores/authStore";
 import { useUserStore } from "stores/userStore";
 import { auth } from "boot/firebase";
 import { useRouter } from "vue-router";
-import { useQuasar } from "quasar";
+import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
+import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 
 const router = useRouter();
-const $q = useQuasar();
 const authStore = useAuthStore();
 const userStore = useUserStore();
-const { user, loading } = authStore;
+const { user, loading } = storeToRefs(authStore);
+const { t } = useI18n();
 
 const email = ref("");
 const password = ref("");
 const isPasswordVisible = ref(false);
 const isLoading = ref(false);
 const formErrors = ref({ email: null, password: null });
-
-const showErrorDialog = ref(false);
-const errorDialog = ref({
-  title: "",
-  message: "",
-  action: null,
-  actionLabel: "",
-});
 
 const isFormValid = computed(
   () =>
@@ -202,11 +177,6 @@ const clearError = (field) => {
   else formErrors.value = { email: null, password: null };
 };
 
-const showError = (title, message, action = null, actionLabel = null) => {
-  errorDialog.value = { title, message, action, actionLabel };
-  showErrorDialog.value = true;
-};
-
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const registrationPage = () => {
@@ -216,74 +186,73 @@ const registrationPage = () => {
 };
 
 const handleAuthError = (error) => {
-  let message = "An error occurred during authentication.";
+  let message = t("auth.anErrorOccurred");
   switch (error.code) {
     case "auth/user-not-found":
-      message = "No account found with this email address.";
+      message = t("auth.noAccountFound");
       break;
     case "auth/wrong-password":
-      message = "Incorrect password.";
+      message = t("auth.incorrectPassword");
       break;
     case "auth/invalid-email":
-      message = "Invalid email address.";
+      message = t("auth.invalidEmail");
       break;
     case "auth/user-disabled":
-      message = "This account has been disabled.";
+      message = t("auth.accountDisabled");
       break;
     case "auth/too-many-requests":
-      message = "Too many failed attempts. Please try again later.";
+      message = t("auth.tooManyRequests");
       break;
     case "auth/network-request-failed":
-      message = "Network error. Please check your connection.";
+      message = t("auth.networkError");
       break;
     default:
       message = error.message || message;
   }
-  showError("Authentication Error", message);
+  showNotifyNegative(message);
 };
 
 const login = async () => {
   try {
+    console.log("[LOGIN] Start login");
     clearError();
     if (!email.value.trim()) {
-      formErrors.value.email = "Email is required";
+      console.log("[LOGIN] Email vuota");
+      formErrors.value.email = t("login.emailRequired");
       return;
     }
     if (!isValidEmail(email.value)) {
-      formErrors.value.email = "Invalid email format";
+      console.log("[LOGIN] Email non valida:", email.value);
+      formErrors.value.email = t("login.invalidEmailFormat");
       return;
     }
     if (!password.value.trim()) {
-      formErrors.value.password = "Password is required";
+      console.log("[LOGIN] Password vuota");
+      formErrors.value.password = t("login.passwordRequired");
       return;
     }
 
     isLoading.value = true;
+    console.log("[LOGIN] Chiamo signInWithEmailAndPassword", email.value);
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email.value,
       password.value,
     );
+    console.log("[LOGIN] signInWithEmailAndPassword OK", userCredential);
     const firebaseUser = userCredential.user;
 
     if (!firebaseUser.emailVerified) {
-      showError(
-        "Email Verification Required",
-        "Please verify your email before logging in.",
-        () => sendEmailVerification(firebaseUser),
-        "Resend Verification",
-      );
+      console.log("[LOGIN] Email non verificata");
+      showNotifyNegative(t("login.emailVerificationRequired"));
       return;
     }
 
+    console.log("[LOGIN] Login riuscito, redirect");
     router.push("/");
-    $q.notify({
-      type: "positive",
-      message: "Login successful!",
-      position: "top",
-    });
+    showNotifyPositive(t("login.loginSuccessful"));
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("[LOGIN] Login error:", error);
     handleAuthError(error);
   } finally {
     isLoading.value = false;
@@ -295,11 +264,7 @@ const handleLogout = async () => {
     isLoading.value = true;
     await authStore.logout();
     await router.push("/login");
-    $q.notify({
-      type: "info",
-      message: "Logged out successfully",
-      position: "top",
-    });
+    showNotifyPositive(t("login.loggedOutSuccessfully"));
   } catch (error) {
     console.error("Logout error:", error);
     handleAuthError(error);
@@ -312,20 +277,17 @@ const forgotPassword = async () => {
   try {
     if (isLoading.value || loading.value) return;
     if (!email.value.trim()) {
-      formErrors.value.email = "Please enter your email address";
+      formErrors.value.email = t("login.pleaseEnterEmail");
       return;
     }
     if (!isValidEmail(email.value)) {
-      formErrors.value.email = "Invalid email format";
+      formErrors.value.email = t("login.invalidEmailFormat");
       return;
     }
 
     isLoading.value = true;
     await sendPasswordResetEmail(auth, email.value);
-    showError(
-      "Password Reset",
-      "Password reset email sent. Please check your inbox.",
-    );
+    showNotifyPositive(t("login.passwordReset"));
   } catch (error) {
     console.error("Password reset error:", error);
     handleAuthError(error);
@@ -333,8 +295,6 @@ const forgotPassword = async () => {
     isLoading.value = false;
   }
 };
-
-onUnmounted(() => {});
 </script>
 
 <style scoped>

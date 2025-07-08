@@ -1,0 +1,35 @@
+[
+  {
+    "id": "bibliografiaTimes",
+    "biblioTimestamp": 1747838258023
+  },
+  {
+    "id": "cacheTimes",
+    "cacheTimeStamp": 1
+  },
+  {
+    "id": "collaneTimes",
+    "collaneTimeStamp": 1745844194331,
+    "coversTimeStamp": 1
+  },
+  {
+    "id": "coversTimes",
+    "coversTimeStamp": 1745844207950
+  },
+  {
+    "id": "default",
+    "coversTimeStamp": 1,
+    "collaneTimeStamp": 1,
+    "editoriTimeStamp": 1,
+    "lingueTimeStamp": 1,
+    "bibliografiaTimeStamp": 1
+  },
+  {
+    "id": "editoriTimes",
+    "editoriTimeStamp": 1745844228773
+  },
+  {
+    "id": "lingueTimes",
+    "lingueTimeStamp": 1745844223078
+  }
+]

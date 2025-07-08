@@ -8,6 +8,11 @@ export default {
     degraded_mode:
       "Degraded mode: some functionalities might not work as expected.",
   },
+  init: {
+    degradedError:
+      "Unable to load some data. Some features may not be available.",
+    offlineWarning: "Offline mode: some functionalities are not available.",
+  },
   auth: {
     setup_failed: "Authentication setup failed: {message}",
     disabled: "Authentication disabled due to Firebase not being ready.",
@@ -16,6 +21,14 @@ export default {
     reload: "Reload",
     connectionError:
       "Connection error. Some functionalities may not be available.",
+    authenticationError: "Authentication Error",
+    anErrorOccurred: "An error occurred during authentication.",
+    noAccountFound: "No account found with this email address.",
+    incorrectPassword: "Incorrect password.",
+    invalidEmail: "Invalid email address.",
+    accountDisabled: "This account has been disabled.",
+    tooManyRequests: "Too many failed attempts. Please try again later.",
+    networkError: "Network error. Please check your connection.",
   },
   error: {
     book_not_found: "Book not found",
@@ -59,6 +72,15 @@ export default {
     config_missing: "Firebase configuration is missing or invalid",
     init_success: "Firebase initialized successfully.",
     init_failed: "Firebase initialization failed: {message}",
+    updateSuccess: "{collection} updated successfully",
+    updateFail: "Failed to update {collection}: {error}",
+    bookUpdated: "Book {bookId} updated successfully",
+    bookUpdateFail: "Error updating book {bookId}: {error}",
+    updatedLocally: "{collection} updated locally",
+    updateLocalFail: "Failed to update {collection} locally: {error}",
+    bookCreated: "Book created successfully",
+    userUpdated: "User updated successfully",
+    userDeleted: "User deleted successfully",
   },
   common: {
     cancel: "Cancel",
@@ -68,6 +90,7 @@ export default {
     delete: "Delete",
     error: "Error",
     retry: "Retry",
+    undo: "Undo",
   },
   bookDetails: {
     deleteBook: "Delete Book",
@@ -94,6 +117,22 @@ export default {
     password: "Password",
     loginButton: "Login",
     logoutButton: "Logout",
+    alreadyLoggedIn: "You are already logged in as",
+    passwordReset: "Password Reset",
+    forgotPassword: "Forgot your password?",
+    resetIt: "Reset it",
+    pleaseLogin: "Please login to continue",
+    admin: "Admin",
+    emailRequired: "Email is required",
+    invalidEmailFormat: "Invalid email format",
+    passwordRequired: "Password is required",
+    pleaseEnterEmail: "Please enter your email address",
+    emailVerificationRequired: "Email Verification Required",
+    pleaseVerifyEmail: "Please verify your email before logging in.",
+    resendVerification: "Resend Verification",
+    passwordResetSent: "Password reset email sent. Please check your inbox.",
+    loginSuccessful: "Login successful!",
+    loggedOutSuccessfully: "Logged out successfully",
   },
   mainLayout: {
     version: "Version",
@@ -103,6 +142,12 @@ export default {
   },
   trash: {
     title: "Image Trash",
+    errorLoadingTrash: "Error loading trash.",
+    restoreDataMissing: "Restore data missing or invalid.",
+    imageRestoredSuccessfully: "Image restored successfully.",
+    errorRestoringImage: "Error restoring image.",
+    itemDeletedPermanently: "Item deleted permanently.",
+    errorDeletingItem: "Error deleting item.",
   },
   bookEditions: {
     edition: "Edition",
@@ -140,6 +185,21 @@ export default {
   bookImages: {
     coverType: "Cover Type",
     confirmDeleteImage: "Are you sure you want to delete the image?",
+    imageUploadedSuccessfully: "Image uploaded successfully.",
+    uploadFailed: "Image upload failed.",
+    onlyJPGJPEGAndPNGFilesAllowed: "Only JPG, JPEG, and PNG files are allowed.",
+    missingRequiredParametersForCoverTypeUpdate:
+      "Missing required parameters for cover type update.",
+    thisCoverTypeIsAlreadyUsedByAnotherImage:
+      "This cover type is already used by another image.",
+    failedToUpdateCoverType: "Failed to update cover type.",
+    failedToDeleteImage: "Failed to delete image.",
+    failedToAddImage: "Failed to add image.",
+    error_creating_placeholder_image: "Error creating placeholder image",
+    fileTooLarge: "The file is too large. Maximum allowed size: 5MB.",
+    imageDeleted: "Image deleted.",
+    imageRestored: "Image restored.",
+    swipeHint: "Swipe to see more images",
   },
   analytics: {
     pageUnderConstruction: "Page under construction",
@@ -190,6 +250,7 @@ export default {
     routerErrorName: "RouterError",
     genericErrorMessage: "Generic Error",
     navigationErrorMessage: "Navigation Error",
+    error: "Navigation error: {error}",
   },
   edizioniUtils: {
     noUserId: "No userId",
@@ -212,5 +273,12 @@ export default {
     databaseListenersInitialized: "Database listeners initialized",
     cleaningUpFirebaseListeners: "Cleaning up all Firebase listeners...",
     allListenersCleanedUp: "All listeners cleaned up",
+  },
+  filters: {
+    error: "Filter error: {error}",
+  },
+  edizioni: {
+    added: "Edition added successfully",
+    failed: "Failed to add edition: {error}",
   },
 };

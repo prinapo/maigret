@@ -18,6 +18,11 @@ export const moveStorageObject = async (fromPath, toPath) => {
     await uploadBytes(targetRef, blob);
     await deleteObject(sourceRef);
   } catch (error) {
+    if (error.code === "storage/object-not-found") {
+      // Logga e continua, non è un errore bloccante
+      console.warn(`File non trovato per spostamento: ${fromPath}`);
+      return;
+    }
     console.error(`Failed to move ${fromPath} to ${toPath}`, error);
     throw error;
   }

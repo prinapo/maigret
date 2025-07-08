@@ -41,3 +41,20 @@ quasar build
 ### Customize the configuration
 
 See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+
+## Pulizia campi id e uniqueId in Firestore
+
+Per rimuovere i campi `id` e `uniqueId` da tutti i documenti della collection `Bibliografia` in Firestore:
+
+1. Assicurati di avere Node.js e le credenziali Firebase Admin SDK configurate.
+2. Salva lo script `clean_bibliografia.js` (vedi file `upload_script.txt`).
+3. Installa le dipendenze necessarie:
+   ```bash
+   npm install firebase-admin
+   ```
+4. Esegui lo script:
+   ```bash
+   node clean_bibliografia.js
+   ```
+
+Questo rimuoverà i campi `id` e `uniqueId` da tutti i libri in Firestore.

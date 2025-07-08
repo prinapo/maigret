@@ -1,6 +1,13 @@
 <template>
-  <div class="bg-dark shadow-2 rounded-borders" style="position: relative">
+  <div v-if="edizioni.length === 0" class="q-pa-md flex flex-center">
+    <q-spinner size="40px" color="primary" />
+  </div>
+  <div v-else style="position: relative">
+    <div v-if="images.length === 0" class="placeholder">
+      Nessuna immagine disponibile
+    </div>
     <q-virtual-scroll
+      v-else
       :items="images"
       virtual-scroll-horizontal
       :virtual-scroll-item-size="itemSize"
@@ -11,18 +18,18 @@
       <template v-slot="{ item: image, index: innerIndex }">
         <div
           :key="innerIndex"
-          class="column items-center q-mx-sm relative-position"
+          class="column items-center q-mx-sm relative-position book-image"
           style="width: 250px; height: 100%"
         >
-          <!-- Trash icon for admin users -->
-          <q-icon
-            v-if="isFieldEditable"
-            name="delete"
-            class="delete-icon"
-            color="negative"
-            size="md"
-            @click="confirmDelete(innerIndex)"
-          />
+          <!-- Trash icon overlay for admin users -->
+          <div v-if="isFieldEditable" class="trash-overlay">
+            <q-icon
+              name="delete"
+              color="negative"
+              size="md"
+              @click="confirmDelete(innerIndex)"
+            />
+          </div>
           <!-- Wrapper per uniformare la dimensione delle immagini -->
           <div class="full-width flex flex-center" style="height: 250px">
             <q-img
@@ -40,7 +47,7 @@
 
           <q-select
             v-model="image.coverTypeId"
-            :options="coverOptions"
+            :options="coverOptionsLocalized"
             :label="isFieldEditable ? $t('bookImages.coverType') : ''"
             @focus="previousCoverTypeId = image.coverTypeId"
             @update:model-value="
@@ -51,7 +58,7 @@
             emit-value
             map-options
             fill-input
-            class="full-width"
+            class="full-width select-contrast-text"
             :borderless="!isFieldEditable"
             :hide-dropdown-icon="!isFieldEditable"
             :readonly="!isFieldEditable"
@@ -60,6 +67,8 @@
                 ? 'pointer-events: none; background: transparent;'
                 : ''
             "
+            option-label="label"
+            option-value="value"
           >
           </q-select>
 
@@ -91,13 +100,11 @@
         </div>
       </template>
     </q-virtual-scroll>
-    <q-icon
+    <q-fab
       v-if="isFieldEditable"
-      name="add_circle"
-      size="48px"
+      icon="add"
       color="primary"
-      class="cursor-pointer absolute-right"
-      style="top: 50%; transform: translateY(100%); right: 30px"
+      class="q-fab-bottom-right fab-small"
       @click="addNewImage"
     />
 
@@ -106,11 +113,16 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-icon name="warning" color="negative" size="2em" />
-          <span class="q-ml-sm">{{ $t('bookImages.confirmDeleteImage') }}</span>
+          <span class="q-ml-sm">{{ $t("bookImages.confirmDeleteImage") }}</span>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat :label="$t('common.cancel')" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('common.cancel')"
+            color="primary"
+            v-close-popup
+          />
           <q-btn
             flat
             :label="$t('common.delete')"
@@ -121,23 +133,35 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Undo action marker -->
+    <div v-if="showUndo" class="undo-action">
+      <button @click="undoDelete">Annulla</button>
+    </div>
+
+    <!-- Notifica errore marker -->
+    <div v-if="showError" class="q-notification">
+      {{ errorMessage }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, unref, computed } from "vue";
+import { ref, unref, computed, onMounted, watch } from "vue";
 import { fireStoreUrl, fireStoreTmblUrl } from "src/boot/firebase";
 import { convertAndUploadImage } from "utils/imageUtils";
 import { useAuthStore } from "stores/authStore";
 import { useUserStore } from "stores/userStore";
 import { useUndoStore } from "stores/undoStore";
 import { storeToRefs } from "pinia";
-import { Notify } from "quasar";
 import { addImage, deleteImage } from "utils/imageUtils";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useCoversStore } from "stores/coversStore";
 import placeholderImage from "assets/placeholder.jpg";
 import { syncBook } from "utils/firebaseDatabaseUtils";
+import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
+import { useI18n } from "vue-i18n";
+const { t, locale } = useI18n();
 const props = defineProps({
   bookId: {
     type: String,
@@ -149,7 +173,6 @@ const undoStore = useUndoStore();
 const dialogs = ref([]);
 const confirmDialogVisible = ref(false);
 const tempImageIndex = ref(null);
-// const uploadInProgress = ref(false);  // Unused variable, commented out
 const defaultBookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
 const emit = defineEmits(["showUndo"]);
 
@@ -164,6 +187,14 @@ const isFieldEditable = computed(() => {
 // Covers store
 const coversStore = useCoversStore();
 const coverOptions = coversStore.covers;
+
+const coverOptionsLocalized = computed(() => {
+  const lang = locale.value;
+  return coverOptions.map((opt) => ({
+    ...opt,
+    label: lang === "it-IT" ? opt.label_it : opt.label_en,
+  }));
+});
 const previousCoverTypeId = "";
 
 // Bibliografia store
@@ -171,6 +202,7 @@ const bibliografiaStore = useBibliografiaStore();
 const biblio = computed(() => unref(bibliografiaStore.bibliografia));
 const book = computed(() => biblio.value.find((b) => b.id === props.bookId));
 const images = computed(() => book.value?.images || []);
+const edizioni = computed(() => book.value?.edizioni || []);
 //console.log("images:", images.value);
 function restoreDeletedImage() {
   if (!undoStore.undoData || undoStore.undoData.type !== "delete-image") return;
@@ -198,9 +230,14 @@ const auth = useAuthStore();
 // State
 
 // Quando un file è stato aggiunto, caricalo su Firebase Storage
+const MAX_FILE_SIZE_MB = 5;
 const onFileAdded = async (event, imageUuid, innerIndex) => {
   const file = event[0];
   if (file) {
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      showNotifyNegative(t("bookImages.fileTooLarge"));
+      return;
+    }
     const validTypes = ["image/jpeg", "image/jpg", "image/png"];
     if (validTypes.includes(file.type)) {
       try {
@@ -218,22 +255,13 @@ const onFileAdded = async (event, imageUuid, innerIndex) => {
           ),
         });
 
-        Notify.create({
-          message: "Image uploaded and database updated successfully",
-          type: "positive",
-        });
+        showNotifyPositive(t("bookImages.imageUploadedSuccessfully"));
       } catch (error) {
         console.error("Error in image upload and processing:", error);
-        Notify.create({
-          message: `Upload failed: ${error.message}`,
-          type: "negative",
-        });
+        showNotifyNegative(t("bookImages.uploadFailed") + ": " + error.message);
       }
     } else {
-      Notify.create({
-        message: "Only JPG, JPEG, and PNG files are allowed.",
-        type: "negative",
-      });
+      showNotifyNegative(t("bookImages.onlyJPGJPEGAndPNGFilesAllowed"));
     }
   }
 };
@@ -288,10 +316,9 @@ const closeDialog = (imageIndex) => {
 
 const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
   if (!coverTypeId || imageIndex === undefined) {
-    Notify.create({
-      message: "Missing required parameters for cover type update",
-      type: "negative",
-    });
+    showNotifyNegative(
+      t("bookImages.missingRequiredParametersForCoverTypeUpdate"),
+    );
     return;
   }
 
@@ -300,10 +327,9 @@ const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
   );
 
   if (isCoverTypeIdUsed) {
-    Notify.create({
-      message: "This cover type is already used by another image",
-      type: "negative",
-    });
+    showNotifyNegative(
+      t("bookImages.thisCoverTypeIsAlreadyUsedByAnotherImage"),
+    );
     const updatedImages = [...images.value];
     updatedImages[imageIndex] = {
       ...updatedImages[imageIndex],
@@ -334,13 +360,6 @@ const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
       images: updatedImages,
     };
 
-    if (coverTypeId === defaultBookCoverTypeId) {
-      const selectedImage = updatedImages[imageIndex];
-      if (selectedImage?.name) {
-        updatedBook.defaultImageName = selectedImage.name;
-      }
-    }
-
     await syncBook({ bookId: props.bookId, book: updatedBook });
     const bibliografia = unref(bibliografiaStore.bibliografia);
     bibliografiaStore.$patch({
@@ -350,11 +369,9 @@ const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
     });
   } catch (error) {
     console.error("Error updating cover type:", error);
-    Notify.create({
-      message: `Failed to update cover type: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(
+      t("bookImages.failedToUpdateCoverType") + ": " + error.message,
+    );
     const updatedImages = [...images.value];
     updatedImages[imageIndex] = {
       ...updatedImages[imageIndex],
@@ -407,11 +424,9 @@ const deleteImageConfirmed = async () => {
     confirmDialogVisible.value = false;
   } catch (error) {
     console.error("Error deleting image:", error);
-    Notify.create({
-      message: `Failed to delete image: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(
+      t("bookImages.failedToDeleteImage") + ": " + error.message,
+    );
     console.log("Notify.create invoked successfully");
   }
 };
@@ -430,18 +445,80 @@ const addNewImage = async () => {
     }
   } catch (error) {
     console.error("Error adding image:", error);
-    Notify.create({
-      message: `Failed to add image: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(t("bookImages.failedToAddImage") + ": " + error.message);
   }
 };
+
+const isMobile = computed(() => window.innerWidth <= 600);
+
+onMounted(async () => {
+  // Solo se l'utente può modificare e il libro non è deleted
+  if (
+    isFieldEditable.value &&
+    book.value &&
+    !book.value.deleted &&
+    images.value.length === 0
+  ) {
+    try {
+      await addImage(props.bookId, t);
+    } catch (error) {
+      // Usa showNotifyNegative e messaggio i18n
+      const msg = t("bookImages.error_creating_placeholder_image");
+      showNotifyNegative(`${msg}: ${error.message}`);
+    }
+  }
+});
+
+const showUndo = ref(false); // Da attivare dopo una delete
+const showError = ref(false);
+const errorMessage = ref("");
+function undoDelete() {
+  // Logica undo base (da completare)
+  showUndo.value = false;
+}
 </script>
 
 <style scoped>
 .img-thumbnail {
   max-width: 100%;
   height: auto;
+}
+/* Forza il colore del testo del q-select a bianco in dark mode */
+.select-contrast-text .q-field__native,
+.select-contrast-text .q-field__input,
+.select-contrast-text .q-field__label {
+  color: white !important;
+}
+@media (prefers-color-scheme: light) {
+  .select-contrast-text .q-field__native,
+  .select-contrast-text .q-field__input,
+  .select-contrast-text .q-field__label {
+    color: inherit !important;
+  }
+}
+/* FAB bottom right */
+.q-fab-bottom-right {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+/* Trash icon overlay */
+.trash-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  padding: 6px;
+  z-index: 10;
+}
+/* FAB per aggiunta, più piccolo */
+.fab-small {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  font-size: 20px;
 }
 </style>

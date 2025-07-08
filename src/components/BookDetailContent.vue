@@ -4,6 +4,7 @@
       <div class="col-12">
         <BookImages v-if="bookId" :bookId="bookId" />
       </div>
+      <!--
       <div class="col-12">
         <Suspense>
           <template #default>
@@ -12,7 +13,9 @@
           <template #fallback>
             <div class="text-center q-pa-md">
               <q-spinner color="primary" size="3em" />
-              <div class="text-body1 q-mt-md">{{ $t('bookDetailContent.loadingDetails') }}</div>
+              <div class="text-body1 q-mt-md">
+                {{ t("bookDetailContent.loadingDetails") }}
+              </div>
             </div>
           </template>
         </Suspense>
@@ -20,15 +23,20 @@
       <div class="col-12">
         <BookEditions v-if="bookId" :bookId="bookId" />
       </div>
+      -->
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
+
 //components
-import BookDetails from "components/BookDetails.vue"; // Import BookDetails component
+// import BookDetails from "components/BookDetails.vue"; // Import BookDetails component
 import BookImages from "components/BookImages.vue"; // Import BookImages component
-import BookEditions from "components/BookEditions.vue"; // Import BookEditions component
+// import BookEditions from "components/BookEditions.vue"; // Import BookEditions component
 
 defineProps({
   bookId: {

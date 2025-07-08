@@ -89,7 +89,7 @@
             <q-dialog v-model="confirmAddEdizione" persistent>
               <q-card>
                 <q-card-section class="q-pa-md">
-                  <p>{{ $t('bookEditions.confirmAddEdition') }}</p>
+                  <p>{{ $t("bookEditions.confirmAddEdition") }}</p>
                 </q-card-section>
 
                 <q-card-actions align="right">
@@ -122,7 +122,7 @@
             <q-dialog v-model="confirmRemoveEdizione" persistent>
               <q-card>
                 <q-card-section class="q-pa-md">
-                  <p>{{ $t('bookEditions.confirmRemoveEdition') }}</p>
+                  <p>{{ $t("bookEditions.confirmRemoveEdition") }}</p>
                 </q-card-section>
 
                 <q-card-actions align="right">
@@ -164,6 +164,7 @@ import {
   addEdizione,
   fetchEditions,
 } from "utils/edizioniUtils";
+import { useBibliografiaStore } from "stores/bibliografiaStore";
 
 // Props
 const props = defineProps({
@@ -174,21 +175,30 @@ const props = defineProps({
 });
 
 // State
-const edizioni = ref([]);
 const detailOriginalValue = ref(null);
 const confirmRemoveEdizione = ref(false);
 const confirmAddEdizione = ref(false);
-const edizioneIndex = ref(null);
 const isLoading = ref(true);
 const loadingError = ref(null);
 const auth = useAuthStore();
-const isLoggedIn = computed(() => !!auth.user);
 const userId = auth.user?.uid;
 const userStore = useUserStore();
 const { settings } = storeToRefs(userStore);
+const bibliografiaStore = useBibliografiaStore();
+const { bibliografia } = storeToRefs(bibliografiaStore);
+
+console.log(
+  "[BookEditions] userStore.userData.books",
+  userStore.userData?.books,
+);
 
 const canManageBooks = computed(() => userStore.hasPermission("manage_books"));
 const { canCollectBooks } = storeToRefs(userStore);
+
+const book = computed(() =>
+  bibliografia.value.find((b) => b.id === props.bookId),
+);
+const edizioni = computed(() => book.value?.edizioni || []);
 
 const handleSavePossessoEdizione = async (
   edizioneUuid,
@@ -204,15 +214,27 @@ const handleSavePossessoEdizione = async (
   }
 
   try {
+    console.log("[BookEditions] handleSavePossessoEdizione called", {
+      edizioneUuid,
+      edizionePosseduto,
+      userId,
+      bookId: props.bookId,
+    });
     if (edizionePosseduto) {
-      await savePossessoEdizione(
+      const result = await savePossessoEdizione(
         edizioneUuid,
         edizionePosseduto,
         userId,
         props.bookId,
       );
+      console.log("[BookEditions] savePossessoEdizione result", result);
     } else {
-      await removePossessoEdizione(edizioneUuid, userId, props.bookId);
+      const result = await removePossessoEdizione(
+        edizioneUuid,
+        userId,
+        props.bookId,
+      );
+      console.log("[BookEditions] removePossessoEdizione result", result);
     }
   } catch (error) {
     console.error("Error updating possession status:", error);
@@ -300,20 +322,12 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     loadingError.value = null;
-
-    // Load editions
-    const loadedEdizioni = await fetchEditions(props.bookId, userId);
-    console.log("loadedEdizioni", loadedEdizioni);
-    if (!loadedEdizioni || loadedEdizioni.length === 0) {
-      if (canManageBooks.value) {
-        await addEdizione(props.bookId);
-        const updatedEdizioni = await fetchEditions(props.bookId, userId.value);
-        edizioni.value = updatedEdizioni;
-      } else {
-        edizioni.value = [];
-      }
-    } else {
-      edizioni.value = loadedEdizioni;
+    // Se il libro non ha edizioni e l'utente può gestire, aggiungi una edizione
+    if (
+      (!book.value?.edizioni || book.value.edizioni.length === 0) &&
+      canManageBooks.value
+    ) {
+      await addEdizione(props.bookId);
     }
   } catch (error) {
     console.error("Error initializing component:", error);

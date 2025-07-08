@@ -5,7 +5,7 @@ import { useUserStore } from "stores/userStore";
 import { updateThemeFromSettings } from "utils/theme";
 
 export function setupAppWatcher() {
-  console.log('appWatcher: setupAppWatcher called');
+  //console.log("appWatcher: setupAppWatcher called");
   const bibliografiaStore = useBibliografiaStore();
   const userStore = useUserStore();
 
@@ -13,7 +13,7 @@ export function setupAppWatcher() {
   watch(
     () => [bibliografiaStore.booksRaw, userStore.books],
     () => {
-      console.log('appWatcher: bibliografiaStore.booksRaw or userStore.books changed');
+      // console.log('[appWatcher] Watcher triggered: booksRaw or userStore.books changed');
       mergeBibliografiaConUtente();
     },
     { deep: true }, // Removed immediate: true
@@ -23,49 +23,57 @@ export function setupAppWatcher() {
     () => userStore.settings.darkMode,
     (newDarkMode) => {
       if (newDarkMode !== undefined) {
-        console.log("appWatcher: Tema cambiato:", newDarkMode);
+        //console.log("appWatcher: Tema cambiato:", newDarkMode);
         updateThemeFromSettings();
       }
     },
     { immediate: true },
   );
   function mergeBibliografiaConUtente() {
-    console.log('appWatcher: mergeBibliografiaConUtente called');
+    // console.log('[appWatcher] mergeBibliografiaConUtente called');
+    // DEBUG: loggo i dati in ingresso
     const booksRaw = bibliografiaStore.booksRaw || [];
     const booksUtente = userStore.books || [];
-
-    const merged = booksRaw.map((book) => {
+    const defaultBookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
+    const merged = booksRaw.map((book, idx) => {
       // Trovo il corrispondente record utente (se esiste)
       const userBook = booksUtente.find((b) => b.bookId === book.id);
-
       // Ricreo l'array di edizioni, mantendo tutti i campi originali di `ed` e aggiungendo `posseduta`.
       const edizioniConPossesso = (book.edizioni || []).map((ed) => {
         const posseduta =
-          userBook?.edizioni?.some((ue) => ue.id === ed.id && ue.posseduta) ??
-          false;
+          userBook?.edizioni?.some(
+            (ue) =>
+              ue.uuid === ed.uuid &&
+              (ue.posseduta === true || ue.posseduto === true),
+          ) ?? false;
         return {
-          // SPREAD di tutti i campi originali di `ed`
           ...ed,
-          // sovrascrivo/aggiungo la proprietà `posseduta`
           posseduta,
         };
       });
-
-      // Se almeno un’edizione è posseduta, allora `posseduto = true`
       const posseduto = edizioniConPossesso.some((ed) => ed.posseduta === true);
 
-      // Restituisco TUTTI i campi di `book`, sostituendo l’array `edizioni` e aggiungendo `posseduto`
-      return {
-        // SPREAD di tutti i campi originali di `book`
-        ...book,
-        // sovrascrivo l’array di edizioni con quello aggiornato
-        edizioni: edizioniConPossesso,
-        // aggiungo il campo `posseduto`
-        posseduto,
-      };
-    });
+      // Calcolo defaultImageName dinamicamente
+      let defaultImageName = "placeholder.jpg";
+      if (Array.isArray(book.images) && book.images.length > 0) {
+        const mainCover = book.images.find(
+          (img) => img.coverTypeId === defaultBookCoverTypeId,
+        );
+        if (mainCover && mainCover.name) {
+          defaultImageName = mainCover.name;
+        } else {
+          defaultImageName = book.images[0].name || "placeholder.jpg";
+        }
+      }
 
+      const mergedBook = {
+        ...book,
+        edizioni: edizioniConPossesso,
+        posseduto,
+        defaultImageName,
+      };
+      return mergedBook;
+    });
     bibliografiaStore.updateBibliografia(merged);
-    console.log('appWatcher: bibliografiaStore.updateBibliografia called');
   }
 }

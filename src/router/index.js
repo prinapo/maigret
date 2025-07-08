@@ -6,7 +6,7 @@ import {
   createWebHashHistory,
 } from "vue-router";
 import routes from "./routes";
-import { Notify } from "quasar";
+import { showNotifyNegative } from "src/utils/notify";
 
 // Custom error class
 class RouterError extends Error {
@@ -21,13 +21,7 @@ class RouterError extends Error {
 
 const handleRouterError = (error, router) => {
   console.error("Router error:", error);
-
-  Notify.create({
-    message: `Errore navigazione: ${error.message}`,
-    type: "negative",
-    color: "red",
-    timeout: 3000,
-  });
+  showNotifyNegative(`Errore navigazione: ${error.message}`);
 
   const errorPath = "/error";
   const errorQuery = {

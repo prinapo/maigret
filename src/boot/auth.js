@@ -1,6 +1,7 @@
 import { boot } from "quasar/wrappers";
-import { Notify } from "quasar";
 import { isFirebaseReady } from "boot/firebase";
+import { showNotifyNegative } from "src/utils/notify";
+import { i18n } from "boot/i18n";
 
 export default boot(async (ctx = {}) => {
   const app = ctx.app;
@@ -13,26 +14,11 @@ export default boot(async (ctx = {}) => {
       return;
     }
   } catch (error) {
-    Notify.create({
-      type: "negative",
-      message:
-        "Errore di connessione. Alcune funzionalità potrebbero non essere disponibili.",
-      position: "top",
-      timeout: 8000,
-      actions: [
-        {
-          label: "Ricarica",
-          color: "white",
-          handler: () => window.location.reload(),
-        },
-      ],
-    });
-
+    showNotifyNegative(i18n.global.t("auth.connectionError"));
     // Imposta modalità offline/degradata
     if (app?.config?.globalProperties) {
       app.config.globalProperties.$firebaseError = true;
     }
-
     // Re-throw per bloccare boot successivi se necessario
     throw new Error(`Firebase initialization failed: ${error.message}`);
   }

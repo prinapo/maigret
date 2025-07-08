@@ -23,10 +23,8 @@ import authBoot from "boot/auth";
 
 describe("Auth Boot File", () => {
   let quasarAppMock;
-  let consoleWarnSpy;
 
   beforeEach(() => {
-    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     // Resetta i mock prima di ogni test
     mockIsFirebaseReady.mockClear();
     Notify.create.mockClear();
@@ -49,7 +47,6 @@ describe("Auth Boot File", () => {
 
     expect(Notify.create).not.toHaveBeenCalled();
     expect(quasarAppMock.config.globalProperties.$authDisabled).toBeUndefined();
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it("should skip auth boot if Firebase is not ready", async () => {
@@ -57,11 +54,8 @@ describe("Auth Boot File", () => {
 
     await authBoot({ app: quasarAppMock });
 
-    expect(Notify.create).not.toHaveBeenCalled(); // Non dovrebbe notificare errore, solo warning in console
+    expect(Notify.create).not.toHaveBeenCalled(); // Non dovrebbe notificare errore
     expect(quasarAppMock.config.globalProperties.$authDisabled).toBe(true);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "Auth boot skipped: Firebase not initialized",
-    );
   });
 
   it("should not proceed if firebase boot fails", async () => {
@@ -70,7 +64,7 @@ describe("Auth Boot File", () => {
     });
 
     await expect(authBoot({ app: quasarAppMock })).rejects.toThrow(
-      "Firebase init failed",
+      "Firebase initialization failed: Firebase init failed",
     );
     expect(quasarAppMock.config.globalProperties.$authDisabled).toBeUndefined();
   });
@@ -89,31 +83,18 @@ describe("Auth Boot File", () => {
     await expect(authBoot({ app })).resolves.not.toThrow();
   });
 
-  // Test: Logging warning se Firebase non pronto
-  it("should log a warning if Firebase is not ready", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockIsFirebaseReady.mockReturnValue(false);
-    await authBoot({ app: quasarAppMock });
-    expect(warnSpy).toHaveBeenCalledWith(
-      "Auth boot skipped: Firebase not initialized",
-    );
-    warnSpy.mockRestore();
-  });
-
-  // Test: Logging error se c'è un errore in fase di boot
-  it("should log an error if an error occurs during boot", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  // Test: Notifica negativa e flag su errore in fase di boot
+  it("should show notify and set $firebaseError if error occurs during boot", async () => {
     mockIsFirebaseReady.mockImplementation(() => {
       throw new Error("fail");
     });
+    quasarAppMock.config.globalProperties.$firebaseError = undefined;
     await expect(authBoot({ app: quasarAppMock })).rejects.toThrow(
       "Firebase initialization failed: fail",
     );
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
-  });
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore();
+    // La notifica negativa dovrebbe essere stata chiamata
+    expect(Notify.create).toHaveBeenCalled();
+    // Il flag $firebaseError dovrebbe essere true
+    expect(quasarAppMock.config.globalProperties.$firebaseError).toBe(true);
   });
 });

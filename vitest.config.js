@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 import { createHtmlPlugin } from "vite-plugin-html";
 import vueDevTools from "vite-plugin-vue-devtools";
 
@@ -41,13 +41,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    setupFiles: ["./test/setup.js"],
+    setupFiles: ["./test/setup.js", "./vitest.setup.js"],
     deps: {
       server: {
         deps: {
-          inline: ["quasar"]
-        }
-      }
+          inline: ["quasar"],
+        },
+      },
     },
   },
 });

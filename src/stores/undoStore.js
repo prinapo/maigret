@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { restoreImageFromTrashAndSync } from "../utils/firebaseDatabaseUtils";
+import { restoreImageFromTrashAndSync } from "utils/firebaseDatabaseUtils";
 import { Notify } from "quasar";
 
 export const useUndoStore = defineStore("undo", {
@@ -14,7 +14,6 @@ export const useUndoStore = defineStore("undo", {
       this.lastUndoOperation = null;
     },
     async undoLastOperation() {
-      console.log("Undo last operation:", this.lastUndoOperation);
       if (!this.lastUndoOperation) return null;
 
       const { bookId, operationType, imageData, imageIndex } =
@@ -22,8 +21,6 @@ export const useUndoStore = defineStore("undo", {
 
       try {
         if (operationType === "deleteImage") {
-          console.log("Undo deleteImage:", bookId, imageData, imageIndex);
-
           const updatedImages = await restoreImageFromTrashAndSync(
             bookId,
             imageData,
@@ -40,7 +37,6 @@ export const useUndoStore = defineStore("undo", {
           return updatedImages; // ✅ restituisce le immagini aggiornate
         }
       } catch (err) {
-        console.error("Errore durante UNDO:", err);
         Notify.create({
           message: "Errore durante l'annullamento",
           color: "negative",

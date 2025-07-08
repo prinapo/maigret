@@ -1,6 +1,9 @@
 <template>
   <div class="q-pa-md">
     <q-page>
+      <div v-if="userStore.hasPermission('manage_books')" class="q-mb-md">
+        <q-toggle v-model="showDeleted" label="Mostra libri eliminati" />
+      </div>
       <div
         v-if="!isInitialized"
         class="flex flex-center"
@@ -129,6 +132,7 @@ const currentPage = ref(1);
 const isLoadingMore = ref(false);
 const loadMoreTrigger = ref(null);
 const observer = ref(null);
+const showDeleted = ref(false);
 
 // Stores
 const bibliografiaStore = useBibliografiaStore();
@@ -144,18 +148,18 @@ const { lingue } = storeToRefs(lingueStore);
 const userStore = useUserStore();
 const { settings } = storeToRefs(userStore);
 
-// Computed per controllo permessi
-// Sostituire questa riga:
-// const canCollectBooks = computed(() => userStore.canCollectBooks);
-// Con:
 const { canCollectBooks } = storeToRefs(userStore);
 
 const filteredBooks = computed(() => {
   if (!bibliografia.value?.length) {
     return [];
   }
-
-  const filtered = bibliografia.value.filter(shouldShowBook);
+  let filtered = bibliografia.value.filter(shouldShowBook);
+  if (!showDeleted.value) {
+    filtered = filtered.filter((b) => !b.deleted);
+  } else {
+    filtered = filtered.filter((b) => b.deleted);
+  }
   return filtered;
 });
 
@@ -224,7 +228,7 @@ const sortedBooks = computed(() => {
 
 // Utility functions
 const openBookDetails = (bookId) => {
-  selectedBookId.value = bookId;
+  selectedBookId.value = String(bookId);
   isDialogOpen.value = true;
 };
 
@@ -300,15 +304,6 @@ const shouldShowBook = (book) => {
 
   return true;
 };
-// Generate hash for filter state to detect changes
-// Rimuovere queste funzioni:
-// const getFilterHash = () => { ... };
-// const getSortHash = () => { ... };
-const getSortHash = () => {
-  return JSON.stringify({
-    orderBy: filters.value.orderBy,
-  });
-};
 
 // Computed property for paginated books
 const paginatedBooks = computed(() => {
@@ -375,28 +370,23 @@ const setupIntersectionObserver = () => {
 watch(
   () => bibliografia.value,
   async (newValue) => {
-    console.log('BibliografiaPage: bibliografia watcher triggered. newValue length:', newValue?.length);
-    if (newValue?.length) {
-      console.log("BibliografiaPage: bibliografia.value has length, setting isInitialized to true");
+    // [BibliografiaPage] bibliografia watcher triggered
+    // newValue, "isInitialized:", isInitialized.value
+    if (Array.isArray(newValue) && !isInitialized.value) {
       isInitialized.value = true;
+      // [BibliografiaPage] isInitialized set to true
       resetPagination();
-
-      // Aspetta che il DOM sia aggiornato e il render sia completato
       await nextTick();
-      console.log("BibliografiaPage: nextTick completed, attempting to hide loading");
-
-      // Aspetta un frame aggiuntivo per essere sicuri che tutto sia renderizzato
       requestAnimationFrame(() => {
-        console.log("BibliografiaPage: requestAnimationFrame callback, hiding loading");
+        // [BibliografiaPage] $q.loading.hide called
         $q.loading.hide();
       });
-    } else {
-      console.log("BibliografiaPage: bibliografia.value is empty or null");
     }
   },
-  { immediate: false }, // Changed to false
+  { immediate: true },
 );
 
+// Unico watcher per tutti i filtri e orderBy
 watch(
   () => [
     filters.value.search,
@@ -413,13 +403,6 @@ watch(
 );
 
 watch(
-  () => filters.value.orderBy,
-  () => {
-    updateBooksList();
-  },
-);
-
-watch(
   () => hasMoreBooks.value,
   (newVal) => {
     if (newVal) {
@@ -430,14 +413,14 @@ watch(
 
 // Lifecycle
 onMounted(() => {
-  console.log("BibliografiaPage: onMounted called");
+  // [BibliografiaPage] onMounted called
   setupIntersectionObserver();
   $q.loading.show({
     message: "Loading...",
     spinnerColor: "primary",
     messageColor: "dark",
   });
-  console.log("BibliografiaPage: $q.loading.show called");
+  // [BibliografiaPage] $q.loading.show called
 });
 
 onUnmounted(() => {

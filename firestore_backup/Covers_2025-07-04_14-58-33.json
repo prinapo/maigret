@@ -1,0 +1,100 @@
+[
+  {
+    "id": "default",
+    "undefined": [
+      {
+        "value": "qNvdwFMLNt2Uz7JjqTjacu",
+        "label": "Prima di copertina"
+      },
+      {
+        "value": "5FPqY3QuqLHe8snQwAVNUz",
+        "label": "Seconda di copertina (aletta anteriore)"
+      },
+      {
+        "value": "sAdhEakJ96NuLDB2nr85qR",
+        "label": "Terza di copertina (aletta posteriore)"
+      },
+      {
+        "value": "ppMZiW1Yy3EV5xkw6x1Mti",
+        "label": "Quarta di copertina"
+      },
+      {
+        "value": "hAvDZKHe436U4op9zut45E",
+        "label": "Dorso"
+      },
+      {
+        "value": "aezrAwYV4ez6XVSmjy7FHw",
+        "label": "Frontespizio (pagina interna con Autore Titolo e Editore)"
+      },
+      {
+        "value": "neoyx5F9pyCGic5YxehrSM",
+        "label": "Occhiello (pagina interna con il titolo)"
+      },
+      {
+        "value": "jAkMzxmRVCcCVRUwGbjmvN",
+        "label": "Colophon (dati edioriali)"
+      },
+      {
+        "value": "k3ysndTkWdDi9AEZwy2jTp",
+        "label": "Indice"
+      },
+      {
+        "tipo": "insert tipo",
+        "value": "j7DLr3jEyN13U4mvwueYuo",
+        "label": "sconosciuta"
+      }
+    ],
+    "cover": [
+      {
+        "value": "qNvdwFMLNt2Uz7JjqTjacu",
+        "label_it": "Prima di copertina",
+        "label_en": "Prima di copertina"
+      },
+      {
+        "value": "5FPqY3QuqLHe8snQwAVNUz",
+        "label_it": "Seconda di copertina (aletta anteriore)",
+        "label_en": "Seconda di copertina (aletta anteriore)"
+      },
+      {
+        "value": "sAdhEakJ96NuLDB2nr85qR",
+        "label_it": "Terza di copertina (aletta posteriore)",
+        "label_en": "Terza di copertina (aletta posteriore)"
+      },
+      {
+        "value": "ppMZiW1Yy3EV5xkw6x1Mti",
+        "label_it": "Quarta di copertina",
+        "label_en": "Quarta di copertina"
+      },
+      {
+        "value": "hAvDZKHe436U4op9zut45E",
+        "label_it": "Dorso",
+        "label_en": "Dorso"
+      },
+      {
+        "value": "aezrAwYV4ez6XVSmjy7FHw",
+        "label_it": "Frontespizio (pagina interna con Autore Titolo e Editore)",
+        "label_en": "Frontespizio (pagina interna con Autore Titolo e Editore)"
+      },
+      {
+        "value": "neoyx5F9pyCGic5YxehrSM",
+        "label_it": "Occhiello (pagina interna con il titolo)",
+        "label_en": "Occhiello (pagina interna con il titolo)"
+      },
+      {
+        "value": "jAkMzxmRVCcCVRUwGbjmvN",
+        "label_it": "Colophon (dati edioriali)",
+        "label_en": "Colophon (dati edioriali)"
+      },
+      {
+        "value": "k3ysndTkWdDi9AEZwy2jTp",
+        "label_it": "Indice",
+        "label_en": "Indice"
+      },
+      {
+        "value": "j7DLr3jEyN13U4mvwueYuo",
+        "label_it": "sconosciuta",
+        "label_en": "sconosciuta"
+      }
+    ]
+  }
+]

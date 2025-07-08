@@ -1,6 +1,6 @@
 <template>
   <q-page padding>
-    <q-banner class="q-mb-md bg-grey-3">
+    <q-banner class="q-mb-md">
       <div class="text-h6">{{ $t("trash.title") }}</div>
       <div class="text-subtitle2">
         Qui trovi le immagini eliminate, puoi ripristinarle o eliminarle
@@ -37,20 +37,8 @@
         </q-item-section>
 
         <q-item-section side>
-          <q-btn
-            dense
-            flat
-            icon="restore"
-            color="primary"
-            @click="restoreEntry(entry)"
-          />
-          <q-btn
-            dense
-            flat
-            icon="delete_forever"
-            color="negative"
-            @click="deleteEntry(entry)"
-          />
+          <q-btn dense flat icon="restore" @click="restoreEntry(entry)" />
+          <q-btn dense flat icon="delete_forever" @click="deleteEntry(entry)" />
         </q-item-section>
       </q-item>
     </q-list>
@@ -61,7 +49,6 @@
 import { ref, onMounted } from "vue"; // Sostituire con:
 import { fetchTrashData } from "utils/firebaseDatabaseUtils";
 import { fireStoreTrashUrl } from "boot/firebase"; // Solo per URL
-import { Notify } from "quasar";
 import {
   deleteTrashEntry,
   restoreImageToDatabase,
@@ -71,6 +58,9 @@ import {
   restoreTrashStorageImage,
 } from "utils/firebaseStorageUtils";
 import placeholderImage from "assets/placeholder.jpg";
+import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
 
 const trashEntries = ref([]);
 
@@ -99,10 +89,7 @@ const fetchTrashEntries = async () => {
     trashEntries.value = await fetchTrashData();
   } catch (error) {
     console.error("Errore caricando il cestino:", error);
-    Notify.create({
-      message: "Errore caricando il cestino.",
-      color: "negative",
-    });
+    showNotifyNegative(t("trash.errorLoadingTrash"));
   }
 };
 
@@ -113,10 +100,7 @@ const restoreEntry = async (entry) => {
   const trashId = entry?.id;
 
   if (!entry || !imageData || !fileName || !bookId || !trashId) {
-    Notify.create({
-      type: "negative",
-      message: "Dati di ripristino mancanti o non validi",
-    });
+    showNotifyNegative(t("trash.restoreDataMissing"));
     return;
   }
 
@@ -127,16 +111,10 @@ const restoreEntry = async (entry) => {
 
     // 🔁 Rimuovi manualmente dalla lista visibile
     trashEntries.value = trashEntries.value.filter((e) => e.id !== trashId);
-    Notify.create({
-      type: "positive",
-      message: "Immagine ripristinata con successo",
-    });
+    showNotifyPositive(t("trash.imageRestoredSuccessfully"));
   } catch (error) {
     console.error("Errore nel ripristinare l'immagine:", error);
-    Notify.create({
-      type: "negative",
-      message: "Errore durante il ripristino dell'immagine",
-    });
+    showNotifyNegative(t("trash.errorRestoringImage"));
   }
 };
 
@@ -151,16 +129,10 @@ const deleteEntry = async (entry) => {
     // 3. Rimuovi dal frontend
     trashEntries.value = trashEntries.value.filter((e) => e.id !== entry.id);
 
-    Notify.create({
-      message: "Elemento eliminato definitivamente.",
-      color: "positive",
-    });
+    showNotifyPositive(t("trash.itemDeletedPermanently"));
   } catch (error) {
     console.error("Errore durante eliminazione:", error);
-    Notify.create({
-      message: "Errore durante eliminazione.",
-      color: "negative",
-    });
+    showNotifyNegative(t("trash.errorDeletingItem"));
   }
 };
 onMounted(() => {

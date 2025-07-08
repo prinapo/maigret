@@ -1,12 +1,3 @@
-// Define visibility levels based on permissions
-export const VISIBILITY = {
-  PUBLIC: "public", // Anyone can see
-  READ_BASIC: "read_basic", // Users with basic read permission
-  READ_ADVANCED: "read_advanced", // Users with advanced read permission
-  READ_ADMIN: "read_admin", // Users with admin read permission
-  READ_SYSTEM: "read_system", // Users with system read permission
-};
-
 export const bookDetailsConfig = [
   // Dettagli Principali - Public Information
   {
@@ -15,7 +6,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Principali",
     sectionOrder: 0,
-    visibility: VISIBILITY.PUBLIC,
+    readOnly: true,
   },
   {
     id: "editore",
@@ -24,12 +15,12 @@ export const bookDetailsConfig = [
     options: "editori",
     section: "Dettagli Principali",
     sectionOrder: 0,
-    visibility: VISIBILITY.PUBLIC,
     store: {
       use: "useEditoriStore",
       name: "editoriStore",
       labelField: "editore",
     },
+    readOnly: true,
   },
   {
     id: "collana",
@@ -38,12 +29,12 @@ export const bookDetailsConfig = [
     options: "collane",
     section: "Dettagli Principali",
     sectionOrder: 0,
-    visibility: VISIBILITY.PUBLIC,
     store: {
       use: "useCollaneStore",
       name: "collaneStore",
       labelField: "collana",
     },
+    readOnly: true,
   },
   {
     id: "numeroCollana",
@@ -51,7 +42,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Principali",
     sectionOrder: 0,
-    visibility: VISIBILITY.PUBLIC,
+    readOnly: true,
   },
   {
     id: "autore",
@@ -59,7 +50,15 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Principali",
     sectionOrder: 0,
-    visibility: VISIBILITY.PUBLIC,
+    readOnly: true,
+  },
+  {
+    id: "edizioni",
+    label: "Edizioni",
+    type: "array",
+    section: "Dettagli Principali",
+    sectionOrder: 0,
+    readOnly: true,
   },
 
   // Dettagli Secondari - Collector Information
@@ -69,7 +68,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Secondari",
     sectionOrder: 1,
-    visibility: VISIBILITY.READ_BASIC,
+    readOnly: true,
   },
   {
     id: "annoScrittura",
@@ -77,7 +76,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Secondari",
     sectionOrder: 1,
-    visibility: VISIBILITY.READ_BASIC,
+    readOnly: true,
   },
   {
     id: "annoPubblicazione",
@@ -85,7 +84,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Secondari",
     sectionOrder: 1,
-    visibility: VISIBILITY.READ_BASIC,
+    readOnly: true,
   },
 
   {
@@ -95,12 +94,12 @@ export const bookDetailsConfig = [
     options: "lingue",
     section: "Dettagli Secondari",
     sectionOrder: 1,
-    visibility: VISIBILITY.PUBLIC,
     store: {
       use: "useLingueStore",
       name: "lingueStore",
       labelField: "lingua",
     },
+    readOnly: true,
   },
 
   // Dettagli Terzi - Admin Information
@@ -110,23 +109,16 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Terzi",
     sectionOrder: 3,
-    visibility: VISIBILITY.READ_ADVANCED,
+    readOnly: true,
   },
-  {
-    id: "copertina",
-    label: "Copertina",
-    type: "text",
-    section: "Dettagli Terzi",
-    sectionOrder: 3,
-    visibility: VISIBILITY.READ_ADVANCED,
-  },
+
   {
     id: "contiene",
     label: "Contiene",
     type: "text",
     section: "Dettagli Terzi",
     sectionOrder: 3,
-    visibility: VISIBILITY.READ_ADVANCED,
+    readOnly: true,
   },
   {
     id: "raccolta",
@@ -134,7 +126,7 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Terzi",
     sectionOrder: 3,
-    visibility: VISIBILITY.READ_ADVANCED,
+    readOnly: true,
   },
 
   // Dettagli Sistema - SuperAdmin Information
@@ -144,23 +136,8 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
-  },
-  {
-    id: "bookLastUpdate",
-    label: "Ultimo Aggiornamento",
-    type: "text",
-    section: "Dettagli Sistema",
-    sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
-  },
-  {
-    id: "timestamp",
-    label: "Data Creazione",
-    type: "text",
-    section: "Dettagli Sistema",
-    sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
+    calculated: true,
   },
   {
     id: "confermato",
@@ -168,15 +145,15 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
   },
   {
     id: "deleted",
-    label: "Cancellato",
-    type: "text",
+    label: "Eliminato",
+    type: "boolean",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
   },
   {
     id: "images",
@@ -184,7 +161,7 @@ export const bookDetailsConfig = [
     type: "array",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
   },
   {
     id: "defaultImageName",
@@ -192,30 +169,32 @@ export const bookDetailsConfig = [
     type: "text",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
+    calculated: true,
   },
   {
-    id: "signedUrl",
-    label: "Signed Url",
-    type: "array",
+    id: "posseduto",
+    label: "Posseduto",
+    type: "boolean",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
+    calculated: true,
   },
   {
-    id: "signedUrlBrd",
-    label: "Signed Url Brd",
+    id: "deletedBy",
+    label: "Eliminato da",
     type: "text",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
   },
   {
-    id: "signedUrlBck",
-    label: "Signed Url Bck",
+    id: "deletedAt",
+    label: "Data Eliminazione",
     type: "text",
     section: "Dettagli Sistema",
     sectionOrder: 4,
-    visibility: VISIBILITY.READ_SYSTEM,
+    readOnly: true,
   },
 ];

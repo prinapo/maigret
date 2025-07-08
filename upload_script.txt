@@ -1,5 +1,0 @@
-open ftp://admin@maigret.crostata.org:61PrnGnnMgr!!@ftp.sostienilsostegno.com
-lcd dist/spa
-cd /
-synchronize remote
-exit

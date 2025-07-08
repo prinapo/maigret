@@ -1,0 +1,607 @@
+[
+  {
+    "id": "73OrRrvv1wg8c3voYrAUXQyx1T83",
+    "lastName": "",
+    "uid": "73OrRrvv1wg8c3voYrAUXQyx1T83",
+    "name": "",
+    "role": "collector",
+    "permissions": []
+  },
+  {
+    "id": "RWkJSQppYvdGtXieAIlQJWk1V473",
+    "createdAt": "2025-06-09T06:30:25.275Z",
+    "photoURL": "",
+    "uid": "RWkJSQppYvdGtXieAIlQJWk1V473",
+    "displayName": "",
+    "email": "maigret.collectors@gmail.com",
+    "role": "superadmin",
+    "permissions": [
+      "collect_books",
+      "manage_books",
+      "manage_users",
+      "manage_system",
+      "view_analytics",
+      "moderate_content",
+      "export_data",
+      "manage_roles"
+    ],
+    "books": [
+      {
+        "bookId": "01c47971-1862-463b-a887-937951b1dde0",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "95kzQexhEAgkMJdj3qo2Wz",
+            "posseduto": true
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "language": "it-IT",
+      "darkMode": true
+    },
+    "lastLogin": "2025-07-04T12:23:41.578Z"
+  },
+  {
+    "id": "currentUser",
+    "lastName": "",
+    "uid": "XjJHhD3RieggGhU3P2fi5ZDwBT72",
+    "name": "",
+    "books": [
+      {
+        "posseduto": true,
+        "bookId": "0169441f-2aae-45d6-8409-5899fd1dea7a",
+        "edizioni": [
+          {
+            "posseduto": false,
+            "uuid": "92dRJbKZAEzp1kCE9FauNS"
+          },
+          {
+            "uuid": "cjRFEGnky7m1YQU9szn9S2",
+            "posseduto": false
+          },
+          {
+            "uuid": "ratxRvKa95TAgzSLiwWo2b",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": false,
+            "uuid": "4UZzLFaj1YrSKrddPwgzuz"
+          }
+        ],
+        "posseduto": false,
+        "bookId": "17830e5d-7e81-4a54-b7ad-72ec319bf1fc"
+      },
+      {
+        "posseduto": true,
+        "bookId": "01c47971-1862-463b-a887-937951b1dde0",
+        "edizioni": [
+          {
+            "uuid": "95kzQexhEAgkMJdj3qo2Wz",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "ac952e14-d611-4c65-a5a6-203a07d477d3",
+            "posseduto": true
+          }
+        ],
+        "bookId": "041d5da2-875b-41fd-8fbb-9718f94c22d1",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "50332258-39c0-4349-9788-be4549db00d2",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "0971aeba-16c5-44df-985c-cb0713f9049a"
+      },
+      {
+        "bookId": "0ac8dbe5-c26c-4f65-aa81-90ad09c5556e",
+        "edizioni": [
+          {
+            "uuid": "3dd37575-1ea8-42cf-acf2-f75d3c2bcd1d",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "6eea019a-fec7-4099-b1f7-2ffa0a1a87c3",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "146b3f76-cd8e-43e5-ac9e-ea4835fe428d"
+      },
+      {
+        "posseduto": true,
+        "bookId": "25ab0fe5-87ba-45b5-a6cf-909b77238b46",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "9facfbe2-baf5-460d-ace9-05275480974e"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "bookId": "27799ba6-040b-43b7-bc8e-8dfd6b7836b3",
+        "edizioni": [
+          {
+            "uuid": "d9d790f9-7f36-441b-ac65-11bb802dd7fb",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "bookId": "2879b36c-74fb-47ea-8fa6-3b422febc957",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "29d01575-3b35-488d-b0db-ddd2d28c4a84"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "66588b94-eab8-4743-8b09-e87d28e26e29"
+          }
+        ],
+        "bookId": "2b434e90-2bfa-423b-bed6-fb1bcd3bc9ad"
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "d6b3a529-fa95-4a75-b749-e94b45213c90",
+            "posseduto": true
+          }
+        ],
+        "bookId": "2f4d31d7-1f25-4644-a1f1-14f8b42d79e0"
+      },
+      {
+        "bookId": "30aad1e4-0f0d-45d4-8155-982dd0a2c833",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "5eca6fcf-1ba2-4cf9-b443-b0139c3818cd"
+          }
+        ],
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "b0a52797-fb4c-4eaf-a7bc-ef625cc9acb6",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "31efe565-2027-4f64-9c53-bac9ccb43d88"
+      },
+      {
+        "bookId": "3adfa202-f3a3-4a77-bcc1-1c199e8f7119",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "90f35230-2aac-4dd6-b23b-de4392233eda"
+          }
+        ],
+        "posseduto": true
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "6178e6b8-c57a-4c31-8b0e-a2237b20bd63",
+            "posseduto": true
+          }
+        ],
+        "bookId": "8c25980e-7839-4afe-8161-e705687f2414"
+      },
+      {
+        "bookId": "f4b4234a-ae35-4ec7-8716-a48211a7b01c",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "d4bb5d8c-a3f5-40c7-a874-781f23bdf14e",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "845add60-b207-4e26-be3e-6aa8feb077ac"
+          }
+        ],
+        "bookId": "16dc2622-2ade-4c5d-9673-9acd632fa9be",
+        "posseduto": true
+      },
+      {
+        "bookId": "a8ebac01-b49e-434d-b1bf-572912a5585f",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "6fe897d9-7504-4508-a9bc-38cb213c6317",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "adcf721d-6443-4897-aece-ca2d878306f2",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "6f83804e-f542-44dc-8a4c-31a4bc8e5314"
+      },
+      {
+        "bookId": "4402b7c4-53c6-4778-b0da-91150ccd3bbc",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "ba5b378a-18cb-49b6-9f01-ab6afd26004d",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "bookId": "cd3f4666-7c47-4c0c-a294-9e3b59bb2e5e",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "1f8273ac-96b6-4b14-88b0-911c27e56f34"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "807c0129-ccf8-4170-a421-0d12cdb168b9"
+          }
+        ],
+        "bookId": "a39638f9-f078-4064-bbb7-840ae22c3958"
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "884008de-fa52-4b7d-9d49-48d111a4dd29",
+            "posseduto": true
+          }
+        ],
+        "bookId": "c5e239d7-32e5-4c18-bef6-95c4ebc1a43f"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "e7ab8962-bf14-4d4c-8ab8-ea2006ee473c"
+          }
+        ],
+        "posseduto": true,
+        "bookId": "8a1b7929-ce4e-4d81-a9a1-03bdb7458e35"
+      },
+      {
+        "posseduto": true,
+        "bookId": "e85d6f3f-ed87-48a8-a149-082c6c68bcd5",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "cfb580e5-b763-483a-9624-ce337e909faa"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "0b732313-5a38-495e-9de9-ab2d220db25f",
+            "posseduto": true
+          }
+        ],
+        "bookId": "4533d8f8-bf8a-49dd-834c-4ca3ee25c3f8"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "65e9f533-43c3-49c2-abc9-bdbc4c353ee6"
+          }
+        ],
+        "posseduto": true,
+        "bookId": "c6fce779-0188-42ce-96d1-fa8996b92dfe"
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "39521a89-ad33-4b85-8c38-813651b7dd13",
+            "posseduto": true
+          }
+        ],
+        "bookId": "54500603-c8ca-40f0-aaea-fb27efec525f",
+        "posseduto": true
+      },
+      {
+        "bookId": "d245ef28-c1c6-4a3a-9229-c3934d07cfcf",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "84a45091-a5bb-4838-814f-d8571ca0d4b0"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "aa64cc41-0e85-44f7-b92d-03a0b0d7d2fc",
+            "posseduto": true
+          }
+        ],
+        "bookId": "7edb83af-d408-4240-897e-027f1eb7c508"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "24b0e084-79d2-44a3-a1d7-c1ae26f6813c"
+          }
+        ],
+        "bookId": "a8505070-2e84-4a4c-ac57-dfe91e452449",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "3d8c43b1-f25a-4581-9be9-586760429c5f",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "b63526b0-161d-44c6-a2b2-ae829bee75b9"
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "500b0c66-893e-4efa-8f18-548b7ad88319",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "776b97cc-1738-41f7-806b-b0663379f112"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "03212fa7-191a-41f1-9ab9-fd3b9ab80e83"
+          }
+        ],
+        "bookId": "43eb1787-40f9-44a6-871a-240a2f02ee98",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "cd263aee-ec23-4ea1-920c-8e0f3bbaf86f"
+          }
+        ],
+        "bookId": "bce327df-679f-43e9-b6f5-349a886ed551",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "ee10e9cf-0f16-468e-96f8-dbe76551f149",
+            "posseduto": true
+          }
+        ],
+        "bookId": "dab52e75-f3dc-4e6c-9480-ac8e71774cfb",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "72cac41b-d7cb-4a58-8adf-e318f643aa41",
+            "posseduto": true
+          }
+        ],
+        "posseduto": true,
+        "bookId": "c8f047a1-1e6c-47a2-89a9-94ca2c40426c"
+      },
+      {
+        "bookId": "b5e94ac9-19ee-404c-93ea-a15e27630a46",
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "9e8a027c-754c-403a-a125-c967f7a5f542"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "uuid": "8e02d022-7722-4a61-83b6-7d13879baf4d",
+            "posseduto": true
+          }
+        ],
+        "bookId": "501a6d4f-0cec-4302-95f6-f01c43de5ac1"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "d5a10de8-b604-40b7-a5d0-d2f76333b37a"
+          }
+        ],
+        "bookId": "be5e6abd-7e7a-4262-bcb9-549374807689",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "2514f3a3-0e0c-4f4a-aae2-c7a5b0262f34"
+          }
+        ],
+        "bookId": "72d76fb9-6bd8-41d4-9b3a-fdd0e1c3f131",
+        "posseduto": true
+      },
+      {
+        "posseduto": true,
+        "bookId": "daa62836-b781-4b1a-a1e8-65e9d2c93168",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "6393f7b7-b670-437e-8933-764190f7dec9"
+          }
+        ]
+      },
+      {
+        "posseduto": true,
+        "bookId": "d0608161-0b15-4cd5-8b40-7fcf209f2d9f",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "3fe87841-988d-40d8-8944-1d5b7eeec0fe"
+          }
+        ]
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "84020c90-be02-4518-8ecd-ec636a74d487"
+          }
+        ],
+        "posseduto": true,
+        "bookId": "7b4b97eb-f0be-469b-9798-7620d057cae2"
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "4a156208-1564-4ada-8c09-038133c654e9"
+          }
+        ],
+        "bookId": "519735f4-8cfe-4e2a-a62e-97e95a09c8eb"
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "beb8e0c6-112f-434c-b512-d3ff5daae369"
+          }
+        ],
+        "bookId": "97d8258e-37d5-4505-88d5-5281cceef897",
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "uuid": "ee568dbd-63b5-4448-a6a7-20693c89a255",
+            "posseduto": false
+          }
+        ],
+        "bookId": "b9612373-52be-431d-a777-445d260cf1f6",
+        "posseduto": false
+      },
+      {
+        "posseduto": true,
+        "bookId": "7f300c5d-a982-4ef8-a69e-71c72fad858b",
+        "edizioni": [
+          {
+            "uuid": "d44854d0-9e83-4bca-aa33-3c79b7df1649",
+            "posseduto": true
+          }
+        ]
+      },
+      {
+        "bookId": "6193cd73-cd4b-46cd-b9b2-3787089f7404",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "fb42e720-dc19-46ad-8fd5-fec238e1b983"
+          }
+        ],
+        "posseduto": true
+      },
+      {
+        "bookId": "c86fdae8-d103-4350-bbfb-32752dc242d4",
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "ba1d7fb0-25e8-4b3a-87e4-2bb4f3677a68"
+          }
+        ],
+        "posseduto": true
+      },
+      {
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "0a3e6df5-5fc7-4648-a955-f9fba028835c"
+          }
+        ],
+        "bookId": "9d944e6b-2fd0-40d5-8166-09f6ddd963d7",
+        "posseduto": true
+      },
+      {
+        "posseduto": true,
+        "edizioni": [
+          {
+            "posseduto": true,
+            "uuid": "c7fd17f0-2b5c-4f42-be14-045efd89e428"
+          }
+        ],
+        "bookId": "4ef40600-f663-42e8-b275-83387ebcd1c4"
+      }
+    ],
+    "lastUpdated": 1747069616574,
+    "settings": {
+      "isAdmin": true,
+      "theme": "dark",
+      "superadmin": false,
+      "darkMode": true
+    },
+    "lastLogin": "2025-06-23T16:03:31.991Z"
+  },
+  {
+    "id": "jsV4zj8UOSUxx3JlpvKqpwjvUI93",
+    "lastName": "",
+    "uid": "jsV4zj8UOSUxx3JlpvKqpwjvUI93",
+    "role": "user",
+    "name": ""
+  }
+]

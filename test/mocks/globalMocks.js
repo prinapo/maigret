@@ -60,6 +60,9 @@ export const mockBibliografia = [
         uuid: "i6Vkf16XpsDTpw5ZhiuvLq",
       },
     ],
+    deleted: false,
+    deletedBy: "",
+    deletedAt: "",
   },
   {
     id: "singleImageTestBook",
@@ -107,6 +110,9 @@ export const mockBibliografia = [
         ],
       },
     ],
+    deleted: false,
+    deletedBy: "",
+    deletedAt: "",
   },
 ];
 
@@ -158,8 +164,6 @@ export const mockNotify = {
   registerType: vi.fn(),
 };
 
-
-
 // Mock firebaseDatabaseUtils
 vi.mock("@/utils/firebaseDatabaseUtils", () => ({
   syncBook: vi.fn(),
@@ -195,9 +199,9 @@ vi.mock("@/utils/imageUtils", async () => ({
         {
           label: "Undo",
           color: "white",
-          handler: onUndo
-        }
-      ]
+          handler: onUndo,
+        },
+      ],
     });
     // Simula il timeout per l'undo
     setTimeout(() => {

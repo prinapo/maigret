@@ -40,6 +40,7 @@ export default configure((/* ctx */) => {
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
     boot: [
+      "i18n", // inizializza i18n
       "pinia", // inizializza PINIA
       "firebase", // inizializza Firebase App
       "auth", // attiva il listener di autenticazione

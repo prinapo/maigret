@@ -14,3 +14,8 @@ export function updateThemeFromSettings() {
     Dark.set(isDarkMode);
   }
 }
+
+export function getUserTheme() {
+  const userStore = useUserStore();
+  return userStore.settings.theme;
+}

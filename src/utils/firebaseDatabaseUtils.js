@@ -1,4 +1,4 @@
-import { db, auth } from "../boot/firebase";
+import { db, auth } from "boot/firebase";
 // Firestore
 import {
   doc,
@@ -14,10 +14,13 @@ import {
   query,
   where,
   orderBy,
+  deleteField,
 } from "firebase/firestore";
-import { Notify } from "quasar";
-import { useBibliografiaStore } from "../stores/bibliografiaStore";
-import { moveStorageObject } from "./firebaseStorageUtils";
+import { showNotifyPositive, showNotifyNegative } from "utils/notify";
+import { useBibliografiaStore } from "stores/bibliografiaStore";
+import { moveStorageObject } from "utils/firebaseStorageUtils";
+import { i18n } from "boot/i18n";
+import { saveAs } from "file-saver";
 /**
  * Centralized utility for handling data synchronization between Firebase, IndexedDB, and Pinia
  * This utility ensures consistent data updates across all storage layers
@@ -113,19 +116,19 @@ export const syncSingleDocCollection = async ({
     storeUpdateFn(data);
 
     // Show success notification
-    Notify.create({
-      message: `${collectionName} updated successfully`,
-      type: "positive",
-    });
+    showNotifyPositive(
+      i18n.global.t("firebase.updateSuccess", { collection: collectionName }),
+    );
 
     return true;
   } catch (error) {
     console.error(`Error syncing ${collectionName}:`, error);
-    Notify.create({
-      message: `Failed to save ${collectionName}: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(
+      i18n.global.t("firebase.updateFail", {
+        collection: collectionName,
+        error: error.message,
+      }),
+    );
     throw error;
   }
 };
@@ -144,17 +147,15 @@ export const syncBook = async ({ bookId, book }) => {
       includeTimestamp: true,
     });
 
-    Notify.create({
-      message: `Libro ${bookId} aggiornato con successo`,
-      type: "positive",
-    });
+    showNotifyPositive(i18n.global.t("firebase.bookUpdated", { bookId }));
   } catch (error) {
     console.error(`Errore nella sincronizzazione del libro ${bookId}:`, error);
-    Notify.create({
-      message: `Errore aggiornando il libro ${bookId}: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(
+      i18n.global.t("firebase.bookUpdateFail", {
+        bookId,
+        error: error.message,
+      }),
+    );
     throw error;
   }
 };
@@ -203,20 +204,20 @@ export const handleOfflineUpdate = async ({
     // 3. Update Pinia store
     storeUpdateFn(data);
 
-    Notify.create({
-      message: `${collectionName} updated locally`,
-      type: "info",
-    });
+    showNotifyPositive(
+      i18n.global.t("firebase.updatedLocally", { collection: collectionName }),
+    );
   } catch (error) {
     console.error(
       `Error handling offline update for ${collectionName}:`,
       error,
     );
-    Notify.create({
-      message: `Failed to update ${collectionName} locally: ${error.message}`,
-      type: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative(
+      i18n.global.t("firebase.updateLocalFail", {
+        collection: collectionName,
+        error: error.message,
+      }),
+    );
     throw error;
   }
 };
@@ -412,10 +413,7 @@ export const createBook = async (bookData) => {
   try {
     const docRef = await addDoc(collection(db, "Bibliografia"), bookData);
 
-    Notify.create({
-      message: "Libro creato con successo",
-      type: "positive",
-    });
+    showNotifyPositive(i18n.global.t("firebase.bookCreated"));
 
     return docRef;
   } catch (error) {
@@ -488,14 +486,14 @@ export const fetchAllUsers = async () => {
  */
 export const updateUserInFirebase = async (userId, updateData) => {
   try {
+    console.log("[updateUserInFirebase] Writing to Firebase:", {
+      userId,
+      updateData,
+    });
     const userRef = doc(db, "Users", userId);
     await updateDoc(userRef, updateData);
 
-    Notify.create({
-      message: "Utente aggiornato con successo",
-      type: "positive",
-      color: "green",
-    });
+    showNotifyPositive(i18n.global.t("firebase.userUpdated"));
   } catch (error) {
     console.error("Error updating user:", error);
     throw error;
@@ -512,11 +510,7 @@ export const deleteUserFromFirebase = async (userId) => {
     const userRef = doc(db, "Users", userId);
     await deleteDoc(userRef);
 
-    Notify.create({
-      message: "Utente eliminato con successo",
-      type: "positive",
-      color: "green",
-    });
+    showNotifyPositive(i18n.global.t("firebase.userDeleted"));
   } catch (error) {
     console.error("Error deleting user:", error);
     throw error;
@@ -544,7 +538,7 @@ export const fetchCollectionData = async (
     }
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
     throw error;
@@ -608,5 +602,63 @@ const updateFirebaseDoc = async (collectionName, docId, data, options = {}) => {
   } catch (error) {
     console.error(`Error updating ${collectionName}/${docId}:`, error);
     throw error;
+  }
+};
+
+/**
+ * Scarica tutti i dati di una collezione come file JSON dal browser
+ */
+export const backupCollectionToJson = async (collectionName) => {
+  const data = await fetchCollectionData(collectionName);
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const now = new Date();
+  const pad = (n) => n.toString().padStart(2, "0");
+  const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  saveAs(blob, `${collectionName}_${timestamp}.json`);
+};
+
+/**
+ * Ripristina tutti i documenti di una collezione da un array JSON
+ */
+export const restoreCollectionFromJson = async (collectionName, jsonData) => {
+  for (const doc of jsonData) {
+    const { id, ...data } = doc;
+    await setDoc(doc(db, collectionName, id), data, { merge: true });
+  }
+};
+
+/**
+ * Restituisce tutti i campi unici trovati nei documenti della collezione
+ */
+export const getAllFieldsInCollection = async (collectionName) => {
+  const data = await fetchCollectionData(collectionName);
+  const fields = new Set();
+  data.forEach((doc) => {
+    Object.keys(doc)
+      .filter((f) => f !== "id") // escludi la chiave id
+      .forEach((f) => fields.add(f));
+  });
+  return Array.from(fields);
+};
+
+/**
+ * Elimina un campo da tutti i documenti della collezione
+ */
+export const removeFieldFromCollection = async (collectionName, field) => {
+  const data = await fetchCollectionData(collectionName);
+  let count = 0;
+  for (const record of data) {
+    if (record.id === undefined || record.id === null || record.id === "") {
+      continue;
+    }
+    if (!(field in record)) {
+      continue;
+    }
+    await updateDoc(doc(db, collectionName, String(record.id)), {
+      [field]: deleteField(),
+    });
+    count++;
   }
 };

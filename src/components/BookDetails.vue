@@ -5,75 +5,94 @@
     style="max-width: 900px"
     class="items-start q-mt-md q-px-md q-col-gutter-md"
   >
-    <div v-for="section in visibleSections" :key="section.name">
-      <q-expansion-item
-        :label="section.name"
-        :default-opened="section.sectionOrder === 0"
-        header-class="text-weight-bold"
-        expand-separator
-      >
-        <q-card>
-          <q-card-section>
-            <div
-              v-for="detail in section.items"
-              :key="detail.id"
-              class="q-mb-md"
-            >
-              <div class="row items-center q-gutter-x-md">
-                <div class="col-12 col-sm-3">{{ detail.label }}:</div>
+    <div v-for="field in visibleFields" :key="field.id" class="q-mb-md">
+      <div class="row items-center q-gutter-x-md">
+        <div class="col-12 col-sm-3">{{ field.label }}:</div>
 
-                <div class="col">
-                  <q-input
-                    v-if="detail.type === 'text'"
-                    v-model="bookDetails[detail.id]"
-                    dense
-                    outlined
-                    :readonly="!isFieldEditable"
-                    @change="saveDetail(bookId, detail.id, $event)"
-                  />
-                  <q-select
-                    v-else-if="detail.type === 'select'"
-                    v-model="bookDetails[detail.id]"
-                    :options="fieldOptions[detail.id]"
-                    emit-value
-                    map-options
-                    option-value="value"
-                    option-label="label"
-                    dense
-                    outlined
-                    :readonly="!isFieldEditable"
-                    @update:model-value="saveDetail(bookId, detail.id, $event)"
-                  />
-                  <q-input
-                    v-else-if="detail.type === 'array'"
-                    :model-value="bookDetails[detail.id]"
-                    dense
-                    outlined
-                    readonly
-                    hint="Campo array - visualizzazione sola lettura"
-                  />
-                </div>
-              </div>
+        <div class="col">
+          <div
+            v-if="
+              field.type === 'array' &&
+              Array.isArray(bookDetails[field.id]) &&
+              typeof bookDetails[field.id][0] === 'object'
+            "
+          >
+            <div class="q-mb-xs">{{ field.label }}</div>
+            <q-table
+              :rows="bookDetails[field.id]"
+              :columns="
+                Object.keys(bookDetails[field.id][0] || {}).map((key) => ({
+                  name: key,
+                  label: key,
+                  field: key,
+                }))
+              "
+              row-key="id"
+              dense
+              flat
+              hide-bottom
+            />
+          </div>
+          <div v-else-if="field.type === 'array'">
+            <div class="q-mb-xs">{{ field.label }}</div>
+            <q-chip
+              v-for="(item, idx) in bookDetails[field.id]"
+              :key="idx"
+              color="primary"
+              text-color="white"
+              class="q-mr-xs"
+            >
+              {{ item }}
+            </q-chip>
+            <div v-if="!bookDetails[field.id]?.length" class="text-grey">
+              (Nessun elemento)
             </div>
-          </q-card-section>
-        </q-card>
-      </q-expansion-item>
+          </div>
+          <q-select
+            v-else-if="field.type === 'select'"
+            :model-value="bookDetails[field.id]"
+            :options="fieldOptions[field.id]"
+            emit-value
+            map-options
+            option-value="value"
+            option-label="label"
+            dense
+            outlined
+            readonly
+            :label="field.label"
+          />
+          <q-input
+            v-else
+            :model-value="bookDetails[field.id]"
+            :label="field.label"
+            dense
+            outlined
+            readonly
+          />
+        </div>
+      </div>
     </div>
 
     <div class="q-pa-md q-gutter-sm text-center mt-4" v-if="canDeleteBooks">
       <q-btn
+        v-if="!book.value?.deleted"
         :label="$t('bookDetails.deleteBook')"
         color="negative"
         @click="confirmDeleteBook = true"
         style="min-height: 48px"
       />
-
+      <q-btn
+        v-else
+        label="Ripristina libro"
+        color="positive"
+        @click="handleRestoreBook"
+        style="min-height: 48px"
+      />
       <q-dialog v-model="confirmDeleteBook" persistent>
         <q-card>
           <q-card-section class="q-pa-md">
-            <p>{{ $t('bookDetails.confirmDeleteBook') }}</p>
+            <p>{{ $t("bookDetails.confirmDeleteBook") }}</p>
           </q-card-section>
-
           <q-card-actions align="right">
             <q-btn
               flat
@@ -93,6 +112,16 @@
         </q-card>
       </q-dialog>
     </div>
+
+    <div v-if="book">
+      <div class="q-mt-lg">
+        <div class="text-bold">Campi extra non configurati:</div>
+        <div v-for="(value, key) in extraFields" :key="key" class="q-mb-xs">
+          <span class="text-primary">{{ key }}:</span>
+          <span>{{ value }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -105,7 +134,6 @@ import { useEditoriStore } from "stores/editoriStore";
 import { useCollaneStore } from "stores/collaneStore";
 import { useLingueStore } from "stores/lingueStore";
 import { useUserStore } from "stores/userStore";
-import { useAuthStore } from "stores/authStore";
 import { bookDetailsConfig } from "config/bookDetailsConfig";
 import { syncBook } from "utils/firebaseDatabaseUtils";
 import { storeToRefs } from "pinia";
@@ -130,10 +158,6 @@ const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
 const lingueStore = useLingueStore();
 const userStore = useUserStore();
-const auth = useAuthStore();
-
-const { settings } = storeToRefs(userStore);
-const isLoggedIn = computed(() => auth.isLoggedIn);
 
 // --- Book & Field Options
 const book = computed(() =>
@@ -141,40 +165,11 @@ const book = computed(() =>
 );
 
 const bookDetails = computed(() => {
-  if (!book.value) return null;
+  if (!book.value) return {};
   const details = {};
-  const hasManagePermission = userStore.hasPermission("manage_books");
-  console.log("VisibleSections: hasManagePermission", hasManagePermission);
-  console.log("BookDetails: hasManagePermission", hasManagePermission);
-
-  if (hasManagePermission) {
-    // Per gli utenti con permessi di gestione: TUTTI i campi dalla configurazione
-    bookDetailsConfig.forEach((field) => {
-      console.log("field", field);
-      const value = book.value[field.id];
-      if (Array.isArray(value)) {
-        // Per gli array, mostra una rappresentazione leggibile
-        details[field.id] =
-          value.length > 0 ? `Array (${value.length} elementi)` : "Array vuoto";
-      } else {
-        details[field.id] = value ?? "";
-      }
-    });
-  } else {
-    // Per gli altri utenti: solo i campi con dati significativi
-    bookDetailsConfig.forEach((field) => {
-      const value = book.value[field.id];
-      if (value !== undefined && value !== null && value !== "") {
-        if (Array.isArray(value) && value.length > 0) {
-          details[field.id] = `Array (${value.length} elementi)`;
-        } else if (!Array.isArray(value)) {
-          details[field.id] = value;
-        }
-      }
-    });
-  }
-
-  console.log("BookDetails: final details", details);
+  bookDetailsConfig.forEach((field) => {
+    details[field.id] = book.value[field.id] ?? "";
+  });
   return details;
 });
 
@@ -197,64 +192,23 @@ const fieldOptions = computed(() => {
 const isFieldEditable = computed(() => userStore.hasPermission("manage_books"));
 const canDeleteBooks = computed(() => userStore.hasPermission("manage_books"));
 
-const visibleFields = computed(() => {
-  const hasManagePermission = userStore.hasPermission("manage_books");
-  if (hasManagePermission) {
-    return bookDetailsConfig;
-  }
-  return bookDetailsConfig.filter((field) => {
-    switch (field.visibility) {
-      case "public":
-        return true;
-      case "read_basic":
-        return isLoggedIn.value;
-      case "read_advanced":
-        return isLoggedIn.value;
-      case "read_admin":
-        return userStore.hasPermission("manage_books");
-      case "read_system":
-        return userStore.hasPermission("manage_books");
-      default:
-        return false;
-    }
-  });
+const mergedFields = computed(() => {
+  if (!book.value) return [];
+  const merged = bookDetailsConfig.map((field) => ({
+    ...field,
+    value: book.value[field.id] ?? "",
+  }));
+  return merged;
 });
 
-const visibleSections = computed(() => {
-  const sections = {};
-  const hasManagePermission = userStore.hasPermission("manage_books");
-
-  visibleFields.value.forEach((field) => {
-    const section = field.section;
-    if (!sections[section]) sections[section] = [];
-
-    if (hasManagePermission) {
-      sections[section].push(field);
-    } else {
-      if (
-        bookDetails.value &&
-        bookDetails.value[field.id] &&
-        bookDetails.value[field.id] !== ""
-      ) {
-        sections[section].push(field);
-      }
-    }
-  });
-
-  let finalSections = Object.entries(sections);
-
-  // Rimuovi sezioni vuote solo se l'utente NON ha i permessi di gestione
-  if (!hasManagePermission) {
-    finalSections = finalSections.filter(([name, items]) => items.length > 0);
+const visibleFields = computed(() => {
+  if (isFieldEditable.value) {
+    return mergedFields.value;
   }
-
-  return finalSections
-    .map(([name, items]) => ({
-      name,
-      sectionOrder: items[0]?.sectionOrder ?? 0,
-      items,
-    }))
-    .sort((a, b) => a.sectionOrder - b.sectionOrder);
+  const filtered = mergedFields.value.filter(
+    (f) => f.value !== "" && f.value !== undefined && f.value !== null,
+  );
+  return filtered;
 });
 
 const confirmDeleteBook = ref(false);
@@ -315,6 +269,42 @@ const handleDeleteBook = async () => {
   }
 };
 
+const handleRestoreBook = async () => {
+  if (!props.bookId) {
+    Notify.create({
+      message: "Invalid book ID",
+      type: "negative",
+    });
+    return;
+  }
+  try {
+    const book = bibliografiaStore.bibliografia.find(
+      (b) => b.id === props.bookId,
+    );
+    if (!book) {
+      throw new Error("Book not found");
+    }
+    const updatedBook = {
+      ...book,
+      deleted: false,
+      deletedAt: "",
+      deletedBy: "",
+    };
+    await syncBook({ bookId: props.bookId, book: updatedBook });
+    Notify.create({
+      message: "Libro ripristinato con successo",
+      type: "positive",
+    });
+  } catch (error) {
+    console.error("Error restoring book:", error);
+    Notify.create({
+      message: `Errore nel ripristino: ${error.message}`,
+      type: "negative",
+      timeout: 3000,
+    });
+  }
+};
+
 const saveDetail = async (bookId, itemId, value) => {
   const cleanValue = getOptionValue(value);
 
@@ -354,4 +344,12 @@ const saveDetail = async (bookId, itemId, value) => {
     });
   }
 };
+
+const extraFields = computed(() => {
+  if (!book.value) return {};
+  const configIds = new Set(bookDetailsConfig.map((f) => f.id));
+  return Object.fromEntries(
+    Object.entries(book.value).filter(([key]) => !configIds.has(key)),
+  );
+});
 </script>

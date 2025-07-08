@@ -1,34 +1,42 @@
-import { storage, fireStoreTrashTmblUrl } from "../boot/firebase";
+import { storage, fireStoreTrashTmblUrl } from "boot/firebase";
 import { ref as storageRef, uploadString } from "firebase/storage";
-import { useBibliografiaStore } from "../stores/bibliografiaStore";
+import { useBibliografiaStore } from "stores/bibliografiaStore";
 import short from "short-uuid";
-import { Notify } from "quasar";
+import {
+  showNotifyPositive,
+  showNotifyNegative,
+  showNotifyUndo,
+} from "utils/notify";
+import { useI18n } from "vue-i18n";
 import {
   syncBook,
   moveImageToTrashAndLogUndo,
   deleteTrashEntry,
 } from "./firebaseDatabaseUtils";
-import { moveStorageObject, generateThumbnail } from "./firebaseStorageUtils";
-import { useUndoStore } from "../stores/undoStore"; // path relativo al tuo store
-import { useCoversStore } from "../stores/coversStore";
+import {
+  moveStorageObject,
+  generateThumbnail,
+} from "utils/firebaseStorageUtils";
+import { useUndoStore } from "stores/undoStore";
+import { useCoversStore } from "stores/coversStore";
 
 const bookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
 
 const shortUuidGenerator = short();
 
 const notifySuccess = (message) => {
-  Notify.create({ message, type: "positive", color: "green" });
+  showNotifyPositive(message);
 };
 
 const notifyError = (message) => {
-  Notify.create({ message, type: "negative", color: "red" });
+  showNotifyNegative(message);
 };
 
 // At the top of the file
-export const deleteImage = async (bookId, imageIndex) => {
+export const deleteImage = async (bookId, imageIndex, t) => {
   const bibliografiaStore = useBibliografiaStore();
   const undoStore = useUndoStore();
-  // prendi il libro da Pinia (se non c’è bookId, puoi anche usarlo da store)
+  // prendi il libro da Pinia (se non c'è bookId, puoi anche usarlo da store)
   const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
   if (!book) throw new Error("Libro non trovato");
 
@@ -45,43 +53,9 @@ export const deleteImage = async (bookId, imageIndex) => {
 
     undoStore.setLastUndo(undoData);
 
-    Notify.create({
-      html: true,
-      position: "bottom",
-      timeout: 5000, // si chiude automaticamente dopo 5 secondi
-      color: "primary",
-      message: `
-        <div style="display:flex;align-items:center">
-          <img
-            src="${fireStoreTrashTmblUrl + encodeURIComponent(imageToDelete.name)}?alt=media"
-            style="width:32px;height:64px;margin-right:8px;object-fit:contain"
-          />
-          <span>Immagine cancellata:
-            <strong>${imageToDelete.name}</strong>
-            (<em>${imageToDelete.coverType}</em>)
-          </span>
-        </div>
-      `,
-      actions: [
-        {
-          label: "Undo",
-          color: "white",
-          handler: async () => {
-            try {
-              const { trashEntryId } = undoData;
-              await undoStore.undoLastOperation();
-
-              if (trashEntryId) {
-                await deleteTrashEntry(trashEntryId);
-                // Aggiorna la UI se serve
-              }
-            } catch (err) {
-              console.error("Errore undo:", err);
-              Notify.create({ type: "negative", message: "Undo fallito" });
-            }
-          },
-        },
-      ],
+    showNotifyUndo(t("bookImages.imageDeleted"), t("common.undo"), async () => {
+      await undoStore.undoLastOperation();
+      showNotifyPositive(t("bookImages.imageRestored"));
     });
   } catch (error) {
     console.error("Errore cancellazione immagine:", error);
@@ -202,6 +176,20 @@ export const fetchImages = async (bookId) => {
   }
 };
 
+// Funzione per generare la thumbnail localmente da un oggetto Image
+const generateThumbnailLocal = (img, contentType = "image/jpeg") => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const width = 300;
+    const height = (width / img.width) * img.height;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    canvas.toBlob((blob) => resolve(blob), contentType, 0.8);
+  });
+};
+
 export const convertAndUploadImage = async (file, bookId, innerIndex) => {
   const bibliografiaStore = useBibliografiaStore();
 
@@ -210,7 +198,6 @@ export const convertAndUploadImage = async (file, bookId, innerIndex) => {
     if (!book) throw new Error("Libro non trovato nello store");
 
     const oldImage = book.images?.[innerIndex];
-    console.log("Old image", oldImage);
     const reader = new FileReader();
 
     // Lettura file come dataURL
@@ -219,7 +206,7 @@ export const convertAndUploadImage = async (file, bookId, innerIndex) => {
       reader.onerror = () => reject(new Error("Errore nel leggere il file"));
       reader.readAsDataURL(file);
     });
-    const img = new Image();
+    const img = new window.Image();
     // Attendi il caricamento dell'immagine
     await new Promise((resolve, reject) => {
       img.onload = () => resolve();
@@ -251,11 +238,11 @@ export const convertAndUploadImage = async (file, bookId, innerIndex) => {
       contentType,
     );
 
-    // Genera e carica il thumbnail (assumo che questa funzione lo faccia)
-    const thumbnailBlob = await generateThumbnail(newFileName);
+    // Genera e carica la thumbnail localmente
+    const thumbnailBlob = await generateThumbnailLocal(img, contentType);
     if (thumbnailBlob) {
       const thumbnailPath = `thumbnails/${newFileName}`;
-      await uploadImageToStorage(thumbnailBlob, thumbnailPath, "image/jpeg");
+      await uploadImageToStorage(thumbnailBlob, thumbnailPath, contentType);
     }
 
     const updatedImages = [...book.images];

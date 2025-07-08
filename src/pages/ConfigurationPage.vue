@@ -4,7 +4,7 @@
       <div class="col-12">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.settings') }}</div>
+            <div class="text-h6">{{ $t("configuration.settings") }}</div>
             <q-separator class="q-my-md" />
 
             <div v-if="!loading.value" class="row q-col-gutter-md">
@@ -45,7 +45,7 @@
       <div class="col-12">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.userInfo') }}</div>
+            <div class="text-h6">{{ $t("configuration.userInfo") }}</div>
             <q-separator class="q-my-md" />
 
             <div class="row q-col-gutter-md">
@@ -60,7 +60,9 @@
               </div>
 
               <div class="col-12" v-if="userStore.userPermissions.length > 0">
-                <div class="text-subtitle2 q-mb-sm">{{ $t('configuration.permissions') }}:</div>
+                <div class="text-subtitle2 q-mb-sm">
+                  {{ $t("configuration.permissions") }}:
+                </div>
                 <div class="row q-col-gutter-xs">
                   <div
                     v-for="permission in userStore.userPermissions"
@@ -87,7 +89,7 @@
       <div class="col-12" v-if="userStore.canManageBooks">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.exportData') }}</div>
+            <div class="text-h6">{{ $t("configuration.exportData") }}</div>
             <q-separator class="q-my-md" />
 
             <div class="row q-col-gutter-md">
@@ -120,7 +122,9 @@
       <div class="col-12" v-if="userStore.hasPermission('manage_system')">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.systemManagement') }}</div>
+            <div class="text-h6">
+              {{ $t("configuration.systemManagement") }}
+            </div>
             <q-separator class="q-my-md" />
 
             <div class="row q-col-gutter-md">
@@ -156,7 +160,7 @@
       <div class="col-12" v-if="userStore.canManageUsers">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.userManagement') }}</div>
+            <div class="text-h6">{{ $t("configuration.userManagement") }}</div>
             <q-separator class="q-my-md" />
 
             <div class="row q-col-gutter-md">
@@ -178,7 +182,7 @@
       <div class="col-12" v-if="userStore.hasPermission('view_analytics')">
         <q-card>
           <q-card-section>
-            <div class="text-h6">{{ $t('configuration.analytics') }}</div>
+            <div class="text-h6">{{ $t("configuration.analytics") }}</div>
             <q-separator class="q-my-md" />
 
             <div class="row q-col-gutter-md">
@@ -201,7 +205,7 @@
     <q-dialog v-model="errorDialog.show" persistent>
       <q-card>
         <q-card-section>
-          <div class="text-h6">{{ $t('common.error') }}</div>
+          <div class="text-h6">{{ $t("common.error") }}</div>
         </q-card-section>
 
         <q-card-section>
@@ -209,7 +213,12 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat :label="$t('common.close')" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('common.close')"
+            color="primary"
+            v-close-popup
+          />
           <q-btn
             v-if="errorDialog.retry"
             flat
@@ -220,11 +229,74 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Backup e Ripristino Firebase</div>
+        <div class="row q-col-gutter-md q-mt-md">
+          <div class="col-12 col-md-6">
+            <q-btn
+              color="primary"
+              label="Backup Globale (tutte le collezioni)"
+              @click="() => collections.forEach(handleBackup)"
+              class="full-width q-mb-sm"
+            />
+          </div>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div v-for="col in collections" :key="col" class="col-12 q-mb-sm">
+            <q-btn
+              color="primary"
+              :label="`Backup ${col}`"
+              @click="() => handleBackup(col)"
+              class="full-width q-mb-xs"
+            />
+            <q-btn
+              color="secondary"
+              :label="`Ripristina ${col}`"
+              class="full-width q-mb-xs"
+            >
+              <input
+                type="file"
+                accept="application/json"
+                @change="(e) => handleRestore(col, e)"
+                style="display: none"
+                ref="fileInput"
+              />
+            </q-btn>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Pulizia campi Bibliografia</div>
+        <q-btn
+          color="info"
+          label="Ricarica campi"
+          @click="loadBibliografiaFields"
+          :loading="loadingFields"
+          class="q-mb-md"
+        />
+        <q-list bordered>
+          <q-item v-for="field in bibliografiaFieldsFiltered" :key="field">
+            <q-item-section>{{ field }}</q-item-section>
+            <q-item-section side>
+              <q-btn
+                color="negative"
+                label="Elimina campo"
+                @click="() => handleRemoveField(field)"
+              />
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card-section>
+    </q-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
 import { useCollaneStore } from "stores/collaneStore";
@@ -238,6 +310,13 @@ import { Notify } from "quasar";
 import { fetchCollectionData } from "utils/firebaseDatabaseUtils";
 import { updateThemeFromSettings } from "utils/theme";
 import { useRouter } from "vue-router";
+import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
+import {
+  backupCollectionToJson,
+  restoreCollectionFromJson,
+  getAllFieldsInCollection,
+  removeFieldFromCollection,
+} from "utils/firebaseDatabaseUtils";
 
 updateThemeFromSettings();
 
@@ -252,12 +331,19 @@ const isLoggedIn = computed(() => auth.isLoggedIn);
 const initialLanguage = settings.value.language || locale.value;
 const selectedLanguage = ref(initialLanguage);
 
-watch(settings, (newSettings) => {
-  if (newSettings.language && newSettings.language !== selectedLanguage.value) {
-    selectedLanguage.value = newSettings.language;
-    locale.value = newSettings.language;
-  }
-}, { immediate: true });
+watch(
+  settings,
+  (newSettings) => {
+    if (
+      newSettings.language &&
+      newSettings.language !== selectedLanguage.value
+    ) {
+      selectedLanguage.value = newSettings.language;
+      locale.value = newSettings.language;
+    }
+  },
+  { immediate: true },
+);
 
 const languageOptions = [
   { label: "Italiano", value: "it-IT" },
@@ -269,16 +355,16 @@ const onChangeLanguage = async (newLocale) => {
   try {
     await userStore.updateSettings({ language: newLocale });
     Notify.create({
-      message: 'Language preference saved!',
-      type: 'positive',
-      timeout: 1000
+      message: "Language preference saved!",
+      type: "positive",
+      timeout: 1000,
     });
   } catch (error) {
-    console.error('Failed to save language preference:', error);
+    console.error("Failed to save language preference:", error);
     Notify.create({
-      message: 'Failed to save language preference.',
-      type: 'negative',
-      timeout: 2000
+      message: "Failed to save language preference.",
+      type: "negative",
+      timeout: 2000,
     });
   }
 };
@@ -533,10 +619,7 @@ const handleExport = async (format = "csv") => {
 
 const backupFirebaseData = async () => {
   if (!userStore.isSuperAdmin) {
-    Notify.create({
-      message: "Solo i superadmin possono eseguire il backup",
-      type: "warning",
-    });
+    showNotifyNegative("Solo i superadmin possono eseguire il backup");
     return;
   }
 
@@ -576,19 +659,10 @@ const backupFirebaseData = async () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    Notify.create({
-      message: "Backup completed successfully",
-      type: "positive",
-      timeout: 3000,
-    });
+    showNotifyPositive("Backup completed successfully");
   } catch (error) {
     console.error("Error during backup:", error);
-    Notify.create({
-      message: "Error during backup: " + error.message,
-      type: "negative",
-      color: "negative",
-      timeout: 3000,
-    });
+    showNotifyNegative("Error during backup: " + error.message);
   } finally {
     actionLoading.backup = false;
   }
@@ -638,4 +712,58 @@ const fetchSomeData = async () => {
     // ... handle error
   }
 };
+
+const collections = [
+  "Bibliografia",
+  "Collane",
+  "Covers",
+  "Editori",
+  "Lingue",
+  "Users",
+];
+
+const bibliografiaFields = ref([]);
+const loadingFields = ref(false);
+
+// Computed: mostra solo i campi NON ufficiali (così i calcolati sono eliminabili)
+const bibliografiaFieldsFiltered = computed(() => {
+  // Prendi solo gli id dei campi ufficiali (non calcolati)
+  const officialFieldIds = new Set(
+    bookDetailsConfig.filter((f) => !f.calculated).map((f) => f.id),
+  );
+  // Mostra solo i campi che non sono ufficiali (quindi i calcolati, come 'id', sono eliminabili)
+  return bibliografiaFields.value.filter((f) => !officialFieldIds.has(f));
+});
+
+const loadBibliografiaFields = async () => {
+  loadingFields.value = true;
+  bibliografiaFields.value = await getAllFieldsInCollection("Bibliografia");
+  loadingFields.value = false;
+};
+
+const handleBackup = async (collection) => {
+  await backupCollectionToJson(collection);
+};
+
+const handleRestore = async (collection, event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const jsonData = JSON.parse(e.target.result);
+    await restoreCollectionFromJson(collection, jsonData);
+    showNotifyPositive("Ripristino completato!");
+  };
+  reader.readAsText(file);
+};
+
+const handleRemoveField = async (field) => {
+  await removeFieldFromCollection("Bibliografia", field);
+  showNotifyPositive(`Campo '${field}' eliminato da tutti i record!`);
+  await loadBibliografiaFields();
+};
+
+onMounted(() => {
+  loadBibliografiaFields();
+});
 </script>

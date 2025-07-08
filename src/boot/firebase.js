@@ -9,7 +9,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { firebaseConfig } from "firebaseConfig/config";
-import { Notify } from "quasar";
+import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { i18n } from "./i18n";
 
 // Variabili globali da esportare
@@ -66,19 +66,7 @@ export default boot(async (ctx = {}) => {
     }
   } catch (error) {
     // Notifica utente dell'errore critico
-    Notify.create({
-      type: "negative",
-      message: t("auth.connection_error"),
-      position: "top",
-      timeout: 8000,
-      actions: [
-        {
-          label: t("auth.reload"),
-          color: "white",
-          handler: () => window.location.reload(),
-        },
-      ],
-    });
+    showNotifyNegative(t("auth.connection_error"), 8000);
 
     // Imposta modalità offline/degradata
     firebaseError = true;

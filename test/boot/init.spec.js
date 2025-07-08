@@ -25,6 +25,8 @@ import {
   activeListeners,
   setupRealtimeListeners,
 } from "listeners/realtimeListeners";
+import itIT from "src/i18n/it-IT.js";
+import enUS from "src/i18n/en-US.js";
 
 vi.mock("listeners/realtimeListeners", () => {
   return {
@@ -146,7 +148,7 @@ describe("Init Boot File", () => {
     expect(mockSetupAppWatcher).not.toHaveBeenCalled();
     expect(Notify.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: "warning",
+        type: "negative",
         message: "Modalità offline: alcune funzionalità non disponibili.",
       }),
     );
@@ -284,25 +286,31 @@ describe("Init Boot File", () => {
 
   // Test: Logging warning se Firebase non pronto
   it("should log a warning if Firebase is not ready", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockIsFirebaseReady.mockReturnValue(false);
     initBoot({ app: quasarAppMock });
-    expect(warnSpy).toHaveBeenCalledWith(
-      "Init boot skipped: Firebase not initialized",
+    // Non si verifica più console.warn, la notifica è sufficiente
+    expect(Notify.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "negative",
+        message: "Modalità offline: alcune funzionalità non disponibili.",
+      }),
     );
-    warnSpy.mockRestore();
   });
 
   // Test: Logging error se c'è un errore in fase di boot
   it("should log an error if an error occurs during boot", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockIsFirebaseReady.mockReturnValue(true);
     mockSetupRealtimeListeners.mockImplementation(() => {
       throw new Error("fail");
     });
     initBoot({ app: quasarAppMock });
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+    // Non si verifica più console.error, la notifica è sufficiente
+    expect(Notify.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "negative",
+        message: expect.any(String),
+      }),
+    );
   });
 
   // Test: Chiamate multiple a initBoot con stati diversi
@@ -316,5 +324,19 @@ describe("Init Boot File", () => {
     await initBoot({ app: quasarAppMock });
     expect(quasarAppMock.config.globalProperties.$appReady).toBe(true);
     expect(quasarAppMock.config.globalProperties.$offlineMode).toBe(true); // rimane true
+  });
+});
+
+describe("Traduzioni - init.degradedError", () => {
+  it("deve esistere in italiano", () => {
+    expect(itIT.init && itIT.init.degradedError).toBeDefined();
+    expect(typeof itIT.init.degradedError).toBe("string");
+    expect(itIT.init.degradedError.length).toBeGreaterThan(0);
+  });
+
+  it("deve esistere in inglese", () => {
+    expect(enUS.init && enUS.init.degradedError).toBeDefined();
+    expect(typeof enUS.init.degradedError).toBe("string");
+    expect(enUS.init.degradedError.length).toBeGreaterThan(0);
   });
 });

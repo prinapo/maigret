@@ -1,0 +1,79 @@
+[
+  {
+    "id": "default",
+    "editore": [
+      {
+        "value": "874d1442-597c-4763-828e-d3a7b4dd76d3",
+        "label": "A. Mondadori"
+      },
+      {
+        "value": "91d305ef-30b1-47d2-ae9c-22674b76b3f1",
+        "label": "Adelphi"
+      },
+      {
+        "value": "0188b545-8238-4d17-967b-1e51dd4f7ac9",
+        "label": "Amica"
+      },
+      {
+        "value": "ab5bcb87-5ac7-4489-b3a6-78c17949308d",
+        "label": "Corriere della sera"
+      },
+      {
+        "value": "0488f6c8-b3db-4d05-a7b1-4b136831d5e5",
+        "label": "Epoca"
+      },
+      {
+        "value": "b5b03d6b-036d-4ef3-85ac-cd294dbb0e69",
+        "label": "Fabbri Editore"
+      },
+      {
+        "value": "268c03f5-1d09-4e07-a6cb-5e1db6e7f48c",
+        "label": "I tascabili Ripostes"
+      },
+      {
+        "value": "c1077990-b051-44fd-af22-d5fe7294bcb5",
+        "label": "Il Sabato"
+      },
+      {
+        "value": "30b2f895-14bb-48a4-8c48-3f5959c19e7f",
+        "label": "L'unità"
+      },
+      {
+        "value": "fc52989a-3c88-4b9a-9361-5d6b7764a029",
+        "label": "Lucarini"
+      },
+      {
+        "value": "c8b09ba5-5e1e-4701-bb62-6d0aa42320bc",
+        "label": "Mondadori - De Agostini"
+      },
+      {
+        "value": "720dbbf1-93ab-40eb-b5ee-9aa67e36f399",
+        "label": "Nuages"
+      },
+      {
+        "value": "vVetP6oGdJS4CMs41d78g8",
+        "label": "Nuovo Editore"
+      },
+      {
+        "value": "4e92e5fc-b631-4d7b-b21d-6d63c15c32c1",
+        "label": "Prova"
+      },
+      {
+        "value": "cfe845eb-fd08-4c26-bcd0-9be53e3f89f5",
+        "label": "Sonzogno "
+      },
+      {
+        "value": "2edfb840-dcb1-40ee-8842-5a7b65d55e5a",
+        "label": "Stampa Alternativa"
+      },
+      {
+        "value": "0584487c-c7db-456a-8317-6a8d12d07fb3",
+        "label": "Tascabili Bompiani"
+      },
+      {
+        "value": "gqz2kcH1ch8qBVcxAyEhyj",
+        "label": "sconosnciuto"
+      }
+    ]
+  }
+]

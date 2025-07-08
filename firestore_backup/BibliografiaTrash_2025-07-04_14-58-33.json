@@ -1,0 +1,225 @@
+[
+  {
+    "id": 678,
+    "editore": "Fabbri Editore",
+    "raccolta": "",
+    "confermato": "si",
+    "ed_2Anno": 0,
+    "ed_1Posseduta": "no",
+    "titolo": "Il morto di Maigret",
+    "lingua": "Italiano",
+    "posseduto": "no",
+    "edizioni": [
+      {
+        "cover": "",
+        "anno": "1950",
+        "edizione": "prima",
+        "posseduto": false,
+        "signedUrl": ""
+      },
+      {
+        "anno": "1980",
+        "edizione": "seconda",
+        "posseduto": true,
+        "signedUrl": ""
+      }
+    ],
+    "titoloOriginale": "",
+    "ed_1Anno": 0,
+    "signedUrlBck": "005aa2cc-9f5f-489e-809f-886059c04e84Bck.jpg?alt=media",
+    "signedUrlBorder": "",
+    "numeroCollana": 29,
+    "bookId": 3103,
+    "annoPubblicazione": 2003,
+    "edizione": "Prima",
+    "_id": "005aa2cc-9f5f-489e-809f-886059c04e84",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "005aa2cc-9f5f-489e-809f-886059c04e84"
+      ]
+    },
+    "signedUrl": "005aa2cc-9f5f-489e-809f-886059c04e84.jpg?alt=media",
+    "uniqueId": "005aa2cc-9f5f-489e-809f-886059c04e84",
+    "collana": "Le grandi inchieste del commissario Maigret",
+    "timestamp": 1710341325603
+  },
+  {
+    "id": 515,
+    "editore": "Adelphi",
+    "raccolta": {
+      "value": "",
+      "timestamp": "2024-03-04T16:46:20.009Z"
+    },
+    "ed_2Anno": 0,
+    "confermato": "si",
+    "titolo": "Maigret e i vecchi signori",
+    "ed_1Posseduta": "f",
+    "lingua": "Italiano",
+    "annoScrittura": 1960,
+    "posseduto": "Sì",
+    "ed_1Anno": 0,
+    "numeroCollana": 331,
+    "bookId": 1001,
+    "traduttore": "Barbara Bertoni",
+    "copertina": "cover__id1913 .jpg",
+    "annoPubblicazione": 2008,
+    "edizione": "Prima",
+    "_id": "00621dc8-d725-4033-9be7-9c2560089a11",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "00621dc8-d725-4033-9be7-9c2560089a11"
+      ]
+    },
+    "signedUrl": "00621dc8-d725-4033-9be7-9c2560089a11.jpg?alt=media",
+    "uniqueId": "00621dc8-d725-4033-9be7-9c2560089a11",
+    "collana": "gli Adelphi - Le inchieste di Maigret",
+    "timestamp": 1710936377122
+  },
+  {
+    "id": 264,
+    "raccolta": "f",
+    "editore": "Il Sabato",
+    "ed_2Anno": 0,
+    "confermato": "sì",
+    "titolo": "Les complices",
+    "ed_1Posseduta": "f",
+    "lingua": "Francese",
+    "ed_1Anno": 0,
+    "bookId": 146,
+    "annoPubblicazione": 2013,
+    "_id": "007780b7-a517-4b42-913e-ef36840309cc",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "007780b7-a517-4b42-913e-ef36840309cc"
+      ]
+    },
+    "signedUrl": "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/007780b7-a517-4b42-913e-ef36840309cc.jpg?alt=media",
+    "uniqueId": "007780b7-a517-4b42-913e-ef36840309cc",
+    "timestamp": 1709916255213
+  },
+  {
+    "id": 415,
+    "raccolta": "f",
+    "confermato": "si",
+    "ed_2Anno": 0,
+    "ed_1Posseduta": "f",
+    "titolo": "I fratelli Rico",
+    "lingua": "Italiano",
+    "posseduto": "no",
+    "ed_1Anno": 0,
+    "numeroCollana": 617,
+    "traduttore": "Marina Di Leo",
+    "bookId": 1001,
+    "copertina": "cover__id3381 .jpg",
+    "_id": "00b85c70-b7c2-43d9-b41e-23b41d29695d",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "00b85c70-b7c2-43d9-b41e-23b41d29695d"
+      ]
+    },
+    "signedUrl": "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/images%2F00b85c70-b7c2-43d9-b41e-23b41d29695d.jpg?alt=media",
+    "uniqueId": "00b85c70-b7c2-43d9-b41e-23b41d29695d",
+    "collana": "Biblioteca Adelphi",
+    "timestamp": 1707907993315
+  },
+  {
+    "id": 451,
+    "raccolta": "f",
+    "ed_2Anno": 0,
+    "confermato": "si",
+    "titolo": "Il morto di Maigret",
+    "ed_1Posseduta": "f",
+    "lingua": "Italiano",
+    "posseduto": "no",
+    "ed_1Anno": 0,
+    "numeroCollana": 179,
+    "traduttore": "Ida Sassi",
+    "bookId": 1001,
+    "copertina": "cover__id2236 .jpg",
+    "_id": "00d3bb07-4d26-4b5d-9fdd-1ac5a1744deb",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "00d3bb07-4d26-4b5d-9fdd-1ac5a1744deb"
+      ]
+    },
+    "signedUrl": null,
+    "uniqueId": "00d3bb07-4d26-4b5d-9fdd-1ac5a1744deb",
+    "collana": "gli Adelphi - Le inchieste di Maigret",
+    "timestamp": 1707907993315
+  },
+  {
+    "id": 215,
+    "raccolta": "f",
+    "ed_2Anno": 0,
+    "confermato": "sì",
+    "titolo": "Une vie comme neuve",
+    "ed_1Posseduta": "f",
+    "lingua": "Francese",
+    "ed_1Anno": 0,
+    "bookId": 121,
+    "_id": "01aaf113-a002-43dd-bba3-3bbb616ab456",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "01aaf113-a002-43dd-bba3-3bbb616ab456"
+      ]
+    },
+    "signedUrl": null,
+    "uniqueId": "01aaf113-a002-43dd-bba3-3bbb616ab456",
+    "timestamp": 1707907993315
+  },
+  {
+    "id": 110,
+    "raccolta": "f",
+    "confermato": "sì",
+    "ed_2Anno": 0,
+    "titolo": "Chez Krull",
+    "ed_1Posseduta": "f",
+    "lingua": "Francese",
+    "ed_1Anno": 0,
+    "bookId": 59,
+    "annoPubblicazione": 1965,
+    "_id": "02d7db07-cac8-4639-a72f-970015d22161",
+    "__metadata": {
+      "segments": [
+        "Bibliografia",
+        "02d7db07-cac8-4639-a72f-970015d22161"
+      ]
+    },
+    "signedUrl": "https://storage.googleapis.com/simenon-db758.appspot.com/02d7db07-cac8-4639-a72f-970015d22161.jpg?GoogleAccessId=firebase-adminsdk-oz0p6%40simenon-db758.iam.gserviceaccount.com&Expires=1707826254&Signature=lDiPTglm4YnrKq8LNhdPJ%2BN24kfIc4EALiJG1IVrNPxpKP6HMSErZ55EqxW3%2Fv%2F8BB0n9RXhez5Q88Ypcihl0ZtsiPnrobWCR2p6cRZEIF0QLlssrdxbvbbBDiShA%2FWsxYp39azpPgRzBkplwNelGm2klfJDnHqu2zC95Js0FyKfDJfT1MgD6qyZbvFUXfO%2BhXJ6VAIsyRVo4Pni0Fa74QXaTLomSvBSkrwkYQ%2BUje7Gn0qcbiUgXJ3jpaMIAM2o92jGwqsEvw9G%2Bw5RXZTAMY0ZSq8ZwHATswN2EclbObf9IFMRzcPtZtCIYzU5zE6FDvPd8qMqWibAyVm34ARkNA%3D%3D",
+    "uniqueId": "02d7db07-cac8-4639-a72f-970015d22161",
+    "timestamp": 1711468323770
+  },
+  {
+    "id": "B4wOREZCaRT5MqBRBBQ2"
+  },
+  {
+    "id": "C3eUgIUbFPya72IqTSin",
+    "titolo": "Prova"
+  },
+  {
+    "id": "X8c2O2byJwE9Fx8AuRdA",
+    "titolo": "Prova 5"
+  },
+  {
+    "id": "lQ0BcVn6mknLnTht2Ilt",
+    "titolo": "giovanni.prinetti@gmail.com"
+  },
+  {
+    "id": "u3fNS6aPDXPROLznHHOA",
+    "titolo": "prova2"
+  },
+  {
+    "id": "uq3WQCvOFTKLexStMHGq",
+    "titolo": "prova4"
+  },
+  {
+    "id": "ymoTcvpPZbGzKJvw2lcM",
+    "titolo": "Prova5"
+  }
+]

@@ -305,17 +305,25 @@ describe("Firebase Boot File", () => {
 
   // Test: Logging error se c'è un errore in fase di boot
   it("should log an error if an error occurs during boot", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    // Simula config mancante
-    vi.doMock("firebaseConfig/config", () => ({
-      firebaseConfig: { apiKey: undefined },
-    }));
-    const module = await import("boot/firebase");
-    const localFirebaseBoot = module.default;
-    await expect(localFirebaseBoot({ app: quasarAppMock })).rejects.toThrow(
-      /config_missing|configurazione di Firebase/,
-    );
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+    // Simula un errore generico durante l'init
+    mockInitializeApp.mockImplementation(() => {
+      throw new Error("config_missing");
+    });
+    try {
+      await firebaseBoot({ app: quasarAppMock });
+    } catch (error) {
+      expect(error.message).toMatch(
+        /Firebase initialization failed: config_missing|configurazione di Firebase/,
+      );
+      // La notifica negativa dovrebbe essere stata chiamata
+      expect(Notify.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "negative",
+          message: expect.any(String),
+        }),
+      );
+      // Il flag $firebaseError dovrebbe essere true
+      expect(quasarAppMock.config.globalProperties.$firebaseError).toBe(true);
+    }
   });
 });

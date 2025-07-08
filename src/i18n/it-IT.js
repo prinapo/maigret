@@ -8,6 +8,15 @@ export default {
     degraded_mode:
       "Modalità degradata: alcune funzionalità potrebbero non funzionare come previsto.",
   },
+
+  init: {
+    degradedError:
+      "Impossibile caricare alcuni dati. Alcune funzionalità potrebbero non essere disponibili.",
+    offlineWarning: "Modalità offline: alcune funzionalità non disponibili.",
+  },
+  filters: {
+    error: "Errore filtro: {error}",
+  },
   auth: {
     setup_failed: "Configurazione autenticazione fallita: {message}",
     disabled: "Autenticazione disabilitata perché Firebase non è pronto.",
@@ -16,6 +25,14 @@ export default {
     reload: "Ricarica",
     connectionError:
       "Errore di connessione. Alcune funzionalità potrebbero non essere disponibili.",
+    authenticationError: "Errore di autenticazione",
+    anErrorOccurred: "Si è verificato un errore durante l'autenticazione.",
+    noAccountFound: "Nessun account trovato con questa email.",
+    incorrectPassword: "Password errata.",
+    invalidEmail: "Indirizzo email non valido.",
+    accountDisabled: "Questo account è stato disabilitato.",
+    tooManyRequests: "Troppi tentativi falliti. Riprova più tardi.",
+    networkError: "Errore di rete. Controlla la connessione.",
   },
   error: {
     book_not_found: "Libro non trovato",
@@ -62,6 +79,15 @@ export default {
     config_missing: "La configurazione di Firebase è mancante o non valida",
     init_success: "Firebase inizializzato con successo.",
     init_failed: "Inizializzazione di Firebase fallita: {message}",
+    updateSuccess: "{collection} aggiornato con successo",
+    updateFail: "Impossibile aggiornare {collection}: {error}",
+    bookUpdated: "Libro {bookId} aggiornato con successo",
+    bookUpdateFail: "Errore aggiornando il libro {bookId}: {error}",
+    updatedLocally: "{collection} aggiornato localmente",
+    updateLocalFail: "Impossibile aggiornare localmente {collection}: {error}",
+    bookCreated: "Libro creato con successo",
+    userUpdated: "Utente aggiornato con successo",
+    userDeleted: "Utente eliminato con successo",
   },
   common: {
     cancel: "Annulla",
@@ -71,6 +97,7 @@ export default {
     delete: "Elimina",
     error: "Errore",
     retry: "Riprova",
+    undo: "Annulla",
   },
   bookDetails: {
     deleteBook: "Elimina il libro",
@@ -83,6 +110,7 @@ export default {
     sortBy: "Ordina per",
     language: "Lingua",
     owned: "Posseduto",
+    error: "Errore filtro: {error}",
   },
   registration: {
     title: "Registrazione",
@@ -97,6 +125,23 @@ export default {
     password: "Password",
     loginButton: "Login",
     logoutButton: "Logout",
+    alreadyLoggedIn: "Sei già autenticato come",
+    passwordReset: "Reset Password",
+    forgotPassword: "Hai dimenticato la password?",
+    resetIt: "Reimposta",
+    pleaseLogin: "Effettua il login per continuare",
+    admin: "Admin",
+    emailRequired: "L'email è obbligatoria",
+    invalidEmailFormat: "Formato email non valido",
+    passwordRequired: "La password è obbligatoria",
+    pleaseEnterEmail: "Inserisci il tuo indirizzo email",
+    emailVerificationRequired: "Verifica email richiesta",
+    pleaseVerifyEmail: "Verifica la tua email prima di accedere.",
+    resendVerification: "Invia di nuovo la verifica",
+    passwordResetSent:
+      "Email per il reset della password inviata. Controlla la tua casella di posta.",
+    loginSuccessful: "Login effettuato con successo!",
+    loggedOutSuccessfully: "Logout effettuato con successo",
   },
   mainLayout: {
     version: "Versione",
@@ -106,6 +151,12 @@ export default {
   },
   trash: {
     title: "Cestino immagini",
+    errorLoadingTrash: "Errore caricando il cestino.",
+    restoreDataMissing: "Dati di ripristino mancanti o non validi.",
+    imageRestoredSuccessfully: "Immagine ripristinata con successo.",
+    errorRestoringImage: "Errore durante il ripristino dell'immagine.",
+    itemDeletedPermanently: "Elemento eliminato definitivamente.",
+    errorDeletingItem: "Errore durante eliminazione.",
   },
   bookEditions: {
     edition: "Edizione",
@@ -143,6 +194,23 @@ export default {
   bookImages: {
     coverType: "Tipo Copertina",
     confirmDeleteImage: "Sei sicuro di eliminare l'immagine?",
+    imageUploadedSuccessfully: "Immagine caricata con successo.",
+    uploadFailed: "Caricamento immagine fallito.",
+    onlyJPGJPEGAndPNGFilesAllowed: "Sono permessi solo file JPG, JPEG e PNG.",
+    missingRequiredParametersForCoverTypeUpdate:
+      "Parametri obbligatori mancanti per aggiornare il tipo di copertina.",
+    thisCoverTypeIsAlreadyUsedByAnotherImage:
+      "Questo tipo di copertina è già usato da un'altra immagine.",
+    failedToUpdateCoverType: "Impossibile aggiornare il tipo di copertina.",
+    failedToDeleteImage: "Impossibile eliminare l'immagine.",
+    failedToAddImage: "Impossibile aggiungere l'immagine.",
+    error_creating_placeholder_image:
+      "Errore nella creazione dell'immagine placeholder",
+    fileTooLarge:
+      "Il file è troppo grande. Dimensione massima consentita: 5MB.",
+    imageDeleted: "Immagine eliminata.",
+    imageRestored: "Immagine ripristinata.",
+    swipeHint: "Scorri per vedere altre immagini",
   },
   analytics: {
     pageUnderConstruction: "Pagina in costruzione",
@@ -193,6 +261,10 @@ export default {
     routerErrorName: "ErroreRouter",
     genericErrorMessage: "Errore generico",
     navigationErrorMessage: "Errore navigazione",
+  },
+  edizioni: {
+    added: "Edizione aggiunta con successo",
+    failed: "Impossibile aggiungere edizione: {error}",
   },
   edizioniUtils: {
     noUserId: "Nessun ID utente",

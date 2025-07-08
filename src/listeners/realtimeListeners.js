@@ -31,7 +31,8 @@ export function setupDatabaseListeners(i18nInstance) {
       doc(db, "Editori", "default"),
       (docSnap) => {
         if (docSnap.exists()) {
-          useEditoriStore().updateEditori(docSnap.data().editore || []);
+          const editoriStore = useEditoriStore();
+          editoriStore.updateEditori(docSnap.data().editore || []);
         }
       },
     );
@@ -41,7 +42,8 @@ export function setupDatabaseListeners(i18nInstance) {
       doc(db, "Covers", "default"),
       (docSnap) => {
         if (docSnap.exists()) {
-          useCoversStore().updateCovers(docSnap.data().cover || []);
+          const coversStore = useCoversStore();
+          coversStore.updateCovers(docSnap.data().cover || []);
         }
       },
     );
@@ -51,7 +53,8 @@ export function setupDatabaseListeners(i18nInstance) {
       doc(db, "Collane", "default"),
       (docSnap) => {
         if (docSnap.exists()) {
-          useCollaneStore().updateCollane(docSnap.data().collana || []);
+          const collaneStore = useCollaneStore();
+          collaneStore.updateCollane(docSnap.data().collana || []);
         }
       },
     );
@@ -61,7 +64,8 @@ export function setupDatabaseListeners(i18nInstance) {
       doc(db, "Lingue", "default"),
       (docSnap) => {
         if (docSnap.exists()) {
-          useLingueStore().updateLingue(docSnap.data().lingua || []);
+          const lingueStore = useLingueStore();
+          lingueStore.updateLingue(docSnap.data().lingua || []);
         }
       },
     );
@@ -71,7 +75,7 @@ export function setupDatabaseListeners(i18nInstance) {
     activeListeners.bibliografia = onSnapshot(
       query(collection(db, "Bibliografia")),
       (snapshot) => {
-        const books = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const books = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
         bibliografiaStore.updateBooksRaw(books);
       },
     );
@@ -109,6 +113,19 @@ export function stopUserDocListener() {
   }
 }
 
+// ===============================
+// GESTIONE STORE DI AUTENTICAZIONE E UTENTE
+//
+// authStore: gestisce SOLO lo stato di autenticazione Firebase (login, logout, loading, loggedIn, user base)
+// userStore: gestisce SOLO i dati di profilo utente (ruolo, permessi, impostazioni, libri, ecc.)
+//
+// Nel listener di autenticazione:
+//   - authStore.setUser: aggiorna solo i dati base di autenticazione (uid, email, emailVerified)
+//   - authStore.setLoggedIn: aggiorna lo stato loggedIn
+//   - userStore.setUser: aggiorna i dati base utente (uid, email, ecc.)
+//   - userStore.ensureUserProfile: controlla/crea/aggiorna il profilo dettagliato su Firestore
+//   - startUserDocListener: ascolta i cambiamenti del profilo utente su Firestore
+// ===============================
 export function setupAuthListener() {
   if (activeListeners.auth) return;
 
@@ -117,16 +134,23 @@ export function setupAuthListener() {
     const authStore = useAuthStore();
 
     if (firebaseUser) {
+      // Aggiorna solo i dati base di autenticazione in authStore
+      const authUserData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        emailVerified: firebaseUser.emailVerified,
+      };
+      authStore.setUser(authUserData);
+      authStore.setLoggedIn(true);
+
+      // Aggiorna i dati base utente in userStore
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         emailVerified: firebaseUser.emailVerified,
       };
-
       userStore.setUser(userData);
-      authStore.setLoggedIn(true);
-      setupRealtimeListeners(window.i18n);
 
       // Controlla e crea il profilo utente se necessario
       try {
@@ -135,6 +159,7 @@ export function setupAuthListener() {
         console.error("Errore nella gestione del profilo utente:", error);
       }
 
+      // Listener realtime sul documento utente
       startUserDocListener(firebaseUser.uid);
     } else {
       userStore.clearUser();
@@ -152,22 +177,17 @@ export function setupRealtimeListeners(i18nInstance) {
 
 // === 4) CLEANUP GLOBALE ===
 export function cleanupAllListeners(i18nInstance) {
-  console.log(i18nInstance.global.t("listeners.cleaningUpFirebaseListeners"));
-
   // Cleanup di tutti i listener attivi
   Object.keys(activeListeners).forEach((key) => {
     if (activeListeners[key]) {
       try {
         activeListeners[key]();
         activeListeners[key] = null;
-        console.log(`Cleaned up ${key} listener`);
       } catch (error) {
         console.error(`Error cleaning up ${key} listener:`, error);
       }
     }
   });
-
-  console.log(i18nInstance.global.t("listeners.allListenersCleanedUp"));
 }
 
 // === 5) Auto-cleanup su window unload ===

@@ -1,7 +1,8 @@
 // src/stores/filtersStore.js
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { Notify } from "quasar";
+import { showNotifyNegative } from "src/utils/notify";
+import { i18n } from "boot/i18n";
 
 class FilterError extends Error {
   constructor(message, type) {
@@ -13,30 +14,28 @@ class FilterError extends Error {
 
 const handleFilterError = (error) => {
   console.error("Filter error:", error);
-  Notify.create({
-    message: `Filter error: ${error.message}`,
-    type: "negative",
-    color: "red",
-    timeout: 3000,
-  });
+  showNotifyNegative(i18n.global.t("filters.error", { error: error.message }));
   throw error;
 };
 
 export const useFiltersStore = defineStore("filters", () => {
   const filters = ref({
-    search: "",                 // stringa di ricerca
-    selectedEditori: [],        // array di stringhe
-    selectedCollane: [],        // array di stringhe
-    lingua: [],                 // array di stringhe
-    posseduto: [],              // array di stringhe: possibili valori "yes", "no"
-    orderBy: []                 // array di stringhe
+    search: "", // stringa di ricerca
+    selectedEditori: [], // array di stringhe
+    selectedCollane: [], // array di stringhe
+    lingua: [], // array di stringhe
+    posseduto: [], // array di stringhe: possibili valori "yes", "no"
+    orderBy: [], // array di stringhe
   });
 
   const validateFilter = (type, value) => {
     switch (type) {
       case "search":
         if (typeof value !== "string") {
-          throw new FilterError("Il termine di ricerca deve essere una stringa", "INVALID_SEARCH");
+          throw new FilterError(
+            "Il termine di ricerca deve essere una stringa",
+            "INVALID_SEARCH",
+          );
         }
         break;
       case "selectedEditori":
@@ -45,7 +44,10 @@ export const useFiltersStore = defineStore("filters", () => {
       case "posseduto":
       case "orderBy":
         if (!Array.isArray(value)) {
-          throw new FilterError(`${type} deve essere un array di stringhe`, "INVALID_ARRAY");
+          throw new FilterError(
+            `${type} deve essere un array di stringhe`,
+            "INVALID_ARRAY",
+          );
         }
         break;
       default:
@@ -70,7 +72,7 @@ export const useFiltersStore = defineStore("filters", () => {
       selectedCollane: [],
       lingua: [],
       posseduto: [],
-      orderBy: []
+      orderBy: [],
     };
   };
 
@@ -116,6 +118,6 @@ export const useFiltersStore = defineStore("filters", () => {
     updateSelectedCollana,
     updateLingua,
     updatePossedutoArray,
-    updateOrderByArray
+    updateOrderByArray,
   };
 });
