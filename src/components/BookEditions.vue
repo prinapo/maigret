@@ -187,11 +187,6 @@ const { settings } = storeToRefs(userStore);
 const bibliografiaStore = useBibliografiaStore();
 const { bibliografia } = storeToRefs(bibliografiaStore);
 
-console.log(
-  "[BookEditions] userStore.userData.books",
-  userStore.userData?.books,
-);
-
 const canManageBooks = computed(() => userStore.hasPermission("manage_books"));
 const { canCollectBooks } = storeToRefs(userStore);
 

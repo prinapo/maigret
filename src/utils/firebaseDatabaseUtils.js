@@ -133,6 +133,12 @@ export const syncSingleDocCollection = async ({
   }
 };
 
+// Funzione per rimuovere i campi non desiderati prima di salvare su Firebase
+function sanitizeBookForFirebase(book) {
+  const { defaultImageName, posseduto, ...rest } = book;
+  return rest;
+}
+
 /**
  * Synchronizes a single book document across Firebase, IndexedDB, and Pinia
  * @param {Object} params - The parameters for synchronization
@@ -143,11 +149,11 @@ export const syncSingleDocCollection = async ({
  */
 export const syncBook = async ({ bookId, book }) => {
   try {
-    await updateFirebaseDoc("Bibliografia", bookId, book, {
+    const sanitizedBook = sanitizeBookForFirebase(book);
+    await updateFirebaseDoc("Bibliografia", bookId, sanitizedBook, {
       includeTimestamp: true,
     });
-
-    showNotifyPositive(i18n.global.t("firebase.bookUpdated", { bookId }));
+    // Notifica rimossa per UX più pulita
   } catch (error) {
     console.error(`Errore nella sincronizzazione del libro ${bookId}:`, error);
     showNotifyNegative(
@@ -577,11 +583,7 @@ export async function updateUserSettingInFirebase(userId, fieldKey, value) {
 const updateFirebaseDoc = async (collectionName, docId, data, options = {}) => {
   try {
     const docRef = doc(db, collectionName, docId);
-    const timestamp = new Date().valueOf();
-
-    const updateData = options.includeTimestamp ? { ...data, timestamp } : data;
-
-    await setDoc(docRef, updateData, { merge: true });
+    await setDoc(docRef, data, { merge: true });
 
     // Aggiorna timestamp in Updates se richiesto
     if (options.updateTimestamp) {
@@ -591,14 +593,9 @@ const updateFirebaseDoc = async (collectionName, docId, data, options = {}) => {
         `${collectionName.toLowerCase()}Times`,
       );
       const timestampField = `${collectionName.toLowerCase()}TimeStamp`;
-      await setDoc(
-        updatesRef,
-        { [timestampField]: timestamp },
-        { merge: true },
-      );
+      // Qui puoi decidere se mantenere il timestamp per la tabella Updates, oppure rimuovere anche qui
+      // await setDoc(updatesRef, { [timestampField]: Date.now() }, { merge: true });
     }
-
-    return timestamp;
   } catch (error) {
     console.error(`Error updating ${collectionName}/${docId}:`, error);
     throw error;

@@ -1,0 +1,15 @@
+Elenco test BookDetails.vue e flag coperti
+
+| Test                                              | Permessi | Tipo campo                | Editable | Salvataggio | Feedback inline | Boolean custom | Ordinamento | Data formattata |
+|---------------------------------------------------|----------|---------------------------|----------|-------------|-----------------|---------------|-------------|-----------------|
+| Mostra nulla se libro non esiste                  | tutti    | -                         | -        | -           | -               | -             | -           | -               |
+| Mostra tutti i campi se manager                   | admin    | text/select/date/boolean  | sì       | sì          | sì              | sì            | sì          | sì              |
+| Mostra solo campi valorizzati se non manager      | user     | text/select/date/boolean  | no       | no          | no              | sì            | sì          | sì              |
+| Modifica campo text                               | admin    | text                      | sì       | sì          | sì              | -             | -           | -               |
+| Modifica campo select                             | admin    | select                    | sì       | sì          | sì              | -             | -           | -               |
+| Modifica campo date                               | admin    | date                      | sì       | sì          | sì              | -             | -           | sì              |
+| Modifica campo boolean                            | admin    | boolean                   | sì       | sì          | sì              | sì            | -           | -               |
+| Visualizza boolean come badge                     | user     | boolean                   | no       | no          | no              | sì            | -           | -               |
+| Visualizza campi extra                            | tutti    | -                         | -        | -           | -               | -             | -           | -               |
+| Ordinamento per sectionOrder                      | tutti    | tutti                     | -        | -           | -               | -             | sì          | -               |
+| Data formattata                                   | tutti    | date                      | -        | -           | -               | -             | -           | sì              | 

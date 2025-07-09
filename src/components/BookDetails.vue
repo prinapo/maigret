@@ -10,11 +10,12 @@
         <div class="col-12 col-sm-3">{{ field.label }}:</div>
 
         <div class="col">
-          <div
+          <template
             v-if="
-              field.type === 'array' &&
               Array.isArray(bookDetails[field.id]) &&
-              typeof bookDetails[field.id][0] === 'object'
+              bookDetails[field.id].length > 0 &&
+              typeof bookDetails[field.id][0] === 'object' &&
+              field.type === 'array'
             "
           >
             <div class="q-mb-xs">{{ field.label }}</div>
@@ -32,8 +33,15 @@
               flat
               hide-bottom
             />
-          </div>
-          <div v-else-if="field.type === 'array'">
+          </template>
+          <template
+            v-else-if="
+              Array.isArray(bookDetails[field.id]) &&
+              field.type === 'array' &&
+              (bookDetails[field.id].length === 0 ||
+                typeof bookDetails[field.id][0] !== 'object')
+            "
+          >
             <div class="q-mb-xs">{{ field.label }}</div>
             <q-chip
               v-for="(item, idx) in bookDetails[field.id]"
@@ -47,28 +55,168 @@
             <div v-if="!bookDetails[field.id]?.length" class="text-grey">
               (Nessun elemento)
             </div>
-          </div>
-          <q-select
-            v-else-if="field.type === 'select'"
-            :model-value="bookDetails[field.id]"
-            :options="fieldOptions[field.id]"
-            emit-value
-            map-options
-            option-value="value"
-            option-label="label"
-            dense
-            outlined
-            readonly
-            :label="field.label"
-          />
-          <q-input
-            v-else
-            :model-value="bookDetails[field.id]"
-            :label="field.label"
-            dense
-            outlined
-            readonly
-          />
+          </template>
+          <template
+            v-else-if="
+              Array.isArray(bookDetails[field.id]) && field.type === 'array'
+            "
+          >
+            <div
+              class="q-mt-xs q-mb-xs bg-warning text-black q-pa-sm rounded-borders"
+            >
+              <strong>⚠️ Config Warning:</strong> Campo
+              <code>{{ field.id }}</code> (<code>{{ field.label }}</code
+              >)<br />
+              <span
+                >Type: <code>{{ field.type }}</code> | Value:
+                <code>{{ JSON.stringify(bookDetails[field.id]) }}</code></span
+              ><br />
+              <span
+                >Config: <code>{{ JSON.stringify(field) }}</code></span
+              >
+              <div class="text-caption text-grey-8">
+                Questo campo array non è gestito da tabella/chip. Correggi
+                <code>bookDetailsConfig</code> o la logica di visualizzazione.
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <template v-if="field.type === 'boolean'">
+              <q-badge
+                v-if="!isFieldEditable(field)"
+                :color="bookDetails[field.id] ? 'green' : 'red'"
+                text-color="white"
+              >
+                {{ bookDetails[field.id] ? "Sì" : "No" }}
+              </q-badge>
+              <q-toggle
+                v-else
+                :model-value="bookDetails[field.id]"
+                @update:model-value="
+                  (val) => saveDetail(props.bookId, field.id, val)
+                "
+                color="primary"
+              />
+              <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
+                ><q-spinner size="xs" color="primary"
+              /></span>
+              <q-icon
+                v-else-if="saveStatus[field.id] === 'success'"
+                name="check_circle"
+                color="green"
+                class="q-ml-xs"
+              />
+              <q-icon
+                v-else-if="saveStatus[field.id] === 'error'"
+                name="error"
+                color="red"
+                class="q-ml-xs"
+              />
+            </template>
+            <q-select
+              v-else-if="field.type === 'select'"
+              :model-value="bookDetails[field.id]"
+              :options="fieldOptions[field.id]"
+              emit-value
+              map-options
+              option-value="value"
+              option-label="label"
+              dense
+              outlined
+              :readonly="!isFieldEditable(field)"
+              @update:model-value="
+                (val) =>
+                  isFieldEditable(field) &&
+                  saveDetail(props.bookId, field.id, val)
+              "
+              :label="field.label"
+            >
+              <template #append>
+                <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
+                  ><q-spinner size="xs" color="primary"
+                /></span>
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'success'"
+                  name="check_circle"
+                  color="green"
+                  class="q-ml-xs"
+                />
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'error'"
+                  name="error"
+                  color="red"
+                  class="q-ml-xs"
+                />
+              </template>
+            </q-select>
+            <q-input
+              v-else-if="field.type === 'date'"
+              :model-value="
+                bookDetails[field.id]
+                  ? new Date(bookDetails[field.id]).toISOString().slice(0, 16)
+                  : ''
+              "
+              :type="isFieldEditable(field) ? 'datetime-local' : 'text'"
+              :readonly="!isFieldEditable(field)"
+              @update:model-value="
+                (val) =>
+                  isFieldEditable(field) &&
+                  saveDetail(props.bookId, field.id, val)
+              "
+              :label="field.label"
+              dense
+              outlined
+            >
+              <template #append>
+                <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
+                  ><q-spinner size="xs" color="primary"
+                /></span>
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'success'"
+                  name="check_circle"
+                  color="green"
+                  class="q-ml-xs"
+                />
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'error'"
+                  name="error"
+                  color="red"
+                  class="q-ml-xs"
+                />
+              </template>
+            </q-input>
+            <q-input
+              v-else-if="!Array.isArray(bookDetails[field.id])"
+              :model-value="bookDetails[field.id]"
+              :readonly="!isFieldEditable(field)"
+              @update:model-value="
+                (val) =>
+                  isFieldEditable(field) &&
+                  saveDetail(props.bookId, field.id, val)
+              "
+              :label="field.label"
+              dense
+              outlined
+            >
+              <template #append>
+                <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
+                  ><q-spinner size="xs" color="primary"
+                /></span>
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'success'"
+                  name="check_circle"
+                  color="green"
+                  class="q-ml-xs"
+                />
+                <q-icon
+                  v-else-if="saveStatus[field.id] === 'error'"
+                  name="error"
+                  color="red"
+                  class="q-ml-xs"
+                />
+              </template>
+            </q-input>
+          </template>
         </div>
       </div>
     </div>
@@ -112,21 +260,11 @@
         </q-card>
       </q-dialog>
     </div>
-
-    <div v-if="book">
-      <div class="q-mt-lg">
-        <div class="text-bold">Campi extra non configurati:</div>
-        <div v-for="(value, key) in extraFields" :key="key" class="q-mb-xs">
-          <span class="text-primary">{{ key }}:</span>
-          <span>{{ value }}</span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, reactive } from "vue";
 import { Notify } from "quasar";
 
 import { useBibliografiaStore } from "stores/bibliografiaStore";
@@ -137,7 +275,7 @@ import { useUserStore } from "stores/userStore";
 import { bookDetailsConfig } from "config/bookDetailsConfig";
 import { syncBook } from "utils/firebaseDatabaseUtils";
 import { storeToRefs } from "pinia";
-console.log("bookdetails", bookDetailsConfig);
+// console.log("bookdetails", bookDetailsConfig);
 const props = defineProps({ bookId: { type: String, required: true } });
 const emit = defineEmits(["bookDeleted"]);
 
@@ -183,13 +321,21 @@ const fieldOptions = computed(() => {
   const options = {};
   bookDetailsConfig.forEach((field) => {
     if (field.type === "select") {
-      options[field.id] = storeOptions[field.options] || [];
+      if (Array.isArray(field.options)) {
+        options[field.id] = field.options;
+      } else {
+        options[field.id] = storeOptions[field.options] || [];
+      }
     }
   });
   return options;
 });
 
-const isFieldEditable = computed(() => userStore.hasPermission("manage_books"));
+const isFieldEditable = (field) =>
+  isFieldEditableGlobal.value && !field.readOnly;
+const isFieldEditableGlobal = computed(() =>
+  userStore.hasPermission("manage_books"),
+);
 const canDeleteBooks = computed(() => userStore.hasPermission("manage_books"));
 
 const mergedFields = computed(() => {
@@ -202,13 +348,24 @@ const mergedFields = computed(() => {
 });
 
 const visibleFields = computed(() => {
+  let fields = [];
   if (isFieldEditable.value) {
-    return mergedFields.value;
+    // Admin/editor: tutti i campi
+    fields = mergedFields.value;
+  } else {
+    // Utente normale o non loggato: solo campi non-readOnly e valorizzati
+    fields = mergedFields.value.filter(
+      (f) =>
+        f.readOnly === false &&
+        f.value !== "" &&
+        f.value !== undefined &&
+        f.value !== null,
+    );
   }
-  const filtered = mergedFields.value.filter(
-    (f) => f.value !== "" && f.value !== undefined && f.value !== null,
-  );
-  return filtered;
+  // Ordina per sectionOrder
+  return fields
+    .slice()
+    .sort((a, b) => (a.sectionOrder ?? 0) - (b.sectionOrder ?? 0));
 });
 
 const confirmDeleteBook = ref(false);
@@ -305,51 +462,39 @@ const handleRestoreBook = async () => {
   }
 };
 
+// Stato di salvataggio per ogni campo
+const saveStatus = reactive({}); // { [fieldId]: 'success' | 'error' | 'saving' | undefined }
+
+const setSaveStatus = (fieldId, status) => {
+  saveStatus[fieldId] = status;
+  if (status === "success" || status === "error") {
+    setTimeout(() => {
+      if (saveStatus[fieldId] === status) saveStatus[fieldId] = undefined;
+    }, 2000);
+  }
+};
+
 const saveDetail = async (bookId, itemId, value) => {
   const cleanValue = getOptionValue(value);
-
-  // Input validation
   if (!bookId || !itemId) {
     Notify.create({
       message: `Invalid input parameters`,
       type: "negative",
       color: "red",
     });
+    setSaveStatus(itemId, "error");
     return;
   }
-
   try {
-    // Validate value based on field type
+    setSaveStatus(itemId, "saving");
     if (cleanValue === undefined || cleanValue === null) {
       throw new Error("Invalid value provided");
     }
-
-    // Update the book data in Firebase
-    await syncBook({
-      bookId,
-      book: { [itemId]: cleanValue },
-    });
-
-    Notify.create({
-      message: `Detail ${itemId} Saved`,
-      type: "positive",
-      color: "green",
-    });
+    await syncBook({ bookId, book: { [itemId]: cleanValue } });
+    setSaveStatus(itemId, "success");
   } catch (error) {
     console.error("Error saving detail:", error);
-    Notify.create({
-      message: `Error saving ${itemId}: ${error.message}`,
-      type: "negative",
-      color: "red",
-    });
+    setSaveStatus(itemId, "error");
   }
 };
-
-const extraFields = computed(() => {
-  if (!book.value) return {};
-  const configIds = new Set(bookDetailsConfig.map((f) => f.id));
-  return Object.fromEntries(
-    Object.entries(book.value).filter(([key]) => !configIds.has(key)),
-  );
-});
 </script>

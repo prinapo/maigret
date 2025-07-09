@@ -1,3 +1,13 @@
+vi.mock("stores/userStore", () => ({
+  useUserStore: () => ({
+    hasPermission: () => true,
+    userData: {},
+    settings: {},
+    $patch: vi.fn(),
+    $reset: vi.fn(),
+  }),
+}));
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createTestingPinia } from "@pinia/testing";
@@ -6,7 +16,10 @@ import BookEditions from "src/components/BookEditions.vue";
 
 // Mock edizioniUtils per evitare errori Pinia fuori contesto
 vi.mock("src/utils/edizioniUtils", () => ({
-  addEdizione: vi.fn().mockResolvedValue(true),
+  addEdizione: (...args) => {
+    console.log("[MOCK addEdizione chiamata]", ...args);
+    return Promise.resolve(true);
+  },
   fetchEditions: vi.fn().mockResolvedValue([]),
 }));
 import * as edizioniUtils from "src/utils/edizioniUtils";
@@ -33,7 +46,7 @@ describe("BookEditions.vue", () => {
         plugins: [
           createTestingPinia({
             initialState: {
-              bibliografiaStore: {
+              bibliografia: {
                 bibliografia: [
                   {
                     id: bookId,
@@ -44,7 +57,7 @@ describe("BookEditions.vue", () => {
                   },
                 ],
               },
-              userStore: { hasPermission: () => true },
+              user: { hasPermission: () => true },
               authStore: { user: { uid: "user" } },
             },
           }),
@@ -65,7 +78,7 @@ describe("BookEditions.vue", () => {
         plugins: [
           createTestingPinia({
             initialState: {
-              bibliografiaStore: {
+              bibliografia: {
                 bibliografia: [
                   {
                     id: bookId,
@@ -76,7 +89,7 @@ describe("BookEditions.vue", () => {
                   },
                 ],
               },
-              userStore: { hasPermission: () => false },
+              user: { hasPermission: () => false },
               authStore: { user: { uid: "user" } },
             },
           }),
@@ -98,7 +111,7 @@ describe("BookEditions.vue", () => {
         plugins: [
           createTestingPinia({
             initialState: {
-              bibliografiaStore: {
+              bibliografia: {
                 bibliografia: [
                   {
                     id: bookId,
@@ -116,7 +129,7 @@ describe("BookEditions.vue", () => {
                   },
                 ],
               },
-              userStore: { hasPermission: () => true },
+              user: { hasPermission: () => true },
               authStore: { user: { uid: "user" } },
             },
           }),
