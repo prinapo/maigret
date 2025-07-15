@@ -33,8 +33,8 @@
           <!-- Wrapper per uniformare la dimensione delle immagini -->
           <div class="full-width flex flex-center" style="height: 250px">
             <q-img
-              :key="image.name"
-              :src="getImageSource(image.name)"
+              :key="image.id"
+              :src="getImageSource(image)"
               @error="handleImageError"
               fit="contain"
               no-spinner
@@ -80,7 +80,7 @@
           >
             <q-card class="full-width full-height">
               <q-img
-                :src="getFullScreenImageUrl(image.name)"
+                :src="getFullScreenImageUrl(image)"
                 fit="contain"
                 class="full-width full-height"
                 @click="closeDialog(innerIndex)"
@@ -158,7 +158,7 @@ import { addImage, deleteImage } from "utils/imageUtils";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useCoversStore } from "stores/coversStore";
 import placeholderImage from "assets/placeholder.jpg";
-import { syncBook } from "utils/firebaseDatabaseUtils";
+import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { useI18n } from "vue-i18n";
 const { t, locale } = useI18n();
@@ -168,7 +168,6 @@ const props = defineProps({
     required: true,
   },
 });
-//console.log("bookId:", props.bookId);
 const undoStore = useUndoStore();
 const dialogs = ref([]);
 const confirmDialogVisible = ref(false);
@@ -183,7 +182,6 @@ const { settings } = storeToRefs(userStore);
 const isFieldEditable = computed(() => {
   return userStore.hasPermission("manage_books");
 });
-//console.log("iseditable reactive:", isFieldEditable.value);
 // Covers store
 const coversStore = useCoversStore();
 const coverOptions = coversStore.covers;
@@ -203,7 +201,6 @@ const biblio = computed(() => unref(bibliografiaStore.bibliografia));
 const book = computed(() => biblio.value.find((b) => b.id === props.bookId));
 const images = computed(() => book.value?.images || []);
 const edizioni = computed(() => book.value?.edizioni || []);
-//console.log("images:", images.value);
 function restoreDeletedImage() {
   if (!undoStore.undoData || undoStore.undoData.type !== "delete-image") return;
 
@@ -274,9 +271,13 @@ const sliceSize = 4; // Number of items to render at once
 // const fileInputRef = ref(null);  // Unused variable, commented out
 
 // Image handling functions
-const getImageSource = (imageName) => {
+const getImageSource = (image) => {
+  const imageName =
+    !image?.id || image.id === "placeholder"
+      ? "placeholder.jpg"
+      : image.id + ".jpg";
   try {
-    if (!imageName || imageName === "placeholder.jpg") {
+    if (imageName === "placeholder.jpg") {
       return placeholderImage;
     }
     return `${fireStoreTmblUrl}${encodeURIComponent(imageName)}?alt=media`;
@@ -286,9 +287,13 @@ const getImageSource = (imageName) => {
   }
 };
 
-const getFullScreenImageUrl = (imageName) => {
+const getFullScreenImageUrl = (image) => {
+  const imageName =
+    !image?.id || image.id === "placeholder"
+      ? "placeholder.jpg"
+      : image.id + ".jpg";
   try {
-    if (!imageName || imageName === "placeholder.jpg") {
+    if (imageName === "placeholder.jpg") {
       return placeholderImage;
     }
     return `${fireStoreUrl}${encodeURIComponent(imageName)}?alt=media`;
@@ -360,7 +365,9 @@ const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
       images: updatedImages,
     };
 
-    await syncBook({ bookId: props.bookId, book: updatedBook });
+    await updateDocInCollection("Bibliografia", props.bookId, updatedBook, {
+      includeTimestamp: true,
+    });
     const bibliografia = unref(bibliografiaStore.bibliografia);
     bibliografiaStore.$patch({
       bibliografia: bibliografia.map((b) =>
@@ -392,8 +399,6 @@ const confirmDelete = (index) => {
   confirmDialogVisible.value = true;
 };
 const deleteImageConfirmed = async () => {
-  console.log("deleteImageConfirmed called");
-
   const imageIndex = tempImageIndex.value;
 
   if (imageIndex === null || imageIndex === undefined) {
@@ -401,8 +406,6 @@ const deleteImageConfirmed = async () => {
   }
 
   try {
-    console.log("Deleting image at index:", imageIndex);
-
     if (images.value.length <= 1) {
       throw new Error("Cannot delete the last image");
     }
@@ -427,7 +430,6 @@ const deleteImageConfirmed = async () => {
     showNotifyNegative(
       t("bookImages.failedToDeleteImage") + ": " + error.message,
     );
-    console.log("Notify.create invoked successfully");
   }
 };
 

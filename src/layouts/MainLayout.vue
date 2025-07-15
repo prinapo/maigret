@@ -6,47 +6,41 @@
         <span class="text-caption">{{ version }}</span>
         <q-toolbar-title>Maigret Collectors</q-toolbar-title>
         <q-btn
-          v-if="isHome"
-          flat
-          dense
-          round
+          v-if="route.name === 'bibliografia'"
           icon="filter_list"
-          @click="mostraFiltro = true"
+          flat
+          round
+          dense
+          @click="showFilterDrawer = true"
         />
+        <slot name="toolbar-right" />
         <q-space />
         <q-btn
           dense
           flat
           round
-          v-if="!isLoggedIn"
+          v-if="!authStore.loggedIn"
           icon="account_circle"
           @click="goToLogin"
         />
         <q-btn dense flat round v-else icon="logout" @click="goToLogin" />
       </q-toolbar>
-      <q-dialog v-model="mostraFiltro">
-        <FiltroComponent />
-      </q-dialog>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" side="left" overlay bordered>
       <q-list>
         <q-item clickable to="/home">
           <q-item-section>
-            <q-item-label>Home</q-item-label>
+            <q-item-label>{{ $t("mainLayout.home") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="home" />
           </q-item-section>
         </q-item>
         <q-separator />
-        <q-item
-          clickable
-          to="/configuration"
-          v-if="userStore.isAdmin || userStore.isSuperAdmin"
-        >
+        <q-item clickable to="/configuration" v-if="authStore.loggedIn">
           <q-item-section>
-            <q-item-label>Configurations</q-item-label>
+            <q-item-label>{{ $t("mainLayout.configurations") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="settings" />
@@ -54,7 +48,7 @@
         </q-item>
         <q-item clickable to="/users" v-if="userStore.canManageUsers">
           <q-item-section>
-            <q-item-label>User Management</q-item-label>
+            <q-item-label>{{ $t("mainLayout.userManagement") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="people" />
@@ -62,7 +56,7 @@
         </q-item>
         <q-item clickable to="/login">
           <q-item-section>
-            <q-item-label>Login</q-item-label>
+            <q-item-label>{{ $t("mainLayout.login") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="login" />
@@ -70,7 +64,7 @@
         </q-item>
         <q-item clickable to="/tables" v-if="userStore.canManageBooks">
           <q-item-section>
-            <q-item-label>Tables</q-item-label>
+            <q-item-label>{{ $t("mainLayout.tables") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="table_chart" />
@@ -79,7 +73,7 @@
         <q-separator />
         <q-item clickable to="/newbook" v-if="userStore.canManageBooks">
           <q-item-section>
-            <q-item-label>New Book</q-item-label>
+            <q-item-label>{{ $t("mainLayout.newBook") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="note_add" />
@@ -88,15 +82,23 @@
         <q-separator />
         <q-item clickable to="/trash" v-if="userStore.canManageBooks">
           <q-item-section>
-            <q-item-label>Trash</q-item-label>
+            <q-item-label>{{ $t("mainLayout.trash") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="delete" />
           </q-item-section>
         </q-item>
+        <q-item clickable to="/profile" v-if="authStore.loggedIn">
+          <q-item-section>
+            <q-item-label>{{ $t("mainLayout.profile") }}</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="person" />
+          </q-item-section>
+        </q-item>
         <q-item clickable @click="showAboutDialog = true">
           <q-item-section>
-            <q-item-label>About</q-item-label>
+            <q-item-label>{{ $t("mainLayout.about") }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="info" />
@@ -108,9 +110,19 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <keep-alive>
-          <component :is="Component" v-if="$route.meta?.keepAlive" />
+          <component
+            :is="Component"
+            v-if="$route.meta?.keepAlive"
+            :showFilterDrawer="showFilterDrawer"
+            @update:showFilterDrawer="(val) => (showFilterDrawer = val)"
+          />
         </keep-alive>
-        <component :is="Component" v-if="!$route.meta?.keepAlive" />
+        <component
+          :is="Component"
+          v-if="!$route.meta?.keepAlive"
+          :showFilterDrawer="showFilterDrawer"
+          @update:showFilterDrawer="(val) => (showFilterDrawer = val)"
+        />
       </router-view>
     </q-page-container>
 
@@ -132,22 +144,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, provide } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { signOut } from "firebase/auth";
-import { auth } from "boot/firebase";
 import { useAuthStore } from "stores/authStore";
-import FiltroComponent from "components/Filter.vue";
 import { useUserStore } from "stores/userStore";
 
 const router = useRouter();
 const route = useRoute();
-const isHome = computed(() => route.path === "/");
-const { isLoggedIn } = useAuthStore();
+const authStore = useAuthStore();
 const userStore = useUserStore();
+const showFilterDrawer = ref(false);
 
 const leftDrawerOpen = ref(false);
-const mostraFiltro = ref(false);
 const showAboutDialog = ref(false);
 const versionCode = ref(process.env.VERSION_CODE);
 const versionName = ref(process.env.VERSION_NAME);
@@ -161,13 +169,5 @@ const goToLogin = () => {
   router.push("/login");
 };
 
-// Rimuovi la funzione logout e sostituiscila con goToLogin
-// const logout = async () => {
-//   try {
-//     await signOut(auth);
-//     router.push("/login");
-//   } catch (error) {
-//     console.error("Error logging out:", error);
-//   }
-// };
+provide("showFilterDrawer", showFilterDrawer);
 </script>

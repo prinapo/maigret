@@ -1,13 +1,5 @@
 [
   {
-    "id": "73OrRrvv1wg8c3voYrAUXQyx1T83",
-    "lastName": "",
-    "uid": "73OrRrvv1wg8c3voYrAUXQyx1T83",
-    "name": "",
-    "role": "collector",
-    "permissions": []
-  },
-  {
     "id": "RWkJSQppYvdGtXieAIlQJWk1V473",
     "createdAt": "2025-06-09T06:30:25.275Z",
     "photoURL": "",
@@ -44,10 +36,11 @@
     "lastLogin": "2025-07-04T12:23:41.578Z"
   },
   {
-    "id": "currentUser",
+    "id": "XjJHhD3RieggGhU3P2fi5ZDwBT72",
     "lastName": "",
     "uid": "XjJHhD3RieggGhU3P2fi5ZDwBT72",
     "name": "",
+    "email": "giovanni.prinetti@gmail.com",
     "books": [
       {
         "posseduto": true,
@@ -596,12 +589,5 @@
       "darkMode": true
     },
     "lastLogin": "2025-06-23T16:03:31.991Z"
-  },
-  {
-    "id": "jsV4zj8UOSUxx3JlpvKqpwjvUI93",
-    "lastName": "",
-    "uid": "jsV4zj8UOSUxx3JlpvKqpwjvUI93",
-    "role": "user",
-    "name": ""
   }
 ]

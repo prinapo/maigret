@@ -1,6 +1,11 @@
 <template>
   <div class="q-pa-md">
     <q-page>
+      <Filter
+        class="q-mb-md"
+        :show-drawer="props.showFilterDrawer"
+        @update:showDrawer="(val) => emit('update:showFilterDrawer', val)"
+      />
       <div v-if="userStore.hasPermission('manage_books')" class="q-mb-md">
         <q-toggle v-model="showDeleted" label="Mostra libri eliminati" />
       </div>
@@ -108,11 +113,10 @@ import { useUserStore } from "stores/userStore";
 import { useFiltersStore } from "stores/filtersStore";
 //components
 import BookDetailContent from "components/BookDetailContent.vue";
+import Filter from "components/Filter.vue";
 //utils
 import { updateThemeFromSettings } from "utils/theme";
-
-// Rimuovere tutto il blocco performanceLogger:
-// const performanceLogger = { ... };
+import { inject } from "vue";
 
 updateThemeFromSettings();
 
@@ -133,6 +137,11 @@ const isLoadingMore = ref(false);
 const loadMoreTrigger = ref(null);
 const observer = ref(null);
 const showDeleted = ref(false);
+const isMobile = computed(() => $q.screen.lt.md);
+const props = defineProps({
+  showFilterDrawer: Boolean,
+});
+const emit = defineEmits(["update:showFilterDrawer"]);
 
 // Stores
 const bibliografiaStore = useBibliografiaStore();

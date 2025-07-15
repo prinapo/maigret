@@ -2,7 +2,7 @@
   <q-page id="add-book" class="q-pa-md">
     <div class="row justify-center">
       <div class="col-xs-12 col-sm-10 col-md-8 col-lg-6">
-        <div class="text-h5 text-center q-mb-md">{{ $t('newBook.title') }}</div>
+        <div class="text-h5 text-center q-mb-md">{{ $t("newBook.title") }}</div>
 
         <q-card flat bordered>
           <q-card-section v-if="userStore.canManageBooks">
@@ -126,8 +126,6 @@ const saveBook = async () => {
     // Create new book document
     const bookData = {
       titolo: titolo.value.trim(),
-      timestamp: new Date().valueOf(),
-      defaultImageName: "placeholder.jpg",
       edizioni: [
         {
           anno: new Date().getFullYear(),
@@ -137,8 +135,6 @@ const saveBook = async () => {
             {
               id: shortUuidGenerator.new(),
               coverType: "",
-              name: "placeholder.jpg",
-              timestamp: new Date().valueOf(),
             },
           ],
         },

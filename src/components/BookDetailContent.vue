@@ -19,11 +19,9 @@
           </template>
         </Suspense>
       </div>
-      <!--
       <div class="col-12">
         <BookEditions v-if="bookId" :bookId="bookId" />
       </div>
-      -->
     </div>
   </div>
 </template>
@@ -36,7 +34,7 @@ const { t } = useI18n();
 //components
 import BookDetails from "components/BookDetails.vue";
 import BookImages from "components/BookImages.vue"; // Import BookImages component
-// import BookEditions from "components/BookEditions.vue"; // Import BookEditions component
+import BookEditions from "components/BookEditions.vue"; // Import BookEditions component
 
 defineProps({
   bookId: {

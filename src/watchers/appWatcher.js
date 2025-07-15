@@ -5,7 +5,6 @@ import { useUserStore } from "stores/userStore";
 import { updateThemeFromSettings } from "utils/theme";
 
 export function setupAppWatcher() {
-  //console.log("appWatcher: setupAppWatcher called");
   const bibliografiaStore = useBibliografiaStore();
   const userStore = useUserStore();
 
@@ -13,7 +12,6 @@ export function setupAppWatcher() {
   watch(
     () => [bibliografiaStore.booksRaw, userStore.books],
     () => {
-      // console.log('[appWatcher] Watcher triggered: booksRaw or userStore.books changed');
       mergeBibliografiaConUtente();
     },
     { deep: true }, // Removed immediate: true
@@ -23,14 +21,12 @@ export function setupAppWatcher() {
     () => userStore.settings.darkMode,
     (newDarkMode) => {
       if (newDarkMode !== undefined) {
-        //console.log("appWatcher: Tema cambiato:", newDarkMode);
         updateThemeFromSettings();
       }
     },
     { immediate: true },
   );
   function mergeBibliografiaConUtente() {
-    // console.log('[appWatcher] mergeBibliografiaConUtente called');
     // DEBUG: loggo i dati in ingresso
     const booksRaw = bibliografiaStore.booksRaw || [];
     const booksUtente = userStore.books || [];
@@ -38,20 +34,24 @@ export function setupAppWatcher() {
     const merged = booksRaw.map((book, idx) => {
       // Trovo il corrispondente record utente (se esiste)
       const userBook = booksUtente.find((b) => b.bookId === book.id);
-      // Ricreo l'array di edizioni, mantendo tutti i campi originali di `ed` e aggiungendo `posseduta`.
+      // Ricreo l'array di edizioni, mantendo tutti i campi originali di `ed` e aggiungendo `posseduto` coerente con Firebase.
       const edizioniConPossesso = (book.edizioni || []).map((ed) => {
-        const posseduta =
+        const posseduto =
           userBook?.edizioni?.some(
-            (ue) =>
-              ue.uuid === ed.uuid &&
-              (ue.posseduta === true || ue.posseduto === true),
+            (ue) => ue.uuid === ed.uuid && ue.posseduto === true,
           ) ?? false;
         return {
           ...ed,
-          posseduta,
+          posseduto,
         };
       });
-      const posseduto = edizioniConPossesso.some((ed) => ed.posseduta === true);
+      const posseduto = edizioniConPossesso.some((ed) => ed.posseduto === true);
+
+      function getImageFileName(img) {
+        return !img?.id || img.id === "placeholder"
+          ? "placeholder.jpg"
+          : img.id + ".jpg";
+      }
 
       // Calcolo defaultImageName dinamicamente
       let defaultImageName = "placeholder.jpg";
@@ -59,10 +59,10 @@ export function setupAppWatcher() {
         const mainCover = book.images.find(
           (img) => img.coverTypeId === defaultBookCoverTypeId,
         );
-        if (mainCover && mainCover.name) {
-          defaultImageName = mainCover.name;
+        if (mainCover && mainCover.id) {
+          defaultImageName = getImageFileName(mainCover);
         } else {
-          defaultImageName = book.images[0].name || "placeholder.jpg";
+          defaultImageName = getImageFileName(book.images[0]);
         }
       }
 

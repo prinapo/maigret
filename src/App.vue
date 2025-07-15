@@ -12,7 +12,6 @@ export default defineComponent({
   setup() {
     // Cleanup quando il componente App viene distrutto
     onBeforeUnmount(() => {
-      console.log("App component unmounting - cleaning up listeners");
       cleanupAllListeners();
     });
 

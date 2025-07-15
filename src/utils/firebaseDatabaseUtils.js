@@ -21,6 +21,7 @@ import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { moveStorageObject } from "utils/firebaseStorageUtils";
 import { i18n } from "boot/i18n";
 import { saveAs } from "file-saver";
+import { onSnapshot } from "firebase/firestore";
 /**
  * Centralized utility for handling data synchronization between Firebase, IndexedDB, and Pinia
  * This utility ensures consistent data updates across all storage layers
@@ -40,19 +41,39 @@ const validateData = (data, collectionName) => {
 };
 
 /**
- * Updates data in Firebase for single-document collections (Collane, Editori, Covers, Lingue)
- * @param {string} collectionName - The name of the collection
- * @param {Object} data - The data to update
- * @param {number} timestamp - The timestamp for the update
- * @returns {Promise<void>}
+ * Funzione generica per aggiornare/mergiare un documento in una collezione
+ * @param {string} collectionName - Nome della collezione
+ * @param {string} docId - ID del documento
+ * @param {Object} data - Dati da aggiornare (id/timestamp verranno rimossi)
+ * @param {Object} options - Opzioni aggiuntive (es. includeTimestamp)
  */
-const updateSingleDocCollection = async (collectionName, data, timestamp) => {
+export const updateDocInCollection = async (
+  collectionName,
+  docId,
+  data,
+  options = {},
+) => {
   try {
-    const docRef = doc(db, collectionName, "default");
-    const fieldName = collectionName.toLowerCase().slice(0, -1); // Remove 's' from collection name
-    await setDoc(docRef, { [fieldName]: data, timestamp }, { merge: true });
+    // Rimuovi id e timestamp dai dati
+    const { id, timestamp, ...cleanData } = data;
+    const docRef = doc(db, collectionName, docId);
+    const payload = { ...cleanData };
+    if (options.includeTimestamp) {
+      payload.timestamp = Date.now();
+    }
+    await setDoc(docRef, payload, { merge: true });
+    // Aggiorna timestamp in Updates se richiesto
+    if (options.updateTimestamp) {
+      const updatesRef = doc(
+        db,
+        "Updates",
+        `${collectionName.toLowerCase()}Times`,
+      );
+      const timestampField = `${collectionName.toLowerCase()}TimeStamp`;
+      // await setDoc(updatesRef, { [timestampField]: Date.now() }, { merge: true });
+    }
   } catch (error) {
-    console.error(`Error updating ${collectionName} in Firebase:`, error);
+    console.error(`Error updating ${collectionName}/${docId}:`, error);
     throw error;
   }
 };
@@ -65,13 +86,12 @@ const updateSingleDocCollection = async (collectionName, data, timestamp) => {
  * @returns {Promise<void>}
  */
 const updateBibliografiaDoc = async (docId, data, timestamp) => {
-  try {
-    const docRef = doc(db, "Bibliografia", docId);
-    await setDoc(docRef, { ...data, timestamp }, { merge: true });
-  } catch (error) {
-    console.error(`Error updating Bibliografia document ${docId}:`, error);
-    throw error;
-  }
+  await updateDocInCollection(
+    "Bibliografia",
+    docId,
+    { ...data, timestamp },
+    {},
+  );
 };
 
 /**
@@ -134,37 +154,30 @@ export const syncSingleDocCollection = async ({
 };
 
 // Funzione per rimuovere i campi non desiderati prima di salvare su Firebase
-function sanitizeBookForFirebase(book) {
-  const { defaultImageName, posseduto, ...rest } = book;
+export function sanitizeBookForFirebase(book) {
+  // Rimuovi i campi non desiderati dal libro
+  const { defaultImageName, posseduto, timestamp, ...rest } = book;
+  // Rimuovi i campi anche da edizioni e immagini
+  if (Array.isArray(rest.edizioni)) {
+    rest.edizioni = rest.edizioni.map((ed) => {
+      const { posseduto, timestamp, ...edRest } = ed;
+      if (Array.isArray(edRest.images)) {
+        edRest.images = edRest.images.map((img) => {
+          const { timestamp, ...imgRest } = img;
+          return imgRest;
+        });
+      }
+      return edRest;
+    });
+  }
+  if (Array.isArray(rest.images)) {
+    rest.images = rest.images.map((img) => {
+      const { timestamp, ...imgRest } = img;
+      return imgRest;
+    });
+  }
   return rest;
 }
-
-/**
- * Synchronizes a single book document across Firebase, IndexedDB, and Pinia
- * @param {Object} params - The parameters for synchronization
- * @param {string} params.bookId - The document ID (book ID)
- * @param {Object} params.book - The book data to update
- * @param {Function} params.storeUpdateFn - The Pinia store update function
- * @returns {Promise<void>}
- */
-export const syncBook = async ({ bookId, book }) => {
-  try {
-    const sanitizedBook = sanitizeBookForFirebase(book);
-    await updateFirebaseDoc("Bibliografia", bookId, sanitizedBook, {
-      includeTimestamp: true,
-    });
-    // Notifica rimossa per UX più pulita
-  } catch (error) {
-    console.error(`Errore nella sincronizzazione del libro ${bookId}:`, error);
-    showNotifyNegative(
-      i18n.global.t("firebase.bookUpdateFail", {
-        bookId,
-        error: error.message,
-      }),
-    );
-    throw error;
-  }
-};
 
 /**
  * Updates a single book document in Firebase
@@ -174,13 +187,12 @@ export const syncBook = async ({ bookId, book }) => {
  * @returns {Promise<void>}
  */
 const updateBookDoc = async (docId, data, timestamp) => {
-  try {
-    const docRef = doc(db, "Bibliografia", docId);
-    await setDoc(docRef, { ...data, timestamp }, { merge: true });
-  } catch (error) {
-    console.error(`Errore aggiornando il libro ${docId} in Firebase:`, error);
-    throw error;
-  }
+  await updateDocInCollection(
+    "Bibliografia",
+    docId,
+    { ...data, timestamp },
+    {},
+  );
 };
 
 /**
@@ -228,6 +240,12 @@ export const handleOfflineUpdate = async ({
   }
 };
 
+function getImageFileName(image) {
+  return !image?.id || image.id === "placeholder"
+    ? "placeholder.jpg"
+    : image.id + ".jpg";
+}
+
 /**
  * Sposta immagine e thumbnail in "trash", aggiorna il libro e aggiunge record undo
  * @param {string} bookId - ID del libro
@@ -245,13 +263,14 @@ export const moveImageToTrashAndLogUndo = async (
   const userId = auth.currentUser?.uid;
   if (!userId) throw new Error("Utente non autenticato");
 
-  const isPlaceholder = imageToDelete.name === "placeholder.jpg";
+  const imageName = getImageFileName(imageToDelete);
+  const isPlaceholder = imageName === "placeholder.jpg";
 
   if (!isPlaceholder) {
-    const imagePath = `images/${imageToDelete.name}`;
-    const thumbnailPath = `thumbnails/${imageToDelete.name}`;
-    const trashImagePath = `trash/${imageToDelete.name}`;
-    const trashThumbnailPath = `trash-thumbnails/${imageToDelete.name}`;
+    const imagePath = `images/${imageName}`;
+    const thumbnailPath = `thumbnails/${imageName}`;
+    const trashImagePath = `trash/${imageName}`;
+    const trashThumbnailPath = `trash-thumbnails/${imageName}`;
 
     // Sposta i file in parallelo
     await Promise.all([
@@ -259,9 +278,6 @@ export const moveImageToTrashAndLogUndo = async (
       moveStorageObject(thumbnailPath, trashThumbnailPath),
     ]);
   } else {
-    console.log(
-      "Immagine placeholder: salto spostamento file, ma aggiorno il libro.",
-    );
   }
 
   // Aggiorna array immagini senza quella cancellata
@@ -270,7 +286,12 @@ export const moveImageToTrashAndLogUndo = async (
   const updatedBook = { ...book, images: updatedImages };
 
   // Sincronizza il libro
-  await syncBook({ bookId, book: updatedBook });
+  await updateDocInCollection(
+    "Bibliografia",
+    bookId,
+    sanitizeBookForFirebase(updatedBook),
+    { includeTimestamp: true },
+  );
 
   // Registra l'azione di undo in Firestore
   const undoCollection = collection(db, "undoTrash");
@@ -303,11 +324,10 @@ export const restoreImageFromTrashAndSync = async (
   imageData,
   imageIndex,
 ) => {
-  const imageName = imageData.name;
+  const imageName = getImageFileName(imageData);
 
   // Se l'immagine è placeholder.jpg, salto lo spostamento
   if (imageName === "placeholder.jpg") {
-    console.log("Immagine placeholder.jpg, salto lo spostamento file.");
   } else {
     const fromImagePath = `trash/${imageName}`;
     const fromThumbPath = `trash-thumbnails/${imageName}`;
@@ -331,7 +351,12 @@ export const restoreImageFromTrashAndSync = async (
   const updatedBook = { ...book, images: updatedImages };
 
   // Sincronizza con Firebase
-  await syncBook({ bookId, book: updatedBook });
+  await updateDocInCollection(
+    "Bibliografia",
+    bookId,
+    sanitizeBookForFirebase(updatedBook),
+    { includeTimestamp: true },
+  );
   return updatedImages;
 };
 
@@ -397,10 +422,20 @@ export const restoreImageToDatabase = async (bookId, imageData) => {
     imagesArray.push(imageData);
 
     // Aggiorna il documento con il nuovo array immagini
-    await updateDoc(bookRef, { images: imagesArray });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      { images: imagesArray },
+      { includeTimestamp: true },
+    );
 
     // Sincronizza con Pinia
-    await syncBook({ bookId, book: { ...bookData, images: imagesArray } });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase({ ...bookData, images: imagesArray }),
+      { includeTimestamp: true },
+    );
   } catch (error) {
     console.error(
       `Errore durante il ripristino dell'immagine per il libro ${bookId}:`,
@@ -485,20 +520,14 @@ export const fetchAllUsers = async () => {
 };
 
 /**
- * Aggiorna un utente in Firebase
- * @param {string} userId - ID dell'utente
- * @param {Object} updateData - Dati da aggiornare
+ * Aggiorna dati utente in Firebase (campo singolo o oggetto)
+ * @param {string} userId
+ * @param {Object} updateData
  * @returns {Promise<void>}
  */
 export const updateUserInFirebase = async (userId, updateData) => {
   try {
-    console.log("[updateUserInFirebase] Writing to Firebase:", {
-      userId,
-      updateData,
-    });
-    const userRef = doc(db, "Users", userId);
-    await updateDoc(userRef, updateData);
-
+    await updateDocInCollection("Users", userId, updateData, { merge: true });
     showNotifyPositive(i18n.global.t("firebase.userUpdated"));
   } catch (error) {
     console.error("Error updating user:", error);
@@ -507,12 +536,53 @@ export const updateUserInFirebase = async (userId, updateData) => {
 };
 
 /**
- * Elimina un utente da Firebase
+ * Sposta un utente in trash (soft delete)
+ * @param {string} userId - ID dell'utente
+ * @returns {Promise<Object>} - I dati utente spostati in trash
+ */
+export const moveUserToTrash = async (userId) => {
+  try {
+    const userRef = doc(db, "Users", userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) throw new Error("User not found");
+    const userData = userSnap.data();
+    await setDocInCollection("UsersTrash", userId, userData);
+    return userData;
+  } catch (error) {
+    console.error("Error moving user to trash:", error);
+    throw error;
+  }
+};
+
+/**
+ * Ripristina un utente da UsersTrash a Users
+ * @param {string} userId
+ * @returns {Promise<void>}
+ */
+export const restoreUserFromTrash = async (userId) => {
+  try {
+    const trashRef = doc(db, "UsersTrash", userId);
+    const trashSnap = await getDoc(trashRef);
+    if (!trashSnap.exists()) throw new Error("User not found in trash");
+    const userData = trashSnap.data();
+    await setDocInCollection("Users", userId, userData);
+    await deleteDoc(trashRef);
+  } catch (error) {
+    console.error("Error restoring user from trash:", error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina un utente da Firebase (soft delete: sposta in trash)
  * @param {string} userId - ID dell'utente
  * @returns {Promise<void>}
  */
 export const deleteUserFromFirebase = async (userId) => {
   try {
+    // Sposta in trash
+    await moveUserToTrash(userId);
+    // Elimina da Users
     const userRef = doc(db, "Users", userId);
     await deleteDoc(userRef);
 
@@ -552,54 +622,16 @@ export const fetchCollectionData = async (
 };
 
 /**
- * Aggiorna un singolo campo di settings per l'utente su Firestore.
- * @param {string} userId ‒ l'UID dell'utente corrente
- * @param {string} fieldKey ‒ la chiave da aggiornare (es. "superadmin", "darkMode", ecc.)
- * @param {any} value ‒ il nuovo valore da salvare
- * @returns {Promise<void>}
+ * Wrapper per setDoc con merge (default true)
  */
-export async function updateUserSettingInFirebase(userId, fieldKey, value) {
-  if (!userId) {
-    throw new Error("updateUserSettingInFirebase: manca l'UID dell'utente");
-  }
-
-  try {
-    const userRef = doc(db, "Users", userId);
-    await updateDoc(userRef, {
-      [`settings.${fieldKey}`]: value,
-    });
-  } catch (err) {
-    console.error(
-      `[firebaseDatabaseUtils] Errore in updateUserSettingInFirebase(${fieldKey}):`,
-      err,
-    );
-    throw err;
-  }
-}
-
-/**
- * Funzione unificata per aggiornare documenti Firebase
- */
-const updateFirebaseDoc = async (collectionName, docId, data, options = {}) => {
-  try {
-    const docRef = doc(db, collectionName, docId);
-    await setDoc(docRef, data, { merge: true });
-
-    // Aggiorna timestamp in Updates se richiesto
-    if (options.updateTimestamp) {
-      const updatesRef = doc(
-        db,
-        "Updates",
-        `${collectionName.toLowerCase()}Times`,
-      );
-      const timestampField = `${collectionName.toLowerCase()}TimeStamp`;
-      // Qui puoi decidere se mantenere il timestamp per la tabella Updates, oppure rimuovere anche qui
-      // await setDoc(updatesRef, { [timestampField]: Date.now() }, { merge: true });
-    }
-  } catch (error) {
-    console.error(`Error updating ${collectionName}/${docId}:`, error);
-    throw error;
-  }
+export const setDocInCollection = async (
+  collectionName,
+  docId,
+  data,
+  options = { merge: true },
+) => {
+  const docRef = doc(db, collectionName, docId);
+  await setDoc(docRef, data, options);
 };
 
 /**
@@ -622,7 +654,7 @@ export const backupCollectionToJson = async (collectionName) => {
 export const restoreCollectionFromJson = async (collectionName, jsonData) => {
   for (const doc of jsonData) {
     const { id, ...data } = doc;
-    await setDoc(doc(db, collectionName, id), data, { merge: true });
+    await setDocInCollection(collectionName, id, data, { merge: true });
   }
 };
 
@@ -653,9 +685,176 @@ export const removeFieldFromCollection = async (collectionName, field) => {
     if (!(field in record)) {
       continue;
     }
-    await updateDoc(doc(db, collectionName, String(record.id)), {
-      [field]: deleteField(),
-    });
+    await updateDocInCollection(
+      collectionName,
+      String(record.id),
+      { [field]: deleteField() },
+      { merge: true },
+    );
     count++;
   }
+};
+
+/**
+ * Recupera tutti gli utenti eliminati (trash) da Firestore
+ * @returns {Promise<Array>}
+ */
+export const fetchAllUsersTrash = async () => {
+  try {
+    const usersCollection = collection(db, "UsersTrash");
+    const snapshot = await getDocs(usersCollection);
+
+    return snapshot.docs.map((doc) => {
+      const userData = {
+        uid: doc.id,
+        ...doc.data(),
+      };
+      return {
+        role: userData.role || "user",
+        permissions: Array.isArray(userData.permissions)
+          ? userData.permissions
+          : [],
+        email: userData.email || "unknown@example.com",
+        displayName: userData.displayName || "Unknown User",
+        ...userData,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching users trash:", error);
+    throw error;
+  }
+};
+
+/**
+ * Crea un nuovo profilo utente in Firestore Users
+ * @param {Object} newUser - Oggetto utente (deve contenere almeno uid, email, displayName)
+ * @returns {Promise<Object>} - Il profilo utente appena creato
+ */
+export const createUserProfileInFirebase = async (newUser) => {
+  if (!newUser || !newUser.uid) {
+    throw new Error("createUserProfileInFirebase: manca l'UID dell'utente");
+  }
+  const userProfile = {
+    uid: newUser.uid,
+    email: newUser.email || "unknown@example.com",
+    displayName: newUser.displayName || "Unknown User",
+    role: "user",
+    permissions: [],
+    settings: {},
+    createdAt: Date.now(),
+    lastLogin: Date.now(),
+  };
+  await setDocInCollection("Users", newUser.uid, userProfile, { merge: true });
+  return userProfile;
+};
+
+/**
+ * Recupera il profilo utente dalla collezione Users dato l'uid
+ * @param {string} uid
+ * @returns {Promise<Object|null>} - I dati utente o null se non trovato
+ */
+export const getUserProfileFromFirebase = async (uid) => {
+  if (!uid) return null;
+  const userRef = doc(db, "Users", uid);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) return null;
+  return { uid, ...userSnap.data() };
+};
+
+/**
+ * Aggiorna il campo lastLogin dell'utente in Users
+ * @param {string} uid
+ * @returns {Promise<void>}
+ */
+export const updateUserLastLoginInFirebase = async (uid) => {
+  if (!uid) return;
+  await updateDocInCollection(
+    "Users",
+    uid,
+    { lastLogin: Date.now() },
+    { merge: true },
+  );
+};
+
+/**
+ * Aggiorna i settings dell'utente in Users
+ * @param {string} uid
+ * @param {Object} newSettings
+ * @param {Object} [oldSettings] - opzionale, per merge lato client
+ * @returns {Promise<void>}
+ */
+export const updateUserSettingsInFirebase = async (
+  uid,
+  newSettings,
+  oldSettings = {},
+) => {
+  if (!uid) throw new Error("updateUserSettingsInFirebase: manca l'UID");
+  const mergedSettings = { ...oldSettings, ...newSettings };
+  await updateDocInCollection(
+    "Users",
+    uid,
+    { settings: mergedSettings },
+    { merge: true },
+  );
+};
+
+/**
+ * Recupera un documento da Firestore dato collection e id
+ */
+export const getDocFromFirebase = async (collectionName, docId) => {
+  const docRef = doc(db, collectionName, docId);
+  return await getDoc(docRef);
+};
+
+/**
+ * Recupera una collezione da Firestore
+ */
+export const getCollectionFromFirebase = async (collectionName) => {
+  const colRef = collection(db, collectionName);
+  return await getDocs(colRef);
+};
+
+/**
+ * Listener realtime su un documento
+ */
+export const onDocSnapshot = (collectionName, docId, callback) => {
+  const docRef = doc(db, collectionName, docId);
+  return onSnapshot(docRef, callback);
+};
+
+/**
+ * Listener realtime su una collezione
+ */
+export const onCollectionSnapshot = (collectionName, callback) => {
+  const colRef = collection(db, collectionName);
+  return onSnapshot(colRef, callback);
+};
+
+/**
+ * Aggiorna il campo books dell'utente in Users
+ * @param {string} uid
+ * @param {Array} books
+ * @returns {Promise<void>}
+ */
+export const updateUserBooksInFirebase = async (uid, books) => {
+  if (!uid) throw new Error("updateUserBooksInFirebase: manca l'UID");
+  await updateDocInCollection("Users", uid, { books }, { merge: true });
+};
+
+/**
+ * Aggiorna un singolo campo di settings per l'utente su Firestore
+ * @param {string} userId
+ * @param {string} fieldKey
+ * @param {any} value
+ * @returns {Promise<void>}
+ */
+export const updateUserSettingInFirebase = async (userId, fieldKey, value) => {
+  if (!userId)
+    throw new Error("updateUserSettingInFirebase: manca l'UID dell'utente");
+  await updateDocInCollection(
+    "Users",
+    userId,
+    { [`settings.${fieldKey}`]: value },
+    { merge: true },
+  );
 };

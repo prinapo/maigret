@@ -9,7 +9,6 @@ import {
 } from "utils/notify";
 import { useI18n } from "vue-i18n";
 import {
-  syncBook,
   moveImageToTrashAndLogUndo,
   deleteTrashEntry,
 } from "./firebaseDatabaseUtils";
@@ -19,6 +18,8 @@ import {
 } from "utils/firebaseStorageUtils";
 import { useUndoStore } from "stores/undoStore";
 import { useCoversStore } from "stores/coversStore";
+import { updateDocInCollection } from "./firebaseDatabaseUtils";
+import { sanitizeBookForFirebase } from "./firebaseDatabaseUtils";
 
 const bookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
 
@@ -98,7 +99,12 @@ export const saveImageDetail = async (bookId, coverTypeId, index) => {
     };
 
     // ✅ Sincronizza il libro aggiornato
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
 
     notifySuccess("Cover type updated successfully");
   } catch (error) {
@@ -107,6 +113,12 @@ export const saveImageDetail = async (bookId, coverTypeId, index) => {
     throw error;
   }
 };
+
+function getImageFileName(image) {
+  return !image?.id || image.id === "placeholder"
+    ? "placeholder.jpg"
+    : image.id + ".jpg";
+}
 
 export const addImage = async (bookId) => {
   const bibliografiaStore = useBibliografiaStore();
@@ -123,9 +135,7 @@ export const addImage = async (bookId) => {
     const shortUuid = shortUuidGenerator.new();
     const defaultImage = {
       id: shortUuid,
-      name: `placeholder.jpg`,
       coverTypeId: "Unknown",
-      timestamp: new Date().valueOf(),
     };
 
     const updatedBook = {
@@ -134,7 +144,12 @@ export const addImage = async (bookId) => {
     };
 
     // ✅ Sincronizza il libro aggiornato ovunque
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
 
     return updatedBook.images;
   } catch (error) {
@@ -249,12 +264,15 @@ export const convertAndUploadImage = async (file, bookId, innerIndex) => {
     updatedImages[innerIndex] = {
       ...updatedImages[innerIndex],
       id: imageUuid,
-      name: newFileName,
-      timestamp: new Date().valueOf(),
     };
 
     const updatedBook = { ...book, images: updatedImages };
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
 
     return updatedImages;
   } catch (error) {

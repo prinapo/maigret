@@ -1,152 +1,89 @@
 <template>
-  <div id="edizioni" class="row items-start q-mt-md q-px-md q-col-gutter-md">
-    <div v-if="edizioni.length === 0" class="text-center full-width">
-      <q-banner class="bg-grey-3">
-        Nessuna edizione disponibile per questo libro.
-        <template v-if="!canManageBooks">
-          <br />
-          Solo gli amministratori possono aggiungere edizioni.
-        </template>
-      </q-banner>
-    </div>
-    <div v-else class="row q-gutter-md q-mb-lg">
-      <q-card
-        v-for="(edizione, edizioneIndex) in edizioni"
-        :key="edizioneIndex"
-        class="column q-mr-xl q-ml-xl"
-        :class="{
-          'bg-positive text-dark': edizione.posseduto && !$q.dark.isActive,
-          'bg-positive text-white': edizione.posseduto && $q.dark.isActive,
-          'bg-grey-2 text-dark': !edizione.posseduto && !$q.dark.isActive,
-          'bg-grey-9 text-white': !edizione.posseduto && $q.dark.isActive,
-        }"
-        style="max-width: 200px"
+  <div class="q-pa-md" style="max-width: 500px; margin: auto">
+    <q-toolbar class="bg-primary text-white shadow-2 q-mb-md">
+      <q-toolbar-title>{{
+        $t("bookEditions.editionsListTitle") || "Edizioni"
+      }}</q-toolbar-title>
+    </q-toolbar>
+    <q-list bordered>
+      <q-item-label header v-if="ownedEditions.length">{{
+        $t("bookEditions.ownedHeader") || "Possedute"
+      }}</q-item-label>
+      <q-item
+        v-for="(edizione, edizioneIndex) in ownedEditions"
+        :key="'owned-' + edizioneIndex"
+        class="edition-item-tight"
+        clickable
+        v-ripple
+        @click="togglePossesso(edizione)"
       >
-        <q-card-section class="overflow-auto">
-          <div class="row q-gutter-md items-center">
-            <div class="col">
-              <q-input
-                v-model="edizione.numero"
-                :label="$t('bookEditions.edition')"
-                color="accent"
-                style="max-width: 100px"
-                :readonly="!canManageBooks"
-                @focus="handleInputFocus(edizione.numero)"
-                @blur="
-                  handleInputBlur('numero', edizioneIndex, edizione.numero)
-                "
-              />
-            </div>
-          </div>
-
-          <div class="row q-gutter-md items-center">
-            <div class="col">
-              <q-input
-                v-model.number="edizione.anno"
-                :label="$t('bookEditions.year')"
-                color="accent"
-                class="col"
-                type="number"
-                style="max-width: 100px; min-height: 48dp"
-                :readonly="!canManageBooks"
-                @focus="handleInputFocus(edizione.anno)"
-                @blur="handleInputBlur('anno', edizioneIndex, edizione.anno)"
-              />
-            </div>
-          </div>
-          <div>
-            <!-- Your content here -->
-          </div>
-          <div class="row q-gutter-md items-center" v-if="canCollectBooks">
-            <div class="col">
-              <q-toggle
-                v-model="edizione.posseduto"
-                :label="$t('bookEditions.owned')"
-                color="positive"
-                @update:model-value="
-                  handleSavePossessoEdizione(
-                    edizione.uuid,
-                    edizione.posseduto,
-                    userId,
-                  )
-                "
-              />
-            </div>
-          </div>
-        </q-card-section>
-        <q-card-section
-          id="Aggiunta rimozione Edizione"
-          class="row items-center q-gutter-md justify-end"
-        >
-          <div v-if="canManageBooks">
-            <q-btn
-              fab
-              icon="add"
-              color="secondary"
-              @click="confirmAddEdizione = true"
-              style="min-height: 48dp"
-            />
-            <q-dialog v-model="confirmAddEdizione" persistent>
-              <q-card>
-                <q-card-section class="q-pa-md">
-                  <p>{{ $t("bookEditions.confirmAddEdition") }}</p>
-                </q-card-section>
-
-                <q-card-actions align="right">
-                  <q-btn
-                    flat
-                    :label="$t('common.cancel')"
-                    color="primary"
-                    @click="confirmAddEdizione = false"
-                    style="min-height: 48dp"
-                  />
-                  <q-btn
-                    flat
-                    :label="$t('common.confirm')"
-                    color="negative"
-                    @click="handleAddEdizione"
-                    style="min-height: 48dp"
-                  />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
-          </div>
-          <div v-if="canManageBooks && edizioni.length > 1">
-            <q-btn
-              fab
-              icon="delete"
-              color="secondary"
-              @click="confirmRemoveEdizione = true"
-              style="min-height: 48dp"
-            />
-            <q-dialog v-model="confirmRemoveEdizione" persistent>
-              <q-card>
-                <q-card-section class="q-pa-md">
-                  <p>{{ $t("bookEditions.confirmRemoveEdition") }}</p>
-                </q-card-section>
-
-                <q-card-actions align="right">
-                  <q-btn
-                    flat
-                    label="Annulla"
-                    color="primary"
-                    @click="confirmRemoveEdizione = false"
-                    style="min-height: 48dp"
-                  />
-                  <q-btn
-                    flat
-                    label="Conferma"
-                    color="negative"
-                    @click="handleRemoveEdizione(edizioneIndex)"
-                    style="min-height: 48dp"
-                  />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
-          </div>
-        </q-card-section>
-      </q-card>
-    </div>
+        <q-item-section avatar>
+          <q-avatar
+            color="grey-4"
+            text-color="dark"
+            size="32px"
+            font-size="14px"
+          >
+            {{ edizione.numero }}
+          </q-avatar>
+        </q-item-section>
+        <q-item-section>
+          <q-item-label caption lines="1"
+            >{{ $t("bookEditions.year") }}: {{ edizione.anno }}</q-item-label
+          >
+        </q-item-section>
+        <q-item-section side>
+          <q-icon
+            name="check_circle"
+            color="positive"
+            size="md"
+            class="cursor-pointer"
+            @click.stop="togglePossesso(edizione)"
+          >
+            <q-tooltip>{{ $t("bookEditions.removeFromCollection") }}</q-tooltip>
+          </q-icon>
+        </q-item-section>
+      </q-item>
+      <q-separator v-if="ownedEditions.length && notOwnedEditions.length" />
+      <q-item-label header v-if="notOwnedEditions.length">{{
+        $t("bookEditions.notOwnedHeader") || "Non possedute"
+      }}</q-item-label>
+      <q-item
+        v-for="(edizione, edizioneIndex) in notOwnedEditions"
+        :key="'notowned-' + edizioneIndex"
+        class="edition-item-tight"
+        clickable
+        v-ripple
+        @click="togglePossesso(edizione)"
+      >
+        <q-item-section avatar>
+          <q-avatar
+            color="grey-4"
+            text-color="dark"
+            size="32px"
+            font-size="14px"
+          >
+            {{ edizione.numero }}
+          </q-avatar>
+        </q-item-section>
+        <q-item-section>
+          <q-item-label caption lines="1"
+            >{{ $t("bookEditions.year") }}: {{ edizione.anno }}</q-item-label
+          >
+        </q-item-section>
+        <q-item-section side>
+          <q-icon
+            name="radio_button_unchecked"
+            color="grey"
+            size="md"
+            class="cursor-pointer"
+            @click.stop="togglePossesso(edizione)"
+          >
+            <q-tooltip>{{ $t("bookEditions.addToCollection") }}</q-tooltip>
+          </q-icon>
+        </q-item-section>
+      </q-item>
+    </q-list>
   </div>
 </template>
 
@@ -195,6 +132,12 @@ const book = computed(() =>
 );
 const edizioni = computed(() => book.value?.edizioni || []);
 
+// Computed per separare edizioni possedute e non possedute
+const ownedEditions = computed(() => edizioni.value.filter((e) => e.posseduto));
+const notOwnedEditions = computed(() =>
+  edizioni.value.filter((e) => !e.posseduto),
+);
+
 const handleSavePossessoEdizione = async (
   edizioneUuid,
   edizionePosseduto,
@@ -209,12 +152,6 @@ const handleSavePossessoEdizione = async (
   }
 
   try {
-    console.log("[BookEditions] handleSavePossessoEdizione called", {
-      edizioneUuid,
-      edizionePosseduto,
-      userId,
-      bookId: props.bookId,
-    });
     if (edizionePosseduto) {
       const result = await savePossessoEdizione(
         edizioneUuid,
@@ -222,14 +159,12 @@ const handleSavePossessoEdizione = async (
         userId,
         props.bookId,
       );
-      console.log("[BookEditions] savePossessoEdizione result", result);
     } else {
       const result = await removePossessoEdizione(
         edizioneUuid,
         userId,
         props.bookId,
       );
-      console.log("[BookEditions] removePossessoEdizione result", result);
     }
   } catch (error) {
     console.error("Error updating possession status:", error);
@@ -312,6 +247,10 @@ const handleInputFocus = (detailValue) => {
   }, 100);
 };
 
+const togglePossesso = (edizione) => {
+  handleSavePossessoEdizione(edizione.uuid, !edizione.posseduto, userId);
+};
+
 // Lifecycle hooks
 onMounted(async () => {
   try {
@@ -338,3 +277,12 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+.edition-item-tight {
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+</style>

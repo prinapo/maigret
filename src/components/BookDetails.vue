@@ -5,10 +5,8 @@
     style="max-width: 900px"
     class="items-start q-mt-md q-px-md q-col-gutter-md"
   >
-    <div v-for="field in visibleFields" :key="field.id" class="q-mb-md">
+    <div v-for="field in visibleFields" :key="field.id">
       <div class="row items-center q-gutter-x-md">
-        <div class="col-12 col-sm-3">{{ field.label }}:</div>
-
         <div class="col">
           <template
             v-if="
@@ -18,7 +16,7 @@
               field.type === 'array'
             "
           >
-            <div class="q-mb-xs">{{ field.label }}</div>
+            <div>{{ field.label }}</div>
             <q-table
               :rows="bookDetails[field.id]"
               :columns="
@@ -122,7 +120,9 @@
               option-value="value"
               option-label="label"
               dense
-              outlined
+              :outlined="isFieldEditable(field)"
+              :borderless="!isFieldEditable(field)"
+              :hide-dropdown-icon="!isFieldEditable(field)"
               :readonly="!isFieldEditable(field)"
               @update:model-value="
                 (val) =>
@@ -165,7 +165,8 @@
               "
               :label="field.label"
               dense
-              outlined
+              :outlined="isFieldEditable(field)"
+              :borderless="!isFieldEditable(field)"
             >
               <template #append>
                 <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
@@ -187,16 +188,21 @@
             </q-input>
             <q-input
               v-else-if="!Array.isArray(bookDetails[field.id])"
-              :model-value="bookDetails[field.id]"
+              :model-value="localFieldValues[field.id]"
               :readonly="!isFieldEditable(field)"
               @update:model-value="
                 (val) =>
+                  isFieldEditable(field) && (localFieldValues[field.id] = val)
+              "
+              @blur="
+                () =>
                   isFieldEditable(field) &&
-                  saveDetail(props.bookId, field.id, val)
+                  saveDetail(props.bookId, field.id, localFieldValues[field.id])
               "
               :label="field.label"
               dense
-              outlined
+              :outlined="isFieldEditable(field)"
+              :borderless="!isFieldEditable(field)"
             >
               <template #append>
                 <span v-if="saveStatus[field.id] === 'saving'" class="q-ml-xs"
@@ -264,7 +270,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, watch } from "vue";
 import { Notify } from "quasar";
 
 import { useBibliografiaStore } from "stores/bibliografiaStore";
@@ -273,9 +279,7 @@ import { useCollaneStore } from "stores/collaneStore";
 import { useLingueStore } from "stores/lingueStore";
 import { useUserStore } from "stores/userStore";
 import { bookDetailsConfig } from "config/bookDetailsConfig";
-import { syncBook } from "utils/firebaseDatabaseUtils";
-import { storeToRefs } from "pinia";
-// console.log("bookdetails", bookDetailsConfig);
+import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 const props = defineProps({ bookId: { type: String, required: true } });
 const emit = defineEmits(["bookDeleted"]);
 
@@ -407,7 +411,9 @@ const handleDeleteBook = async () => {
     };
 
     // Usa la funzione centralizzata per sincronizzare
-    await syncBook({ bookId: props.bookId, book: updatedBook });
+    await updateDocInCollection("Bibliografia", props.bookId, updatedBook, {
+      includeTimestamp: true,
+    });
 
     Notify.create({
       message: "Book marked as deleted successfully",
@@ -447,7 +453,9 @@ const handleRestoreBook = async () => {
       deletedAt: "",
       deletedBy: "",
     };
-    await syncBook({ bookId: props.bookId, book: updatedBook });
+    await updateDocInCollection("Bibliografia", props.bookId, updatedBook, {
+      includeTimestamp: true,
+    });
     Notify.create({
       message: "Libro ripristinato con successo",
       type: "positive",
@@ -490,11 +498,32 @@ const saveDetail = async (bookId, itemId, value) => {
     if (cleanValue === undefined || cleanValue === null) {
       throw new Error("Invalid value provided");
     }
-    await syncBook({ bookId, book: { [itemId]: cleanValue } });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      { [itemId]: cleanValue },
+      { includeTimestamp: true },
+    );
     setSaveStatus(itemId, "success");
   } catch (error) {
     console.error("Error saving detail:", error);
     setSaveStatus(itemId, "error");
   }
 };
+
+// Stato locale per i valori dei campi testuali
+const localFieldValues = reactive({});
+
+// Inizializza i valori locali quando cambia il libro
+watch(
+  () => bookDetails.value,
+  (details) => {
+    if (details) {
+      for (const key of Object.keys(details)) {
+        localFieldValues[key] = details[key];
+      }
+    }
+  },
+  { immediate: true, deep: true },
+);
 </script>

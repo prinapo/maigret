@@ -214,41 +214,33 @@ const handleAuthError = (error) => {
 
 const login = async () => {
   try {
-    console.log("[LOGIN] Start login");
     clearError();
     if (!email.value.trim()) {
-      console.log("[LOGIN] Email vuota");
       formErrors.value.email = t("login.emailRequired");
       return;
     }
     if (!isValidEmail(email.value)) {
-      console.log("[LOGIN] Email non valida:", email.value);
       formErrors.value.email = t("login.invalidEmailFormat");
       return;
     }
     if (!password.value.trim()) {
-      console.log("[LOGIN] Password vuota");
       formErrors.value.password = t("login.passwordRequired");
       return;
     }
 
     isLoading.value = true;
-    console.log("[LOGIN] Chiamo signInWithEmailAndPassword", email.value);
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email.value,
       password.value,
     );
-    console.log("[LOGIN] signInWithEmailAndPassword OK", userCredential);
     const firebaseUser = userCredential.user;
 
     if (!firebaseUser.emailVerified) {
-      console.log("[LOGIN] Email non verificata");
       showNotifyNegative(t("login.emailVerificationRequired"));
       return;
     }
 
-    console.log("[LOGIN] Login riuscito, redirect");
     router.push("/");
     showNotifyPositive(t("login.loginSuccessful"));
   } catch (error) {

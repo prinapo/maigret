@@ -42,6 +42,7 @@ export default configure((/* ctx */) => {
     boot: [
       "i18n", // inizializza i18n
       "pinia", // inizializza PINIA
+      "logrocket",
       "firebase", // inizializza Firebase App
       "auth", // attiva il listener di autenticazione
       "init",

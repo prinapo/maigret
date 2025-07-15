@@ -38,7 +38,6 @@
             </template>
             <template v-slot:body="props">
               <q-tr :props="props">
-                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
                 <q-td key="label_it" :props="props">
                   {{ props.row.label_it }}
                   <q-popup-edit
@@ -121,12 +120,12 @@
             </template>
             <template v-slot:body="props">
               <q-tr :props="props">
-                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
+                <q-td key="label" :props="props">{{ props.row.label }}</q-td>
 
-                <q-td key="label" :props="props">
-                  {{ props.row.label }}
+                <q-td key="editore" :props="props">
+                  {{ getEditoreLabel(props.row.editore) }}
                   <q-popup-edit
-                    v-model="props.row.label"
+                    v-model="props.row.editore"
                     :title="$t('tablesEdit.updatePublisher')"
                     buttons
                     v-slot="scope"
@@ -189,24 +188,28 @@
             </template>
             <template v-slot:body="props">
               <q-tr :props="props">
-                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
-                <q-td key="label" :props="props">
-                  {{ props.row.label }}
+                <q-td key="label" :props="props">{{ props.row.label }}</q-td>
+                <q-td key="editore" :props="props">
+                  {{ getEditoreLabel(props.row.editore) }}
                   <q-popup-edit
-                    v-model="props.row.label"
-                    :title="$t('tablesEdit.updateSeries')"
+                    v-model="props.row.editore"
+                    :title="$t('tablesEdit.updatePublisher')"
                     buttons
                     v-slot="scope"
                     dense
                     unelevated
                   >
-                    <q-input
+                    <q-select
                       v-model="scope.value"
+                      :options="editoriOptions"
+                      option-label="label"
+                      option-value="value"
+                      emit-value
+                      map-options
                       dense
                       autofocus
-                      counter
                       @keyup.enter="scope.set"
-                      style="min-height: 48dp"
+                      style="min-width: 180px"
                     />
                   </q-popup-edit>
                 </q-td>
@@ -255,7 +258,6 @@
             </template>
             <template v-slot:body="props">
               <q-tr :props="props">
-                <q-td key="value" :props="props">{{ props.row.value }}</q-td>
                 <q-td key="label" :props="props">
                   {{ props.row.label }}
                   <q-popup-edit
@@ -313,9 +315,14 @@ import { useLingueStore } from "stores/lingueStore";
 import { useCoversStore } from "stores/coversStore";
 import { useUserStore } from "stores/userStore";
 import { Notify } from "quasar";
-import { syncSingleDocCollection } from "utils/firebaseDatabaseUtils";
+import {
+  syncSingleDocCollection,
+  updateDocInCollection,
+} from "utils/firebaseDatabaseUtils";
 
 import { storeToRefs } from "pinia";
+import { useBibliografiaStore } from "stores/bibliografiaStore";
+
 // UUID generator
 const translator = short();
 const { t } = useI18n();
@@ -329,13 +336,6 @@ const loading = ref(false);
 
 // Table columns
 const coversColumns = [
-  {
-    name: "value",
-    required: true,
-    label: "Reference ID",
-    align: "left",
-    field: (row) => row.value,
-  },
   {
     name: "label_it",
     required: true,
@@ -356,14 +356,6 @@ const coversColumns = [
 
 const editoriColumns = [
   {
-    name: "value",
-    required: true,
-    label: "Reference ID",
-    align: "left",
-    field: (row) => row.value,
-    format: (val) => `${val}`,
-  },
-  {
     name: "label",
     required: true,
     label: "Editore",
@@ -376,30 +368,24 @@ const editoriColumns = [
 
 const collaneColumns = [
   {
-    name: "value",
-    required: true,
-    label: "Reference ID",
-    align: "left",
-    field: (row) => row.value,
-  },
-  {
     name: "label",
     required: true,
-    label: "Collane",
+    label: "Collana",
     align: "left",
     field: (row) => row.label,
+    sortable: true,
+  },
+  {
+    name: "editore",
+    required: true,
+    label: "Editore",
+    align: "left",
+    field: (row) => row.editore,
     sortable: true,
   },
 ];
 
 const lingueColumns = [
-  {
-    name: "value",
-    required: true,
-    label: "Reference ID",
-    align: "left",
-    field: (row) => row.value,
-  },
   {
     name: "label",
     required: true,
@@ -415,6 +401,7 @@ const coversStore = useCoversStore();
 const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
 const lingueStore = useLingueStore();
+const bibliografiaStore = useBibliografiaStore();
 const { covers } = storeToRefs(coversStore);
 const { editori } = storeToRefs(editoriStore);
 const { collane } = storeToRefs(collaneStore);
@@ -469,16 +456,13 @@ const saveCoverData = async () => {
       label_en: row.label_en,
     }));
 
-    await syncSingleDocCollection({
-      collectionName: "Covers",
-      fieldName: "cover",
-      data: serializableData,
-      storeUpdateFn: (data) => coversStore.updateCovers(data),
-      indexedDBUpdateFn: async () => {
-        // IndexedDB update is handled automatically by syncSingleDocCollection
-        // No need for direct IndexedDB calls
-      },
-    });
+    await updateDocInCollection(
+      "Covers",
+      "default",
+      { cover: serializableData },
+      { includeTimestamp: true },
+    );
+    coversStore.updateCovers(serializableData);
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
     Notify.create({
@@ -497,16 +481,13 @@ const saveEditoriData = async () => {
       label: row.label,
     }));
 
-    await syncSingleDocCollection({
-      collectionName: "Editori",
-      fieldName: "editore",
-      data: serializableData,
-      storeUpdateFn: (data) => editoriStore.updateEditori(data),
-      indexedDBUpdateFn: async () => {
-        // IndexedDB update is handled automatically by syncSingleDocCollection
-        // No need for direct IndexedDB calls
-      },
-    });
+    await updateDocInCollection(
+      "Editori",
+      "default",
+      { editore: serializableData },
+      { includeTimestamp: true },
+    );
+    editoriStore.updateEditori(serializableData);
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
     Notify.create({
@@ -523,18 +504,16 @@ const saveCollaneData = async () => {
     const serializableData = collaneRows.value.map((row) => ({
       value: row.value,
       label: row.label,
+      editore: row.editore || "",
     }));
 
-    await syncSingleDocCollection({
-      collectionName: "Collane",
-      fieldName: "collana",
-      data: serializableData,
-      storeUpdateFn: (data) => collaneStore.updateCollane(data),
-      indexedDBUpdateFn: async () => {
-        // IndexedDB update is handled automatically by syncSingleDocCollection
-        // No need for direct IndexedDB calls
-      },
-    });
+    await updateDocInCollection(
+      "Collane",
+      "default",
+      { collana: serializableData },
+      { includeTimestamp: true },
+    );
+    collaneStore.updateCollane(serializableData);
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
     Notify.create({
@@ -553,16 +532,13 @@ const saveLingueData = async () => {
       label: row.label,
     }));
 
-    await syncSingleDocCollection({
-      collectionName: "Lingue",
-      fieldName: "lingua",
-      data: serializableData,
-      storeUpdateFn: (data) => lingueStore.updateLingue(data),
-      indexedDBUpdateFn: async () => {
-        // IndexedDB update is handled automatically by syncSingleDocCollection
-        // No need for direct IndexedDB calls
-      },
-    });
+    await updateDocInCollection(
+      "Lingue",
+      "default",
+      { lingua: serializableData },
+      { includeTimestamp: true },
+    );
+    lingueStore.updateLingue(serializableData);
   } catch (error) {
     console.error("Error saving array to Firestore:", error);
     Notify.create({
@@ -592,5 +568,13 @@ const userStore = useUserStore();
 if (!userStore.canManageBooks) {
   // Redirect o mostra messaggio di errore
   console.warn("User does not have permission to access this page");
+}
+
+const editoriOptions = computed(() =>
+  editoriRows.value.map((e) => ({ label: e.label, value: e.value })),
+);
+function getEditoreLabel(editoreValue) {
+  const found = editoriRows.value.find((e) => e.value === editoreValue);
+  return found ? found.label : editoreValue;
 }
 </script>

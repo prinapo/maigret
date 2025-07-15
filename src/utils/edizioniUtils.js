@@ -3,8 +3,16 @@ import { showNotifyPositive, showNotifyNegative } from "utils/notify";
 import { i18n } from "boot/i18n";
 import { Notify } from "quasar";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
-import { syncBook, updateUserInFirebase } from "utils/firebaseDatabaseUtils";
+import {
+  updateUserInFirebase,
+  getUserProfileFromFirebase,
+  updateUserBooksInFirebase,
+  sanitizeBookForFirebase,
+} from "utils/firebaseDatabaseUtils";
 import short from "short-uuid";
+import { db } from "boot/firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 
 const shortUuidGenerator = short();
 
@@ -61,12 +69,18 @@ export const saveEdizioneDetail = async (name, index, value, bookId) => {
     }
     const updatedEdizioni = existingEdizioni.map((item, i) => {
       if (i === index) {
-        return { ...item, [name]: value };
+        const { posseduto, timestamp, ...rest } = item;
+        return { ...rest, [name]: value };
       }
       return item;
     });
     const updatedBook = { ...book, edizioni: updatedEdizioni };
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
   } catch (error) {
     console.error("Error saving edition detail:", error);
     Notify.create({
@@ -84,37 +98,28 @@ export const savePossessoEdizione = async (
   userID,
   bookId,
 ) => {
-  const userStore = useUserStore();
   try {
-    const userData = { ...userStore.userData };
+    // 1. Leggi lo stato attuale da Firestore
+    const userData = await getUserProfileFromFirebase(userID);
     userData.books = userData.books || [];
-    const bookIndex = userData.books.findIndex((b) => b.bookId === bookId);
-    if (bookIndex !== -1) {
-      userData.books[bookIndex].edizioni =
-        userData.books[bookIndex].edizioni || [];
-      const edizioneIndex = userData.books[bookIndex].edizioni.findIndex(
-        (e) => e.uuid === edizioneUuid,
-      );
-      if (edizioneIndex !== -1) {
-        userData.books[bookIndex].edizioni[edizioneIndex].posseduto =
-          edizionePosseduto;
-      } else {
-        userData.books[bookIndex].edizioni.push({
-          uuid: edizioneUuid,
-          posseduto: edizionePosseduto,
-        });
-      }
-      userData.books[bookIndex].posseduto = userData.books[
-        bookIndex
-      ].edizioni.some((e) => e.posseduto);
-    } else {
-      userData.books.push({
-        bookId: bookId,
-        posseduto: edizionePosseduto,
-        edizioni: [{ uuid: edizioneUuid, posseduto: edizionePosseduto }],
-      });
+    // 2. Trova o aggiungi il libro
+    let book = userData.books.find((b) => b.bookId === bookId);
+    if (!book) {
+      book = { bookId, posseduto: edizionePosseduto, edizioni: [] };
+      userData.books.push(book);
     }
-    await updateUserInFirebase(userID, userData);
+    // 3. Trova o aggiungi l'edizione
+    let edizione = book.edizioni.find((e) => e.uuid === edizioneUuid);
+    if (!edizione) {
+      edizione = { uuid: edizioneUuid, posseduto: edizionePosseduto };
+      book.edizioni.push(edizione);
+    } else {
+      edizione.posseduto = edizionePosseduto;
+    }
+    // 4. Aggiorna il flag posseduto del libro
+    book.posseduto = book.edizioni.some((e) => e.posseduto);
+    // 5. Scrivi solo l'array books aggiornato
+    await updateUserBooksInFirebase(userID, userData.books);
     Notify.create({
       message: `Possesso aggiornato con successo`,
       type: "positive",
@@ -129,30 +134,25 @@ export const savePossessoEdizione = async (
 };
 
 export const removePossessoEdizione = async (edizioneUuid, userID, bookId) => {
-  const userStore = useUserStore();
   try {
-    const userData = { ...userStore.userData };
+    // 1. Leggi lo stato attuale da Firestore
+    const userData = await getUserProfileFromFirebase(userID);
     userData.books = userData.books || [];
-    const bookIndex = userData.books.findIndex((b) => b.bookId === bookId);
-    if (bookIndex !== -1) {
-      userData.books[bookIndex].edizioni =
-        userData.books[bookIndex].edizioni || [];
-      const edizioneIndex = userData.books[bookIndex].edizioni.findIndex(
-        (e) => e.uuid === edizioneUuid,
-      );
-      if (edizioneIndex !== -1) {
-        userData.books[bookIndex].edizioni[edizioneIndex].posseduto = false;
-        const hasAnyPossessed = userData.books[bookIndex].edizioni.some(
-          (e) => e.posseduto,
-        );
-        userData.books[bookIndex].posseduto = hasAnyPossessed;
-        await updateUserInFirebase(userID, userData);
-        Notify.create({
-          message: `Possesso rimosso con successo`,
-          type: "positive",
-        });
-      }
-    }
+    // 2. Trova il libro
+    let book = userData.books.find((b) => b.bookId === bookId);
+    if (!book) return;
+    // 3. Trova l'edizione
+    let edizione = book.edizioni.find((e) => e.uuid === edizioneUuid);
+    if (!edizione) return;
+    edizione.posseduto = false;
+    // 4. Aggiorna il flag posseduto del libro
+    book.posseduto = book.edizioni.some((e) => e.posseduto);
+    // 5. Scrivi solo l'array books aggiornato
+    await updateUserBooksInFirebase(userID, userData.books);
+    Notify.create({
+      message: `Possesso rimosso con successo`,
+      type: "positive",
+    });
   } catch (error) {
     Notify.create({
       message: `Errore nella rimozione del possesso`,
@@ -182,7 +182,12 @@ export const removeEdizione = async (bookId, edizioni, index) => {
     const updatedBook = { ...book, edizioni: cleanEdizioni };
 
     // Use centralized sync function
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
 
     Notify.create({
       message: `Edizione Removed`,
@@ -229,8 +234,6 @@ export const addEdizione = async (bookId) => {
         {
           id: shortUuidGenerator.new(),
           coverType: "",
-          name: "placeholder.jpg",
-          timestamp: new Date().valueOf(),
         },
       ],
     };
@@ -239,7 +242,12 @@ export const addEdizione = async (bookId) => {
     const updatedBook = { ...book, edizioni: newEdizioni };
 
     // Use centralized sync function
-    await syncBook({ bookId, book: updatedBook });
+    await updateDocInCollection(
+      "Bibliografia",
+      bookId,
+      sanitizeBookForFirebase(updatedBook),
+      { includeTimestamp: true },
+    );
 
     showNotifyPositive(i18n.global.t("edizioni.added"));
     return true;

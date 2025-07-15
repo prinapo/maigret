@@ -16,7 +16,7 @@
       <q-item v-for="(entry, index) in trashEntries" :key="entry.id">
         <q-item-section avatar>
           <q-img
-            :src="getTrashImageUrl(entry.imageData.name)"
+            :src="getTrashImageUrl(entry.imageData)"
             spinner-color="grey-7"
             style="width: 64px; height: 64px; object-fit: contain"
           />
@@ -24,7 +24,9 @@
 
         <q-item-section>
           <q-item-label
-            ><strong>{{ entry.imageData.name }}</strong></q-item-label
+            ><strong>{{
+              getImageFileName(entry.imageData)
+            }}</strong></q-item-label
           >
           <q-item-label caption>
             Tipo: {{ entry.imageData.coverType }} – Data:
@@ -64,14 +66,19 @@ const { t } = useI18n();
 
 const trashEntries = ref([]);
 
-const getTrashImageUrl = (imageName) => {
-  if (!imageName) return "";
+function getImageFileName(image) {
+  return !image?.id || image.id === "placeholder"
+    ? "placeholder.jpg"
+    : image.id + ".jpg";
+}
 
+const getTrashImageUrl = (imageData) => {
+  const imageName = getImageFileName(imageData);
+  if (!imageName) return "";
   if (imageName === "placeholder.jpg") {
     // Usa l'immagine statica locale importata
     return placeholderImage;
   }
-
   // URL per immagini nella cartella trash
   return `${fireStoreTrashUrl}${encodeURIComponent(imageName)}?alt=media`;
 };
@@ -95,7 +102,7 @@ const fetchTrashEntries = async () => {
 
 const restoreEntry = async (entry) => {
   const imageData = entry?.imageData;
-  const fileName = imageData?.name;
+  const fileName = getImageFileName(imageData);
   const bookId = entry?.bookId;
   const trashId = entry?.id;
 
@@ -121,7 +128,7 @@ const restoreEntry = async (entry) => {
 const deleteEntry = async (entry) => {
   try {
     // 1. Elimina immagine e thumbnail da Firebase Storage
-    await deleteTrashStorageImage(entry.imageData.name);
+    await deleteTrashStorageImage(getImageFileName(entry.imageData));
 
     // 2. Elimina il documento dalla collection Firestore
     await deleteTrashEntry(entry.id);

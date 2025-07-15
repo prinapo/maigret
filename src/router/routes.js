@@ -79,6 +79,10 @@ const routes = [
         component: () => import("pages/Analytics.vue"),
         meta: { keepAlive: false, title: "Trash" },
       },
+      {
+        path: "/profile",
+        component: () => import("pages/UserProfilePage.vue"),
+      },
     ],
   },
 

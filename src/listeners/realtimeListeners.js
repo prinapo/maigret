@@ -2,7 +2,7 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "src/boot/firebase";
 import { db } from "src/boot/firebase";
-import { doc, collection, onSnapshot, query } from "firebase/firestore";
+import { doc, collection, onSnapshot, query, getDoc } from "firebase/firestore";
 import { updateThemeFromSettings } from "utils/theme"; // Add this import
 import { useEditoriStore } from "stores/editoriStore";
 import { useCoversStore } from "stores/coversStore";
@@ -11,6 +11,14 @@ import { useLingueStore } from "stores/lingueStore";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useUserStore } from "stores/userStore";
 import { useAuthStore } from "stores/authStore";
+import { showNotifyNegative } from "src/utils/notify";
+import { i18n } from "boot/i18n";
+import {
+  getDocFromFirebase,
+  getCollectionFromFirebase,
+  onDocSnapshot,
+  onCollectionSnapshot,
+} from "../utils/firebaseDatabaseUtils";
 
 // Gestione centralizzata dei listener
 const activeListeners = {
@@ -27,53 +35,41 @@ const activeListeners = {
 export function setupDatabaseListeners(i18nInstance) {
   try {
     // Editori
-    activeListeners.editori = onSnapshot(
-      doc(db, "Editori", "default"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const editoriStore = useEditoriStore();
-          editoriStore.updateEditori(docSnap.data().editore || []);
-        }
-      },
-    );
+    activeListeners.editori = onDocSnapshot("Editori", "default", (docSnap) => {
+      if (docSnap.exists()) {
+        const editoriStore = useEditoriStore();
+        editoriStore.updateEditori(docSnap.data().editore || []);
+      }
+    });
 
     // Covers
-    activeListeners.covers = onSnapshot(
-      doc(db, "Covers", "default"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const coversStore = useCoversStore();
-          coversStore.updateCovers(docSnap.data().cover || []);
-        }
-      },
-    );
+    activeListeners.covers = onDocSnapshot("Covers", "default", (docSnap) => {
+      if (docSnap.exists()) {
+        const coversStore = useCoversStore();
+        coversStore.updateCovers(docSnap.data().cover || []);
+      }
+    });
 
     // Collane
-    activeListeners.collane = onSnapshot(
-      doc(db, "Collane", "default"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const collaneStore = useCollaneStore();
-          collaneStore.updateCollane(docSnap.data().collana || []);
-        }
-      },
-    );
+    activeListeners.collane = onDocSnapshot("Collane", "default", (docSnap) => {
+      if (docSnap.exists()) {
+        const collaneStore = useCollaneStore();
+        collaneStore.updateCollane(docSnap.data().collana || []);
+      }
+    });
 
     // Lingue
-    activeListeners.lingue = onSnapshot(
-      doc(db, "Lingue", "default"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const lingueStore = useLingueStore();
-          lingueStore.updateLingue(docSnap.data().lingua || []);
-        }
-      },
-    );
+    activeListeners.lingue = onDocSnapshot("Lingue", "default", (docSnap) => {
+      if (docSnap.exists()) {
+        const lingueStore = useLingueStore();
+        lingueStore.updateLingue(docSnap.data().lingua || []);
+      }
+    });
 
     // Bibliografia
     const bibliografiaStore = useBibliografiaStore();
-    activeListeners.bibliografia = onSnapshot(
-      query(collection(db, "Bibliografia")),
+    activeListeners.bibliografia = onCollectionSnapshot(
+      "Bibliografia",
       (snapshot) => {
         const books = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
         bibliografiaStore.updateBooksRaw(books);
@@ -94,16 +90,19 @@ function startUserDocListener(uid) {
     activeListeners.userDoc = null;
   }
 
-  const userDocRef = doc(db, "Users", uid);
-  activeListeners.userDoc = onSnapshot(userDocRef, (docSnap) => {
-    if (docSnap.exists()) {
-      userStore.setUserDataFromDb(docSnap.data());
-      // Apply theme after user data is loaded
-      updateThemeFromSettings();
-    } else {
-      userStore.setUserDataFromDb({});
-    }
-  });
+  const userDocRef = { collection: "Users", id: uid };
+  activeListeners.userDoc = onDocSnapshot(
+    userDocRef.collection,
+    userDocRef.id,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        userStore.setUserDataFromDb(docSnap.data());
+        updateThemeFromSettings();
+      } else {
+        userStore.setUserDataFromDb({});
+      }
+    },
+  );
 }
 
 export function stopUserDocListener() {
@@ -134,33 +133,70 @@ export function setupAuthListener() {
     const authStore = useAuthStore();
 
     if (firebaseUser) {
-      // Aggiorna solo i dati base di autenticazione in authStore
-      const authUserData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        emailVerified: firebaseUser.emailVerified,
-      };
-      authStore.setUser(authUserData);
-      authStore.setLoggedIn(true);
-
-      // Aggiorna i dati base utente in userStore
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        emailVerified: firebaseUser.emailVerified,
-      };
-      userStore.setUser(userData);
-
-      // Controlla e crea il profilo utente se necessario
+      // Controlla se l'utente è in trash
+      let isBlocked = false;
       try {
-        await userStore.ensureUserProfile(firebaseUser);
-      } catch (error) {
-        console.error("Errore nella gestione del profilo utente:", error);
+        const trashRef = { collection: "UsersTrash", id: firebaseUser.uid };
+        const trashSnap = await getDocFromFirebase(
+          trashRef.collection,
+          trashRef.id,
+        );
+        if (trashSnap.exists()) {
+          isBlocked = true;
+        }
+      } catch (e) {
+        // ignora errori
       }
 
-      // Listener realtime sul documento utente
-      startUserDocListener(firebaseUser.uid);
+      if (isBlocked) {
+        // Mostra notifica e imposta utente base senza permessi
+        showNotifyNegative(i18n.global.t("auth.blockedMessage"));
+        const authUserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified,
+        };
+        authStore.setUser(authUserData);
+        authStore.setLoggedIn(true);
+        userStore.setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified,
+          role: "user",
+          permissions: [],
+          settings: {},
+        });
+        // Non avviare listener profilo avanzato
+      } else {
+        // Aggiorna solo i dati base di autenticazione in authStore
+        const authUserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified,
+        };
+        authStore.setUser(authUserData);
+        authStore.setLoggedIn(true);
+
+        // Aggiorna i dati base utente in userStore
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified,
+        };
+        userStore.setUser(userData);
+
+        // Controlla e crea il profilo utente se necessario
+        try {
+          await userStore.ensureUserProfile(firebaseUser);
+        } catch (error) {
+          console.error("Errore nella gestione del profilo utente:", error);
+        }
+
+        // Listener realtime sul documento utente
+        startUserDocListener(firebaseUser.uid);
+      }
     } else {
       userStore.clearUser();
       authStore.clearUser();

@@ -42,7 +42,7 @@
       </div>
 
       <!-- User Role and Permissions Info -->
-      <div class="col-12">
+      <div class="col-12" v-if="userStore.userRole !== 'user'">
         <q-card>
           <q-card-section>
             <div class="text-h6">{{ $t("configuration.userInfo") }}</div>
@@ -86,7 +86,10 @@
       </div>
 
       <!-- Export Section -->
-      <div class="col-12" v-if="userStore.canManageBooks">
+      <div
+        class="col-12"
+        v-if="userStore.userRole !== 'user' && userStore.canManageBooks"
+      >
         <q-card>
           <q-card-section>
             <div class="text-h6">{{ $t("configuration.exportData") }}</div>
@@ -119,7 +122,13 @@
       </div>
 
       <!-- System Management Section -->
-      <div class="col-12" v-if="userStore.hasPermission('manage_system')">
+      <div
+        class="col-12"
+        v-if="
+          userStore.userRole !== 'user' &&
+          userStore.hasPermission('manage_system')
+        "
+      >
         <q-card>
           <q-card-section>
             <div class="text-h6">
@@ -157,7 +166,10 @@
       </div>
 
       <!-- User Management Section -->
-      <div class="col-12" v-if="userStore.canManageUsers">
+      <div
+        class="col-12"
+        v-if="userStore.userRole !== 'user' && userStore.canManageUsers"
+      >
         <q-card>
           <q-card-section>
             <div class="text-h6">{{ $t("configuration.userManagement") }}</div>
@@ -179,7 +191,13 @@
       </div>
 
       <!-- Analytics Section -->
-      <div class="col-12" v-if="userStore.hasPermission('view_analytics')">
+      <div
+        class="col-12"
+        v-if="
+          userStore.userRole !== 'user' &&
+          userStore.hasPermission('view_analytics')
+        "
+      >
         <q-card>
           <q-card-section>
             <div class="text-h6">{{ $t("configuration.analytics") }}</div>
@@ -230,7 +248,7 @@
       </q-card>
     </q-dialog>
 
-    <q-card class="q-mb-md">
+    <q-card class="q-mb-md" v-if="userStore.userRole !== 'user'">
       <q-card-section>
         <div class="text-h6">Backup e Ripristino Firebase</div>
         <div class="row q-col-gutter-md q-mt-md">
@@ -255,20 +273,21 @@
               color="secondary"
               :label="`Ripristina ${col}`"
               class="full-width q-mb-xs"
+              @click="() => triggerFileInput(col)"
             >
               <input
                 type="file"
                 accept="application/json"
-                @change="(e) => handleRestore(col, e)"
+                :ref="fileInputs[col]"
                 style="display: none"
-                ref="fileInput"
+                @change="(e) => handleRestore(col, e)"
               />
             </q-btn>
           </div>
         </div>
       </q-card-section>
     </q-card>
-    <q-card class="q-mb-md">
+    <q-card class="q-mb-md" v-if="userStore.userRole !== 'user'">
       <q-card-section>
         <div class="text-h6">Pulizia campi Bibliografia</div>
         <q-btn
@@ -292,11 +311,60 @@
         </q-list>
       </q-card-section>
     </q-card>
+
+    <q-card
+      v-if="userStore.userRole !== 'user' && userStore.canManageBooks"
+      class="q-mb-md"
+    >
+      <q-card-section>
+        <div class="text-h6">Controlla immagini rotte in Storage</div>
+        <q-btn
+          color="primary"
+          :loading="checkingMissingImages"
+          label="Controlla immagini mancanti"
+          @click="checkMissingImagesInStorage"
+          class="q-mt-sm"
+        />
+        <div v-if="missingImageIds.length" class="q-mt-sm">
+          <q-badge color="warning"
+            >{{ missingImageIds.length }} immagini mancanti</q-badge
+          >
+          <q-btn
+            color="warning"
+            label="Sostituisci tutte con placeholder"
+            @click="replaceMissingImagesWithPlaceholder"
+            class="q-ml-sm"
+          />
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <q-card
+      v-if="userStore.userRole !== 'user' && userStore.canManageBooks"
+      class="q-mb-md"
+    >
+      <q-card-section>
+        <div class="text-h6">Pulizia campi Bibliografia</div>
+        <q-btn
+          color="warning"
+          label="Pulisci campi inutili"
+          @click="cleanBibliografiaFields"
+          class="q-mt-sm"
+        />
+      </q-card-section>
+    </q-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  getCurrentInstance,
+} from "vue";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
 import { useCollaneStore } from "stores/collaneStore";
@@ -317,11 +385,24 @@ import {
   getAllFieldsInCollection,
   removeFieldFromCollection,
 } from "utils/firebaseDatabaseUtils";
+import { i18n } from "src/boot/i18n";
+import {
+  getStorage,
+  ref as storageRef,
+  listAll,
+  getDownloadURL,
+  deleteObject,
+  uploadBytes,
+} from "firebase/storage";
+import { storage } from "src/boot/firebase";
+import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
+import short from "short-uuid";
+import JSZip from "jszip";
 
 updateThemeFromSettings();
 
 const router = useRouter();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 
 const userStore = useUserStore();
 const { settings } = storeToRefs(userStore);
@@ -352,6 +433,9 @@ const languageOptions = [
 
 const onChangeLanguage = async (newLocale) => {
   locale.value = newLocale;
+  if (i18n && i18n.global) {
+    i18n.global.locale.value = newLocale;
+  }
   try {
     await userStore.updateSettings({ language: newLocale });
     Notify.create({
@@ -750,9 +834,45 @@ const handleRestore = async (collection, event) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = async (e) => {
-    const jsonData = JSON.parse(e.target.result);
-    await restoreCollectionFromJson(collection, jsonData);
-    showNotifyPositive("Ripristino completato!");
+    try {
+      const jsonData = JSON.parse(e.target.result);
+      // Sicurezza: controlla che il file sia compatibile con la collezione
+      let valid = false;
+      if (collection === "Collane") {
+        valid = Array.isArray(jsonData) && jsonData[0]?.collana;
+      } else if (collection === "Editori") {
+        valid = Array.isArray(jsonData) && jsonData[0]?.editore;
+      } else if (collection === "Lingue") {
+        valid = Array.isArray(jsonData) && jsonData[0]?.lingua;
+      } else if (collection === "Covers") {
+        valid = Array.isArray(jsonData) && jsonData[0]?.cover;
+      } else if (collection === "Bibliografia") {
+        valid =
+          Array.isArray(jsonData) &&
+          (jsonData[0]?.books || jsonData[0]?.titolo || jsonData[0]?.id);
+      } else if (collection === "Users") {
+        valid =
+          Array.isArray(jsonData) && (jsonData[0]?.email || jsonData[0]?.uid);
+      } else {
+        valid = true; // fallback per collezioni custom
+      }
+      if (!valid) {
+        Notify.create({
+          message: `File non valido: non sembra un backup della collezione ${collection}!`,
+          type: "negative",
+          timeout: 3000,
+        });
+        return;
+      }
+      await restoreCollectionFromJson(collection, jsonData);
+      showNotifyPositive("Ripristino completato!");
+    } catch (err) {
+      Notify.create({
+        message: "Errore nel file JSON: " + err.message,
+        type: "negative",
+        timeout: 3000,
+      });
+    }
   };
   reader.readAsText(file);
 };
@@ -762,6 +882,135 @@ const handleRemoveField = async (field) => {
   showNotifyPositive(`Campo '${field}' eliminato da tutti i record!`);
   await loadBibliografiaFields();
 };
+
+// Mappa di ref per ogni input file
+const fileInputs = {};
+collections.forEach((col) => {
+  fileInputs[col] = ref(null);
+});
+
+const triggerFileInput = (col) => {
+  const input = fileInputs[col]?.value;
+  if (Array.isArray(input)) {
+    if (input[0]) input[0].click();
+  } else if (input) {
+    input.click();
+  }
+};
+
+const missingImageIds = ref([]);
+const checkingMissingImages = ref(false);
+
+async function checkMissingImagesInStorage() {
+  checkingMissingImages.value = true;
+  missingImageIds.value = [];
+  const storage = getStorage();
+  const idsToCheck = [];
+  for (const book of bibliografiaStore.bibliografia) {
+    if (Array.isArray(book.images)) {
+      for (const img of book.images) {
+        if (img.id && img.id !== "placeholder") {
+          idsToCheck.push(img.id);
+        }
+      }
+    }
+  }
+  let missing = [];
+  for (const id of idsToCheck) {
+    try {
+      await getDownloadURL(storageRef(storage, `images/${id}.jpg`));
+    } catch (e) {
+      missing.push(id);
+    }
+  }
+  missingImageIds.value = missing;
+  checkingMissingImages.value = false;
+  Notify.create({
+    message: `Immagini non trovate in storage: ${missing.length}`,
+    type: missing.length ? "warning" : "positive",
+    timeout: 4000,
+  });
+}
+
+async function replaceMissingImagesWithPlaceholder() {
+  let changedBooks = 0;
+  let fixedImages = 0;
+  for (const book of bibliografiaStore.bibliografia) {
+    let changed = false;
+    if (Array.isArray(book.images)) {
+      for (const img of book.images) {
+        if (missingImageIds.value.includes(img.id)) {
+          img.id = "placeholder";
+          changed = true;
+          fixedImages++;
+        }
+      }
+    }
+    if (changed) {
+      await updateDocInCollection("Bibliografia", book.id, {
+        images: book.images,
+      });
+      changedBooks++;
+    }
+  }
+  Notify.create({
+    message: `Sostituite ${fixedImages} immagini mancanti in ${changedBooks} libri.`,
+    type: "positive",
+    timeout: 4000,
+  });
+  missingImageIds.value = [];
+}
+
+async function cleanBibliografiaFields() {
+  let changedBooks = 0;
+  for (const book of bibliografiaStore.bibliografia) {
+    let changed = false;
+    // Rimuovi dal libro
+    ["timestamp", "posseduto", "defaultImageName"].forEach((field) => {
+      if (book && field in book) {
+        delete book[field];
+        changed = true;
+      }
+    });
+    // Rimuovi da edizioni
+    if (Array.isArray(book.edizioni)) {
+      for (const ed of book.edizioni) {
+        ["timestamp", "posseduto"].forEach((field) => {
+          if (ed && field in ed) {
+            delete ed[field];
+            changed = true;
+          }
+        });
+        // Rimuovi da immagini
+        if (Array.isArray(ed.images)) {
+          for (const img of ed.images) {
+            if (img && "timestamp" in img) {
+              delete img.timestamp;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+    // Rimuovi da immagini a livello libro
+    if (Array.isArray(book.images)) {
+      for (const img of book.images) {
+        if (img && "timestamp" in img) {
+          delete img.timestamp;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      await updateDocInCollection("Bibliografia", book.id, book);
+    }
+  }
+  Notify.create({
+    message: "Pulizia completata! Campi rimossi da tutti i libri.",
+    type: "positive",
+    timeout: 3000,
+  });
+}
 
 onMounted(() => {
   loadBibliografiaFields();

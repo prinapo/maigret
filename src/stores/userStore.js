@@ -8,6 +8,13 @@ import {
   getFirestore,
   updateDoc,
 } from "firebase/firestore";
+import { i18n } from "src/boot/i18n";
+import {
+  getUserProfileFromFirebase,
+  createUserProfileInFirebase,
+  updateUserSettingsInFirebase,
+  updateUserLastLoginInFirebase,
+} from "../utils/firebaseDatabaseUtils";
 
 export const useUserStore = defineStore("user", () => {
   const books = ref([]);
@@ -16,79 +23,70 @@ export const useUserStore = defineStore("user", () => {
   const lastLogin = ref(null);
 
   function setUser(newUser) {
-    // console.log("[userStore] setUser called with:", newUser);
     user.value = newUser;
   }
 
   function setUserDataFromDb(userData) {
-    // console.log("[userStore] setUserDataFromDb called with:", userData);
     books.value = userData.books || [];
     settings.value = userData.settings || {};
     if (userData.role !== undefined) {
       user.value = { ...user.value, role: userData.role };
     }
     if (userData.permissions !== undefined) {
-      user.value = { ...user.value, permissions: userData.permissions };
+      // Normalizza i permessi: array di stringhe
+      let perms = userData.permissions;
+      if (
+        Array.isArray(perms) &&
+        perms.length > 0 &&
+        typeof perms[0] === "object" &&
+        perms[0].value
+      ) {
+        perms = perms.map((p) => p.value);
+      }
+      user.value = { ...user.value, permissions: perms };
+    }
+    if (userData.displayName !== undefined) {
+      user.value = { ...user.value, displayName: userData.displayName };
+    }
+    // Imposta la lingua globale se presente nelle impostazioni
+    if (
+      userData.settings &&
+      userData.settings.language &&
+      i18n &&
+      i18n.global
+    ) {
+      i18n.global.locale.value = userData.settings.language;
     }
   }
 
   async function createUserProfile(newUser) {
     try {
-      const db = getFirestore();
-
-      const userProfile = {
-        uid: newUser.uid,
-        email: newUser.email,
-        displayName: newUser.displayName || "",
-        photoURL: newUser.photoURL || "",
-        role: "user", // Ruolo base è user
-        permissions: [], // Nessun permesso per i nuovi utenti
-        books: [],
-        settings: {
-          darkMode: false,
-        },
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      await setDoc(doc(db, "Users", newUser.uid), userProfile, { merge: true });
+      // Usa funzione centralizzata
+      const userProfile = await createUserProfileInFirebase(newUser);
       setUserDataFromDb(userProfile);
       user.value = userProfile;
-
-      // console.log("Profilo utente creato con successo:", newUser.uid);
       return userProfile;
     } catch (error) {
       console.error("Errore nella creazione del profilo utente:", error);
-
       if (error.code === "permission-denied") {
         console.error(
           "Errore di permessi: verifica le regole di sicurezza Firestore",
         );
       }
-
       throw error;
     }
   }
 
   async function ensureUserProfile(userToEnsure) {
     try {
-      const db = getFirestore();
-
-      const userDocRef = doc(db, "Users", userToEnsure.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        // console.log("Profilo utente non trovato, creazione in corso...");
+      // Usa funzione centralizzata
+      const userData = await getUserProfileFromFirebase(userToEnsure.uid);
+      if (!userData) {
         return await createUserProfile(userToEnsure);
       } else {
-        const userData = userDoc.data();
         setUserDataFromDb(userData);
-
         // Aggiorna la data dell'ultimo login
-        await updateDoc(userDocRef, {
-          lastLogin: new Date().toISOString(),
-        });
-
+        await updateUserLastLoginInFirebase(userToEnsure.uid);
         return userData;
       }
     } catch (error) {
@@ -108,19 +106,15 @@ export const useUserStore = defineStore("user", () => {
 
   async function updateSettings(newSettings) {
     try {
-      const db = getFirestore();
-
       if (!user.value || !user.value.uid) {
         throw new Error("User not logged in or UID not available.");
       }
-
-      const userDocRef = doc(db, "Users", user.value.uid);
-      await updateDoc(userDocRef, {
-        settings: { ...settings.value, ...newSettings },
-      });
-
+      await updateUserSettingsInFirebase(
+        user.value.uid,
+        newSettings,
+        settings.value,
+      );
       settings.value = { ...settings.value, ...newSettings };
-      // console.log("User settings updated successfully:", settings.value);
     } catch (error) {
       console.error("Error updating user settings:", error);
       throw error;
@@ -129,20 +123,33 @@ export const useUserStore = defineStore("user", () => {
 
   function updateUserRole(role, permissions = []) {
     if (user.value) {
-      const newPermissions =
-        role === "superadmin"
-          ? [
-              "manage_books",
-              "manage_users",
-              "manage_system",
-              "view_analytics",
-              "moderate_content",
-              "export_data",
-              "manage_roles",
-              "collect_books",
-            ]
-          : permissions;
-
+      let newPermissions = [];
+      if (role === "superadmin") {
+        newPermissions = [
+          "manage_books",
+          "manage_users",
+          "manage_system",
+          "view_analytics",
+          "moderate_content",
+          "export_data",
+          "manage_roles",
+          // superadmin NON ha collect_books di default
+        ];
+      } else if (role === "admin") {
+        newPermissions = [
+          "view_analytics",
+          "moderate_content",
+          "export_data",
+          // admin NON ha manage_books, manage_users, manage_system, manage_roles
+        ];
+      } else if (role === "user") {
+        // Un user può essere anche collector se ha collect_books
+        if (permissions.includes("collect_books")) {
+          newPermissions = ["collect_books"];
+        } else {
+          newPermissions = [];
+        }
+      }
       user.value = {
         ...user.value,
         role,
@@ -150,12 +157,6 @@ export const useUserStore = defineStore("user", () => {
       };
     }
   }
-
-  const posseduta = computed(() => (bookId, editionId) => {
-    const book = books.value.find((b) => b.bookId === bookId);
-    const ed = book?.edizioni.find((e) => e.id === editionId);
-    return ed?.posseduta || false;
-  });
 
   const darkMode = computed(() => settings.value.darkMode ?? false);
 
@@ -213,6 +214,15 @@ export const useUserStore = defineStore("user", () => {
     );
   });
 
+  const canManageRoles = computed(() => {
+    if (!user.value) return false;
+    const role = user.value.role?.toLowerCase();
+    return (
+      role === "superadmin" ||
+      (role === "admin" && user.value.permissions?.includes("manage_roles"))
+    );
+  });
+
   return {
     books,
     settings,
@@ -225,7 +235,6 @@ export const useUserStore = defineStore("user", () => {
     clearUser,
     updateSettings,
     updateUserRole,
-    posseduta,
     darkMode,
     isAdmin,
     isSuperAdmin,
@@ -235,5 +244,6 @@ export const useUserStore = defineStore("user", () => {
     canCollectBooks,
     canManageBooks,
     canManageUsers,
+    canManageRoles,
   };
 });
