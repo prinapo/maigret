@@ -42,3 +42,18 @@ execSync("npx cap sync android", { stdio: "inherit" });
 console.log(
   "Build di produzione e sync completati. Ora puoi aprire Android Studio e lanciare l'app.",
 );
+
+// 6. Compila APK debug con gradlew.bat
+console.log("Compilazione APK debug con gradlew...");
+execSync(".\\src-capacitor\\android\\gradlew.bat assembleDebug", {
+  stdio: "inherit",
+});
+
+// 7. Installa APK sul dispositivo via adb (specifica seriale device)
+console.log("Installazione APK su dispositivo via adb...");
+execSync(
+  "adb -s BV6600EEA0051073 install -r .\\src-capacitor\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+  { stdio: "inherit" },
+);
+
+console.log("APK installato sul dispositivo. Puoi testare l'app ora.");
