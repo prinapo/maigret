@@ -78,13 +78,14 @@ console.log("Build di produzione e sync completati.");
 // --- 3. COMPILAZIONE APK ---
 console.log("Compilazione APK debug con gradle...");
 const isWin = process.platform === "win32";
+const gradleDir = path.join("src-capacitor", "android");
 const gradleCmd = isWin
-  ? path.join("src-capacitor", "android", "gradlew.bat")
-  : path.join("src-capacitor", "android", "gradlew");
+  ? "gradlew.bat"
+  : "./gradlew";
 const gradleBuildCmd = isWin
   ? `"${gradleCmd}" assembleDebug`
   : `chmod +x \"${gradleCmd}\" && \"${gradleCmd}\" assembleDebug`;
-run(gradleBuildCmd);
+run(gradleBuildCmd, { cwd: gradleDir });
 
 // --- 4. INSTALLAZIONE SU DEVICE ---
 try {
