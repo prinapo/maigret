@@ -11,8 +11,11 @@ export const useBibliografiaStore = defineStore("bibliografia", () => {
   // bibliografia = lista completa con dati utente (merged)
   const bibliografia = ref([]);
 
+  const isLoaded = ref(false);
+
   function updateBooksRaw(firestoreBooks) {
     booksRaw.value = firestoreBooks;
+    isLoaded.value = true;
   }
 
   function updateBibliografia(mergedBooks) {
@@ -41,5 +44,6 @@ export const useBibliografiaStore = defineStore("bibliografia", () => {
     updateBibliografia,
     clearBibliografia,
     canAddImage,
+    isLoaded,
   };
 });

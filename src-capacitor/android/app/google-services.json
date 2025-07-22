@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "55590854970",
+    "project_id": "simenon-db758",
+    "storage_bucket": "simenon-db758.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55590854970:android:6fb1203a9168f943eeb003",
+        "android_client_info": {
+          "package_name": "com.prinapo.maigret"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsy_vlLIak9KRMqAtJjR_4Jecj0No5E50"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,7 @@
 # Test Suite - Boot Sequence & Core Initialization
 
 **Ultimo aggiornamento:** 2024-06-11
-**Release:** v4.01 (committata su GitHub)
+**Release:** v4.01 (Committata su GitHub)
 **Esito:** TUTTI I TEST DI BOOT VERDI
 
 ---

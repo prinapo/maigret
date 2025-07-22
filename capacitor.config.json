@@ -1,0 +1,6 @@
+{
+    "appId": "com.prinapo.maigret",
+    "appName": "Maigret Collectors",
+    "webDir": "dist/spa",
+    "bundledWebRuntime": false
+}

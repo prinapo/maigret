@@ -13,6 +13,15 @@ export default boot(async (ctx = {}) => {
       }
       return;
     }
+
+    // In development mode, allow testing without auth
+    if (process.env.DEV) {
+      console.log("Development mode: skipping auth domain check");
+      if (app?.config?.globalProperties) {
+        app.config.globalProperties.$debugMode = true;
+      }
+      return;
+    }
   } catch (error) {
     showNotifyNegative(i18n.global.t("auth.connectionError"));
     // Imposta modalità offline/degradata

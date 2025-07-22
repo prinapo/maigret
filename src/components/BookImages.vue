@@ -36,6 +36,7 @@
               :key="image.id"
               :src="getImageSource(image)"
               @error="handleImageError"
+              @load="onImageLoad(innerIndex)"
               fit="contain"
               no-spinner
               class="full-width"
@@ -161,6 +162,7 @@ import placeholderImage from "assets/placeholder.jpg";
 import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { useI18n } from "vue-i18n";
+import { Loading } from "quasar";
 const { t, locale } = useI18n();
 const props = defineProps({
   bookId: {
@@ -225,6 +227,42 @@ defineExpose({ restoreDeletedImage });
 const auth = useAuthStore();
 
 // State
+
+// Aggiungi stato per il tracciamento delle immagini caricate
+const loadedImages = ref(new Set());
+const allImagesLoaded = computed(() => {
+  return images.value && loadedImages.value.size >= images.value.length;
+});
+
+// Funzione per gestire il caricamento delle immagini
+const onImageLoad = (index) => {
+  loadedImages.value.add(index);
+  console.log(
+    `[Image ${index}] loaded, total: ${loadedImages.value.size}/${images.value.length}`,
+  );
+
+  // Se tutte le immagini sono caricate, nascondi il loader
+  if (allImagesLoaded.value) {
+    console.log(
+      "[Loader] hide after all images loaded",
+      new Date().toISOString(),
+    );
+    Loading.hide();
+  }
+};
+
+// Reset del conteggio quando cambiano le immagini
+watch(
+  () => images.value,
+  () => {
+    loadedImages.value.clear();
+    if (images.value && images.value.length > 0) {
+      Loading.show();
+      console.log("[Loader] show for new images", new Date().toISOString());
+    }
+  },
+  { deep: true },
+);
 
 // Quando un file è stato aggiunto, caricalo su Firebase Storage
 const MAX_FILE_SIZE_MB = 5;
@@ -454,6 +492,12 @@ const addNewImage = async () => {
 const isMobile = computed(() => window.innerWidth <= 600);
 
 onMounted(async () => {
+  // Mostra il loader se ci sono immagini da caricare
+  if (images.value && images.value.length > 0) {
+    Loading.show();
+    console.log("[Loader] show on mount", new Date().toISOString());
+  }
+
   // Solo se l'utente può modificare e il libro non è deleted
   if (
     isFieldEditable.value &&

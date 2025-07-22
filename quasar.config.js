@@ -5,7 +5,6 @@
 
 import { configure } from "quasar/wrappers";
 import path from "path";
-import firebase from "src/boot/firebase";
 
 export default configure((/* ctx */) => {
   return {
@@ -42,7 +41,6 @@ export default configure((/* ctx */) => {
     boot: [
       "i18n", // inizializza i18n
       "pinia", // inizializza PINIA
-      "logrocket",
       "firebase", // inizializza Firebase App
       "auth", // attiva il listener di autenticazione
       "init",
@@ -55,8 +53,8 @@ export default configure((/* ctx */) => {
         node: "node20",
       },
       env: {
-        APP_VERSION: JSON.stringify("4.03"),
-        VERSION_CODE: JSON.stringify("403"),
+        APP_VERSION: JSON.stringify("4.17"),
+        VERSION_CODE: JSON.stringify("417"),
       },
       sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'

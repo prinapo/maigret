@@ -1,12 +1,13 @@
 {
   "name": "Maigret Collector",
-  "version": "3.41",
+  "version": "4.02",
   "description": "Catalogo completo dei libri di Simenon con il commissario Maigret",
   "private": true,
   "dependencies": {
-    "@capacitor/android": "^6.1.0",
-    "@capacitor/app": "^6.0.0",
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0"
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0"
   }
 }

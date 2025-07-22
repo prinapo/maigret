@@ -1,6 +1,6 @@
 <template>
   <q-layout view="hHh LpR fFf">
-    <q-header elevated>
+    <q-header elevated style="padding-top: env(safe-area-inset-top)">
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <span class="text-caption">{{ version }}</span>

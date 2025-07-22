@@ -3,12 +3,14 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.prinapo.maigret"
     compileSdk rootProject.ext.compileSdkVersion
+    println "Using compileSdkVersion: ${rootProject.ext.compileSdkVersion}"
     defaultConfig {
         applicationId "com.prinapo.maigret"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 343
-        versionName "3.43"
+        println "Using targetSdkVersion: ${rootProject.ext.targetSdkVersion}"
+        versionCode 417
+        versionName "4.17"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -40,9 +42,18 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    
+    // Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:33.16.0')
+    
+    // Firebase Crashlytics NDK e Analytics (senza versioni specifiche grazie al BoM)
+    implementation 'com.google.firebase:firebase-crashlytics-ndk'
+    implementation 'com.google.firebase:firebase-analytics'
 }
 
 apply from: 'capacitor.build.gradle'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
 
 try {
     def servicesJSON = file('google-services.json')
