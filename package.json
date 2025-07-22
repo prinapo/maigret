@@ -8,7 +8,9 @@
     "test:ui": "vitest --ui",
     "dev": "quasar dev",
     "build": "quasar build && npm run sentry:sourcemaps",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org prinapo --project javascript-vue ./dist/ssr && sentry-cli sourcemaps upload --org prinapo --project javascript-vue ./dist/ssr"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org prinapo --project javascript-vue ./dist/ssr && sentry-cli sourcemaps upload --org prinapo --project javascript-vue ./dist/ssr",
+    "build-android": "node build-android.cjs",
+    "build-android-minor": "node build-android.cjs --minor"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
