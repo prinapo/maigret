@@ -1,8 +1,17 @@
 #!/usr/bin/env node
+// build-android.cjs v1.4
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
+
+// --- DEBUG: Stampa la lista dei device trovati da adb all'avvio ---
+try {
+  const adbOutput = execSync("adb devices").toString();
+  console.log("\n[DEBUG] adb devices output:\n" + adbOutput + "\n");
+} catch (e) {
+  console.log("[DEBUG] adb devices non disponibile o errore: " + e.message);
+}
 
 // --- PARSING OPZIONI CLI ---
 const args = process.argv.slice(2);
@@ -17,46 +26,37 @@ function run(cmd, opts = {}) {
 }
 
 function ask(question) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  return new Promise((res) =>
-    rl.question(question, (answer) => {
-      rl.close();
-      res(answer);
-    }),
-  );
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(res => rl.question(question, answer => { rl.close(); res(answer); }));
 }
 
 async function getDeviceSerial() {
   let deviceSerial = process.env.DEVICE_SERIAL;
+  const devices = execSync("adb devices")
+    .toString()
+    .split("\n")
+    .filter(line => line.match(/\bdevice\b/) && !line.startsWith("List"))
+    .map(line => line.trim().split(/\s+/)[0]);
+  console.log("DEBUG: Device trovati da adb:", devices);
   if (!deviceSerial) {
-    const devices = execSync("adb devices")
-      .toString()
-      .split("\n")
-      .filter((line) => line.match(/device$/) && !line.startsWith("List"))
-      .map((line) => line.split("\t")[0]);
     if (devices.length === 0) {
-      throw new Error(
-        "Nessun device trovato! Collega almeno un dispositivo via USB o imposta DEVICE_SERIAL.",
-      );
+      throw new Error("Nessun device trovato! Collega almeno un dispositivo via USB o imposta DEVICE_SERIAL.");
     } else if (devices.length === 1) {
       deviceSerial = devices[0];
+      console.log(`DEBUG: Un solo device trovato: ${deviceSerial}`);
     } else {
       console.log("Dispositivi trovati:");
       devices.forEach((d, i) => console.log(`  [${i + 1}] ${d}`));
       let idx = -1;
       while (idx < 0 || idx >= devices.length) {
-        const answer = await ask(
-          `Scegli il dispositivo su cui installare l'app [1-${devices.length}]: `,
-        );
+        const answer = await ask(`Scegli il dispositivo su cui installare l'app [1-${devices.length}]: `);
         idx = parseInt(answer, 10) - 1;
         if (isNaN(idx) || idx < 0 || idx >= devices.length) {
           console.log("Scelta non valida. Riprova.");
         }
       }
       deviceSerial = devices[idx];
+      console.log(`DEBUG: Device selezionato: ${deviceSerial}`);
     }
   }
   return deviceSerial;
