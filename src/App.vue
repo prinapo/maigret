@@ -19,7 +19,10 @@ export default defineComponent({
     const { isLoaded } = storeToRefs(bibliografiaStore);
 
     watch(isLoaded, (val) => {
-      console.log("Bibliografia loaded:", val);
+      if (val) {
+        Loading.hide();
+        console.log("[Loader] hide on isLoaded=true", new Date().toISOString());
+      }
     });
 
     let loaderStart = null;
@@ -28,14 +31,18 @@ export default defineComponent({
       loaderStart = Date.now();
       console.log("[Loader] show", new Date().toISOString());
       Loading.show();
+
+      // Fallback per evitare che il loader rimanga appeso all'infinito
       setTimeout(() => {
-        Loading.hide();
-        const duration = ((Date.now() - loaderStart) / 1000).toFixed(2);
-        console.log(
-          `[Loader] hide after ${duration}s`,
-          new Date().toISOString(),
-        );
-      }, 5000);
+        if (Loading.isActive) {
+          Loading.hide();
+          const duration = ((Date.now() - loaderStart) / 1000).toFixed(2);
+          console.log(
+            `[Loader] hide after fallback timeout ${duration}s`,
+            new Date().toISOString(),
+          );
+        }
+      }, 30000); // Timeout di 30 secondi
       console.log("App mounted");
     });
 
