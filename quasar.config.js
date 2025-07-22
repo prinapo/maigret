@@ -44,6 +44,7 @@ export default configure((/* ctx */) => {
       "firebase", // inizializza Firebase App
       "auth", // attiva il listener di autenticazione
       "init",
+      "back-button-handler",
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build

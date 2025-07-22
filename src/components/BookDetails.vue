@@ -271,7 +271,8 @@
 
 <script setup>
 import { ref, computed, reactive, watch } from "vue";
-import { Notify } from "quasar";
+import { Notify, Platform } from "quasar";
+import { useBackButton } from "src/composables/useBackButton";
 
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
@@ -373,6 +374,15 @@ const visibleFields = computed(() => {
 });
 
 const confirmDeleteBook = ref(false);
+
+// Gestione del pulsante "back" su mobile per chiudere il dialog di conferma
+if (Platform.is.capacitor) {
+  useBackButton(() => {
+    if (confirmDeleteBook.value) {
+      confirmDeleteBook.value = false;
+    }
+  }, () => confirmDeleteBook.value);
+}
 
 const handleDeleteBook = async () => {
   if (!props.bookId) {

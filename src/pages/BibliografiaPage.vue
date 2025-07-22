@@ -103,7 +103,8 @@ import { fireStoreTmblUrl } from "boot/firebase";
 //native
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
-import { useQuasar } from "quasar";
+import { useQuasar, Platform } from "quasar";
+import { useBackButton } from "src/composables/useBackButton";
 //stores
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
@@ -234,6 +235,15 @@ const sortedBooks = computed(() => {
     });
   });
 });
+
+// Gestione del pulsante "back" per chiudere il dialog
+if (Platform.is.capacitor) {
+  useBackButton(() => {
+    if (isDialogOpen.value) {
+      isDialogOpen.value = false;
+    }
+  }, () => isDialogOpen.value);
+}
 
 // Utility functions
 const openBookDetails = (bookId) => {
