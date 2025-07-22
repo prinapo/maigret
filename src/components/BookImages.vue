@@ -1,8 +1,5 @@
 <template>
-  <div v-if="edizioni.length === 0" class="q-pa-md flex flex-center">
-    <q-spinner size="40px" color="primary" />
-  </div>
-  <div v-else style="position: relative">
+  <div style="position: relative">
     <div v-if="images.length === 0" class="placeholder">
       Nessuna immagine disponibile
     </div>
