@@ -377,11 +377,14 @@ const confirmDeleteBook = ref(false);
 
 // Gestione del pulsante "back" su mobile per chiudere il dialog di conferma
 if (Platform.is.capacitor) {
-  useBackButton(() => {
-    if (confirmDeleteBook.value) {
-      confirmDeleteBook.value = false;
-    }
-  }, () => confirmDeleteBook.value);
+  useBackButton(
+    () => {
+      if (confirmDeleteBook.value) {
+        confirmDeleteBook.value = false;
+      }
+    },
+    () => confirmDeleteBook.value,
+  );
 }
 
 const handleDeleteBook = async () => {

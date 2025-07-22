@@ -85,11 +85,14 @@ const emit = defineEmits(["update:showDrawer"]);
 
 // Gestione del pulsante "back" per chiudere il drawer
 if (Platform.is.capacitor) {
-  useBackButton(() => {
-    if (showFilterDrawer.value) {
-      showFilterDrawer.value = false;
-    }
-  }, () => showFilterDrawer.value);
+  useBackButton(
+    () => {
+      if (showFilterDrawer.value) {
+        showFilterDrawer.value = false;
+      }
+    },
+    () => showFilterDrawer.value,
+  );
 }
 
 const $q = useQuasar();

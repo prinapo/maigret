@@ -238,11 +238,14 @@ const sortedBooks = computed(() => {
 
 // Gestione del pulsante "back" per chiudere il dialog
 if (Platform.is.capacitor) {
-  useBackButton(() => {
-    if (isDialogOpen.value) {
-      isDialogOpen.value = false;
-    }
-  }, () => isDialogOpen.value);
+  useBackButton(
+    () => {
+      if (isDialogOpen.value) {
+        isDialogOpen.value = false;
+      }
+    },
+    () => isDialogOpen.value,
+  );
 }
 
 // Utility functions
