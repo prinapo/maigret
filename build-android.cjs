@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// build-android.cjs v1.4
-// build-android.cjs v1.4
+// build-android.cjs v1.5
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -14,17 +13,8 @@ try {
   console.log("[DEBUG] adb devices non disponibile o errore: " + e.message);
 }
 
-// --- DEBUG: Stampa la lista dei device trovati da adb all'avvio ---
-try {
-  const adbOutput = execSync("adb devices").toString();
-  console.log("\n[DEBUG] adb devices output:\n" + adbOutput + "\n");
-} catch (e) {
-  console.log("[DEBUG] adb devices non disponibile o errore: " + e.message);
-}
-
 // --- PARSING OPZIONI CLI ---
 const args = process.argv.slice(2);
-let doMinor = args.includes("--minor") || args.includes("-minor");
 let buildOnly = args.includes("--build-only") || args.includes("-build-only");
 const interactive = args.length === 0;
 
@@ -63,7 +53,6 @@ async function getDeviceSerial() {
     } else if (devices.length === 1) {
       deviceSerial = devices[0];
       console.log(`DEBUG: Un solo device trovato: ${deviceSerial}`);
-      console.log(`DEBUG: Un solo device trovato: ${deviceSerial}`);
     } else {
       console.log("Dispositivi trovati:");
       devices.forEach((d, i) => console.log(`  [${i + 1}] ${d}`));
@@ -78,7 +67,6 @@ async function getDeviceSerial() {
         }
       }
       deviceSerial = devices[idx];
-      console.log(`DEBUG: Device selezionato: ${deviceSerial}`);
       console.log(`DEBUG: Device selezionato: ${deviceSerial}`);
     }
   }
@@ -105,37 +93,40 @@ function updateQuasarConfig(versionName, versionCode) {
 
 (async () => {
   // --- INTERATTIVITÀ ---
+  let isPlayStore = false;
   if (interactive) {
-    const minorAnswer = await ask(
-      "Vuoi incrementare la versione minor? [y/N]: ",
+    const releaseAnswer = await ask(
+      "Vuoi fare una release Play Store? [y/N]: ",
     );
-    doMinor = /^y(es)?$/i.test(minorAnswer.trim());
-    const buildAnswer = await ask(
-      "Vuoi solo buildare o anche installare su device? [1] Solo build  [2] Build + install [default 2]: ",
-    );
-    buildOnly = buildAnswer.trim() === "1";
+    isPlayStore = /^y(es)?$/i.test(releaseAnswer.trim());
+    if (!isPlayStore) {
+      const buildAnswer = await ask(
+        "Vuoi solo buildare o anche installare su device? [1] Solo build  [2] Build + install [default 2]: ",
+      );
+      buildOnly = buildAnswer.trim() === "1";
+    }
   }
 
-  // --- 1. VERSIONAMENTO (solo se richiesto) ---
-  if (doMinor) {
+  // --- 1. VERSIONAMENTO (solo se Play Store) ---
+  if (isPlayStore) {
     console.log("Incremento versione minor...");
     run("npm version minor --no-git-tag-version");
-
-    // Leggi la nuova versione
-    const pkgPath = path.join(__dirname, "package.json");
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-    const version = pkg.version; // es: '4.4.0'
-    const [major, minor] = version.split(".");
-    const versionCode = parseInt(major) * 100 + parseInt(minor); // es: 4*100+4 = 404
-    const versionName = `${major}.${minor.padStart(2, "0")}`; // es: '4.04'
-
-    // Aggiorna quasar.config.js
-    updateQuasarConfig(versionName, versionCode);
-
-    // Aggiorna build.gradle
-    console.log("Aggiorno build.gradle con la nuova versione...");
-    run("node update-android-version.cjs");
   }
+
+  // Leggi la versione
+  const pkgPath = path.join(__dirname, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  const version = pkg.version; // es: '4.4.0'
+  const [major, minor] = version.split(".");
+  const versionCode = parseInt(major) * 100 + parseInt(minor); // es: 4*100+4 = 404
+  const versionName = `${major}.${minor.padStart(2, "0")}`; // es: '4.04'
+
+  // Aggiorna quasar.config.js
+  updateQuasarConfig(versionName, versionCode);
+
+  // Aggiorna build.gradle
+  console.log("Aggiorno build.gradle con la nuova versione...");
+  run("node update-android-version.cjs");
 
   // --- 2. BUILD E SYNC ---
   console.log("Eseguo build di produzione e sync...");
@@ -143,7 +134,23 @@ function updateQuasarConfig(versionName, versionCode) {
   run("npx cap sync android");
   console.log("Build di produzione e sync completati.");
 
-  // --- 3. COMPILAZIONE APK ---
+  if (isPlayStore) {
+    // --- 3. GENERA APP BUNDLE FIRMATO ---
+    console.log("Genero app bundle firmato per Play Store...");
+    const isWin = process.platform === "win32";
+    const gradleDir = path.join("src-capacitor", "android");
+    const gradleCmd = isWin ? "gradlew.bat" : "./gradlew";
+    const gradleBundleCmd = isWin
+      ? `"${gradleCmd}" bundleRelease`
+      : `chmod +x \"${gradleCmd}\" && \"${gradleCmd}\" bundleRelease`;
+    run(gradleBundleCmd, { cwd: gradleDir });
+    console.log(
+      "App bundle generato: src-capacitor/android/app/build/outputs/bundle/release/app-release.aab",
+    );
+    process.exit(0);
+  }
+
+  // --- 3. COMPILAZIONE APK DEBUG (solo per test) ---
   console.log("Compilazione APK debug con gradle...");
   const isWin = process.platform === "win32";
   const gradleDir = path.join("src-capacitor", "android");
@@ -160,7 +167,7 @@ function updateQuasarConfig(versionName, versionCode) {
     process.exit(0);
   }
 
-  // --- 4. INSTALLAZIONE SU DEVICE ---
+  // --- 4. INSTALLAZIONE SU DEVICE (solo per test) ---
   try {
     const deviceSerial = await getDeviceSerial();
     const apkPath = path.join(

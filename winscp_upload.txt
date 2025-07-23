@@ -1,0 +1,8 @@
+
+option batch abort
+option confirm off
+open ftp://admin%40maigret.crostata.org:61PrnGnnMgr!!@ftp.sostienilsostegno.com:21
+lcd "C:\Users\giova\quasar\maigret\dist\spa"
+cd /
+put *.*
+exit
