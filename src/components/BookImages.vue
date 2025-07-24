@@ -106,8 +106,47 @@
       icon="add"
       color="primary"
       class="q-fab-bottom-right fab-small"
-      @click="addNewImage"
+      @click="openAddImageDialog"
     />
+
+    <!-- Dialog scelta sorgente immagine -->
+    <q-dialog v-model="addImageDialog">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Aggiungi immagine</div>
+        </q-card-section>
+        <q-card-actions align="around">
+          <q-btn flat label="Scatta foto" @click="takePhoto" />
+          <q-btn flat label="Scegli da file" @click="pickFile" />
+          <q-btn flat label="Annulla" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Dialog cropper -->
+    <q-dialog v-model="showCropperDialog" persistent maximized>
+      <q-card style="height: 90vh; width: 95vw;">
+        <q-card-section>
+          <div class="text-h6">Ritaglia la copertina</div>
+        </q-card-section>
+        <q-card-section style="height: 70vh;">
+          <Cropper
+            v-if="cropperImage"
+            :src="cropperImage"
+            :stencil-props="{ aspectRatio: 0, movable: true, resizable: true }"
+            :auto-zoom="true"
+            :transitions="true"
+            class="cropper"
+            @change="onCropChange"
+            ref="cropperRef"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Annulla" @click="cancelCrop" />
+          <q-btn flat label="Salva" color="primary" @click="saveCroppedImage" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Confirmation dialog -->
     <q-dialog v-model="confirmDialogVisible">
@@ -163,6 +202,11 @@ import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { useI18n } from "vue-i18n";
 import { Loading } from "quasar";
+import { Cropper } from 'vue-advanced-cropper';
+import 'vue-advanced-cropper/dist/style.css';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { ref as vueRef } from 'vue';
+
 const { t, locale } = useI18n();
 const props = defineProps({
   bookId: {
@@ -522,6 +566,90 @@ function undoDelete() {
   // Logica undo base (da completare)
   showUndo.value = false;
 }
+
+const addImageDialog = vueRef(false);
+const showCropperDialog = vueRef(false);
+const cropperImage = vueRef(null);
+const cropperResult = vueRef(null);
+const cropperRef = vueRef(null);
+
+function openAddImageDialog() {
+  addImageDialog.value = true;
+}
+
+async function takePhoto() {
+  addImageDialog.value = false;
+  try {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Camera,
+    });
+    cropperImage.value = image.dataUrl;
+    showCropperDialog.value = true;
+  } catch (e) {
+    showNotifyNegative('Errore acquisizione foto');
+  }
+}
+
+function pickFile() {
+  addImageDialog.value = false;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        cropperImage.value = ev.target.result;
+        showCropperDialog.value = true;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+
+function cancelCrop() {
+  showCropperDialog.value = false;
+  cropperImage.value = null;
+  cropperResult.value = null;
+}
+
+function onCropChange({ canvas }) {
+  cropperResult.value = canvas ? canvas.toDataURL('image/jpeg', 0.9) : null;
+}
+
+async function saveCroppedImage() {
+  if (!cropperResult.value) return;
+  try {
+    // Carica l'immagine ritagliata come nuova copertina
+    await uploadCroppedImage(cropperResult.value);
+    showCropperDialog.value = false;
+    cropperImage.value = null;
+    cropperResult.value = null;
+  } catch (e) {
+    showNotifyNegative('Errore salvataggio immagine');
+  }
+}
+
+async function uploadCroppedImage(dataUrl) {
+  // Converti dataUrl in Blob
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  // Usa la funzione già esistente per upload (adatta se serve)
+  await convertAndUploadImage(blob, props.bookId, images.value.length);
+  // Aggiorna lo store
+  const updatedImages = await fetchImages(props.bookId);
+  const bibliografia = unref(bibliografiaStore.bibliografia);
+  bibliografiaStore.$patch({
+    bibliografia: bibliografia.map((b) =>
+      b.id === props.bookId ? { ...b, images: updatedImages } : b,
+    ),
+  });
+}
 </script>
 
 <style scoped>
@@ -566,5 +694,10 @@ function undoDelete() {
   min-width: 40px;
   min-height: 40px;
   font-size: 20px;
+}
+.cropper {
+  width: 100%;
+  height: 100%;
+  background: #222;
 }
 </style>
