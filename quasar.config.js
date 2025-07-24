@@ -44,6 +44,7 @@ export default configure((/* ctx */) => {
       "firebase", // inizializza Firebase App
       "auth", // attiva il listener di autenticazione
       "init",
+      "back-button-handler",
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
@@ -53,8 +54,8 @@ export default configure((/* ctx */) => {
         node: "node20",
       },
       env: {
-        APP_VERSION: JSON.stringify("4.17"),
-        VERSION_CODE: JSON.stringify("417"),
+        APP_VERSION: JSON.stringify("4.19"),
+        VERSION_CODE: JSON.stringify("419"),
       },
       sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'

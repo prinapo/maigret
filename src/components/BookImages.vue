@@ -1,8 +1,5 @@
 <template>
-  <div v-if="edizioni.length === 0" class="q-pa-md flex flex-center">
-    <q-spinner size="40px" color="primary" />
-  </div>
-  <div v-else style="position: relative">
+  <div style="position: relative">
     <div v-if="images.length === 0" class="placeholder">
       Nessuna immagine disponibile
     </div>
@@ -35,7 +32,7 @@
             <q-img
               :key="image.id"
               :src="getImageSource(image)"
-              @error="handleImageError"
+              @error="handleImageError(innerIndex)"
               @load="onImageLoad(innerIndex)"
               fit="contain"
               no-spinner
@@ -338,6 +335,8 @@ const onFileAdded = async (event, imageUuid, innerIndex) => {
       } catch (error) {
         console.error("Error in image upload and processing:", error);
         showNotifyNegative(t("bookImages.uploadFailed") + ": " + error.message);
+      } finally {
+        Loading.hide();
       }
     } else {
       showNotifyNegative(t("bookImages.onlyJPGJPEGAndPNGFilesAllowed"));
@@ -385,8 +384,9 @@ const getFullScreenImageUrl = (image) => {
   }
 };
 
-const handleImageError = (event) => {
+const handleImageError = (event, index) => {
   event.target.src = placeholderImage;
+  onImageLoad(index); // Considera l'immagine come "caricata" anche in caso di errore
 };
 
 const showImageFullscreen = (imageIndex) => {
@@ -473,6 +473,8 @@ const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
         b.id === props.bookId ? { ...b, images: updatedImages } : b,
       ),
     });
+  } finally {
+    Loading.hide();
   }
 };
 
@@ -512,6 +514,8 @@ const deleteImageConfirmed = async () => {
     showNotifyNegative(
       t("bookImages.failedToDeleteImage") + ": " + error.message,
     );
+  } finally {
+    Loading.hide();
   }
 };
 
@@ -530,6 +534,8 @@ const addNewImage = async () => {
   } catch (error) {
     console.error("Error adding image:", error);
     showNotifyNegative(t("bookImages.failedToAddImage") + ": " + error.message);
+  } finally {
+    Loading.hide();
   }
 };
 
@@ -555,6 +561,8 @@ onMounted(async () => {
       // Usa showNotifyNegative e messaggio i18n
       const msg = t("bookImages.error_creating_placeholder_image");
       showNotifyNegative(`${msg}: ${error.message}`);
+    } finally {
+      Loading.hide();
     }
   }
 });

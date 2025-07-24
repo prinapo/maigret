@@ -103,7 +103,8 @@ import { fireStoreTmblUrl } from "boot/firebase";
 //native
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
-import { useQuasar } from "quasar";
+import { useQuasar, Platform } from "quasar";
+import { useBackButton } from "src/composables/useBackButton";
 //stores
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
@@ -117,8 +118,10 @@ import Filter from "components/Filter.vue";
 //utils
 import { updateThemeFromSettings } from "utils/theme";
 import { inject } from "vue";
+import { App as CapacitorApp } from "@capacitor/app";
 
 updateThemeFromSettings();
+const backHandler = ref(null);
 
 const $q = useQuasar();
 
@@ -234,6 +237,18 @@ const sortedBooks = computed(() => {
     });
   });
 });
+
+// Gestione del pulsante "back" per chiudere il dialog
+if (Platform.is.capacitor) {
+  useBackButton(
+    () => {
+      if (isDialogOpen.value) {
+        isDialogOpen.value = false;
+      }
+    },
+    () => isDialogOpen.value,
+  );
+}
 
 // Utility functions
 const openBookDetails = (bookId) => {
@@ -421,20 +436,34 @@ watch(
 );
 
 // Lifecycle
-onMounted(() => {
-  // [BibliografiaPage] onMounted called
+onMounted(async () => {
   setupIntersectionObserver();
   $q.loading.show({
     message: "Loading...",
     spinnerColor: "primary",
     messageColor: "dark",
   });
-  // [BibliografiaPage] $q.loading.show called
+
+  // Salva il listener per poterlo rimuovere
+  backHandler.value = await CapacitorApp.addListener("backButton", () => {
+    // Controlla prima il filtro, poi il dialogo
+    if (props.showFilterDrawer) {
+      emit("update:showFilterDrawer", false);
+    } else if (isDialogOpen.value) {
+      isDialogOpen.value = false;
+    } else {
+      CapacitorApp.exitApp();
+    }
+  });
 });
 
 onUnmounted(() => {
   if (observer.value) {
     observer.value.disconnect();
+  }
+  // Rimuovi il listener del back button
+  if (backHandler.value && typeof backHandler.value.remove === "function") {
+    backHandler.value.remove();
   }
 });
 </script>

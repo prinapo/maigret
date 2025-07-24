@@ -65,8 +65,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
-import { useQuasar } from "quasar";
+import { useQuasar, Platform } from "quasar";
 import { storeToRefs } from "pinia";
+import { useBackButton } from "src/composables/useBackButton";
 import { useFiltersStore } from "stores/filtersStore";
 import { useEditoriStore } from "stores/editoriStore";
 import { useCollaneStore } from "stores/collaneStore";
@@ -81,6 +82,18 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(["update:showDrawer"]);
+
+// Gestione del pulsante "back" per chiudere il drawer
+if (Platform.is.capacitor) {
+  useBackButton(
+    () => {
+      if (showFilterDrawer.value) {
+        showFilterDrawer.value = false;
+      }
+    },
+    () => showFilterDrawer.value,
+  );
+}
 
 const $q = useQuasar();
 const isMobile = computed(() => $q.screen.lt.md);
