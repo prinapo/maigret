@@ -148,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, unref, computed, onMounted, watch } from "vue";
+import { ref, unref, computed, onMounted, watch, onUnmounted } from "vue";
 import { fireStoreUrl, fireStoreTmblUrl } from "src/boot/firebase";
 import { convertAndUploadImage } from "utils/imageUtils";
 import { useAuthStore } from "stores/authStore";
@@ -163,6 +163,7 @@ import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { useI18n } from "vue-i18n";
 import { Loading } from "quasar";
+import { App as CapacitorApp } from "@capacitor/app";
 const { t, locale } = useI18n();
 const props = defineProps({
   bookId: {
@@ -491,6 +492,9 @@ const addNewImage = async () => {
 
 const isMobile = computed(() => window.innerWidth <= 600);
 
+const isAnyImageDialogOpen = computed(() => dialogs.value.some(Boolean));
+let backHandler = null;
+
 onMounted(async () => {
   // Mostra il loader se ci sono immagini da caricare
   if (images.value && images.value.length > 0) {
@@ -512,6 +516,20 @@ onMounted(async () => {
       const msg = t("bookImages.error_creating_placeholder_image");
       showNotifyNegative(`${msg}: ${error.message}`);
     }
+  }
+
+  // Gestione back button per modale immagine
+  backHandler = await CapacitorApp.addListener("backButton", () => {
+    const openIndex = dialogs.value.findIndex(Boolean);
+    if (openIndex !== -1) {
+      dialogs.value[openIndex] = false;
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (backHandler && typeof backHandler.remove === "function") {
+    backHandler.remove();
   }
 });
 
