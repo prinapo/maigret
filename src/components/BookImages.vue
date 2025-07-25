@@ -122,11 +122,11 @@
 
     <!-- Dialog cropper -->
     <q-dialog v-model="showCropperDialog" persistent maximized>
-      <q-card style="height: 90vh; width: 95vw;">
+      <q-card style="height: 90vh; width: 95vw">
         <q-card-section>
           <div class="text-h6">Ritaglia la copertina</div>
         </q-card-section>
-        <q-card-section style="height: 70vh;">
+        <q-card-section style="height: 70vh">
           <Cropper
             v-if="cropperImage"
             :src="cropperImage"
@@ -184,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, unref, computed, onMounted, watch } from "vue";
+import { ref, unref, computed, onMounted, watch, nextTick } from "vue";
 import { fireStoreUrl, fireStoreTmblUrl } from "src/boot/firebase";
 import { convertAndUploadImage } from "utils/imageUtils";
 import { useAuthStore } from "stores/authStore";
@@ -199,10 +199,10 @@ import { updateDocInCollection } from "utils/firebaseDatabaseUtils";
 import { showNotifyPositive, showNotifyNegative } from "src/utils/notify";
 import { useI18n } from "vue-i18n";
 import { Loading } from "quasar";
-import { Cropper } from 'vue-advanced-cropper';
-import 'vue-advanced-cropper/dist/style.css';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { ref as vueRef } from 'vue';
+import { Cropper } from "vue-advanced-cropper";
+import "vue-advanced-cropper/dist/style.css";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { ref as vueRef } from "vue";
 
 const { t, locale } = useI18n();
 const props = defineProps({
@@ -276,7 +276,7 @@ const allImagesLoaded = computed(() => {
 });
 
 // Funzione per gestire il caricamento delle immagini
-const onImageLoad = (index) => {
+const onImageLoad = async (index) => {
   loadedImages.value.add(index);
   console.log(
     `[Image ${index}] loaded, total: ${loadedImages.value.size}/${images.value.length}`,
@@ -288,6 +288,7 @@ const onImageLoad = (index) => {
       "[Loader] hide after all images loaded",
       new Date().toISOString(),
     );
+    await nextTick(); // aspetta che il DOM sia aggiornato
     Loading.hide();
   }
 };
@@ -597,15 +598,15 @@ async function takePhoto() {
     cropperImage.value = image.dataUrl;
     showCropperDialog.value = true;
   } catch (e) {
-    showNotifyNegative('Errore acquisizione foto');
+    showNotifyNegative("Errore acquisizione foto");
   }
 }
 
 function pickFile() {
   addImageDialog.value = false;
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -627,7 +628,7 @@ function cancelCrop() {
 }
 
 function onCropChange({ canvas }) {
-  cropperResult.value = canvas ? canvas.toDataURL('image/jpeg', 0.9) : null;
+  cropperResult.value = canvas ? canvas.toDataURL("image/jpeg", 0.9) : null;
 }
 
 async function saveCroppedImage() {
@@ -639,7 +640,7 @@ async function saveCroppedImage() {
     cropperImage.value = null;
     cropperResult.value = null;
   } catch (e) {
-    showNotifyNegative('Errore salvataggio immagine');
+    showNotifyNegative("Errore salvataggio immagine");
   }
 }
 

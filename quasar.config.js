@@ -5,6 +5,7 @@
 
 import { configure } from "quasar/wrappers";
 import path from "path";
+import fs from "fs";
 
 export default configure((/* ctx */) => {
   return {
@@ -53,10 +54,22 @@ export default configure((/* ctx */) => {
         browser: ["es2019", "edge88", "firefox78", "chrome87", "safari13.1"],
         node: "node20",
       },
-      env: {
-        APP_VERSION: JSON.stringify("4.19"),
-        VERSION_CODE: JSON.stringify("419"),
-      },
+      env: (() => {
+        // Leggi la versione da package.json
+        let pkg = { version: "4.19.0" };
+        try {
+          pkg = JSON.parse(fs.readFileSync("package.json"));
+        } catch (e) {}
+        // VERSION_CODE: 4.20.0 -> 42000
+        const versionCode = pkg.version
+          .split(".")
+          .map((n, i) => (i < 2 ? n.padStart(2, "0") : n.padStart(3, "0")))
+          .join("");
+        return {
+          APP_VERSION: JSON.stringify(pkg.version),
+          VERSION_CODE: JSON.stringify(versionCode),
+        };
+      })(),
       sourcemap: true,
       vueRouterMode: "hash", // available values: 'hash', 'history'
 

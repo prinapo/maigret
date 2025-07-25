@@ -111,9 +111,12 @@ const editoriStore = useEditoriStore();
 const collaneStore = useCollaneStore();
 const lingueStore = useLingueStore();
 
-// Opzioni dropdown (array di oggetti {value, label})
-const editoriOptions = ref([]);
-const lingueOptions = ref([]);
+const { editori } = storeToRefs(editoriStore);
+const { lingue } = storeToRefs(lingueStore);
+
+const editoriOptions = computed(() => editori.value || []);
+const lingueOptions = computed(() => lingue.value || []);
+
 const possedutoOptions = ref([
   { label: "Posseduto", value: "yes" },
   { label: "Non Posseduto", value: "no" },
@@ -216,12 +219,6 @@ const selectedPossedutoObjects = computed({
     const valori = arr ? arr.map((o) => o.value) : [];
     filtersStore.updatePossedutoArray(valori);
   },
-});
-
-// Carico le opzioni (modelli) al mount
-onMounted(() => {
-  editoriOptions.value = editoriStore.editori || [];
-  lingueOptions.value = lingueStore.lingue || [];
 });
 
 // Pulsanti Applica/Reset (puoi personalizzare la logica)
