@@ -88,13 +88,14 @@
 
           <!-- Only show the uploader for superadmin users -->
           <q-uploader
-            v-if="isFieldEditable"
-            class="full-width q-mt-sm"
-            :url="''"
-            :hide-upload-btn="true"
-            :multiple="false"
-            @added="(event) => onFileAdded(event, image.id, innerIndex)"
-          />
+  v-if="isFieldEditable"
+  class="full-width q-mt-sm"
+  :url="''"
+  :hide-upload-btn="true"
+  :multiple="false"
+  @added="(event) => onFileAdded(event, image.id, innerIndex)"
+/>
+
         </div>
       </template>
     </q-virtual-scroll>

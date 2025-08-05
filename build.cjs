@@ -12,6 +12,9 @@ const FTP_USER = process.env.FTP_USER;
 const FTP_PASSWORD = process.env.FTP_PASS;
 const FTP_HOST = process.env.FTP_HOST;
 
+const isWin = process.platform === "win32";
+const gradleCmd = isWin ? "gradlew.bat" : "./gradlew";
+
 function run(cmd, options = {}) {
   console.log(`\n> ${cmd}`);
   execSync(cmd, { stdio: "inherit", ...options });
@@ -30,6 +33,29 @@ function prompt(question) {
   );
 }
 
+async function buildAPKorAAB() {
+  const answer = (
+    await prompt("Vuoi generare AAB o APK? (aab/apk): ")
+  ).toLowerCase();
+  const buildDir = "src-capacitor/android";
+
+  if (answer === "apk") {
+    console.log("Generazione APK...");
+    run(`cd ${buildDir} && ${gradleCmd} assembleRelease`);
+    console.log(
+      "✅ APK generato in: src-capacitor/android/app/build/outputs/apk/release/",
+    );
+  } else if (answer === "aab") {
+    console.log("Generazione AAB...");
+    run(`cd ${buildDir} && ${gradleCmd} bundleRelease`);
+    console.log(
+      "✅ AAB generato in: src-capacitor/android/app/build/outputs/bundle/release/",
+    );
+  } else {
+    console.log("❌ Scelta non valida, nessun file generato.");
+  }
+}
+
 async function main() {
   console.log("Scegli build:");
   console.log("1. Build Android (Play Store, release, aumenta versione minor)");
@@ -46,19 +72,106 @@ async function main() {
 
   switch (choice) {
     case "1":
-      // Build Play Store
-      console.log("Incremento versione minor...");
-      run("npm version minor --no-git-tag-version");
+      // Chiedi quale versione incrementare
+      const incrementType = (
+        await prompt(
+          "Quale versione vuoi incrementare? (major/minor/patch, default minor): ",
+        )
+      ).toLowerCase();
+
+      // Valori accettati per il prompt
+      const validIncrements = ["major", "minor", "patch"];
+      const inc = validIncrements.includes(incrementType)
+        ? incrementType
+        : "minor";
+
+      console.log(`Incremento versione ${inc}...`);
+      run(`npm version ${inc} --no-git-tag-version`);
+
       const version = JSON.parse(fs.readFileSync("package.json")).version;
-      console.log(`Nuova versione: ${version}`);
+      console.log(`Versione aggiornata: ${version}`);
+
+      // Funzione per aggiornare versionCode e versionName in build.gradle
+      function updateVersionInBuildGradle() {
+        const buildGradlePath = path.resolve(
+          "src-capacitor/android/app/build.gradle",
+        );
+
+        if (!fs.existsSync(buildGradlePath)) {
+          console.error("❌ build.gradle non trovato: " + buildGradlePath);
+          process.exit(1);
+        }
+
+        // Esempio di conversione: 4.24.0 -> 42400
+        const parts = version.split(".").map((n) => parseInt(n, 10));
+        const versionCode = parts[0] * 10000 + parts[1] * 100 + (parts[2] || 0);
+
+        let buildGradleContent = fs.readFileSync(buildGradlePath, "utf8");
+
+        buildGradleContent = buildGradleContent.replace(
+          /versionCode\s+\d+/g,
+          `versionCode ${versionCode}`,
+        );
+        buildGradleContent = buildGradleContent.replace(
+          /versionName\s+"[^"]+"/g,
+          `versionName "${version}"`,
+        );
+
+        fs.writeFileSync(buildGradlePath, buildGradleContent, "utf8");
+
+        console.log(
+          `Aggiornato build.gradle: versionCode=${versionCode}, versionName=${version}`,
+        );
+      }
+
+      updateVersionInBuildGradle();
+
       run("quasar clean");
       run("quasar build -m capacitor -T android");
+
+      const keystorePath = path.resolve("maigret_collector.jks");
+      if (!fs.existsSync(keystorePath)) {
+        console.error(`❌ File keystore non trovato: ${keystorePath}`);
+        process.exit(1);
+      }
+
+      const keyAlias = process.env.APP_KEY_ALIAS;
+      if (!keyAlias) {
+        console.error("❌ Variabile APP_KEY_ALIAS non definita in .env");
+        process.exit(1);
+      }
+
+      const keyPassword = process.env.APP_KEY_PASSWORD;
+      if (!keyPassword) {
+        console.error("❌ Variabile APP_KEY_PASSWORD non definita in .env");
+        process.exit(1);
+      }
+
+      console.log("Generazione AAB con gradle bundleRelease...");
+      const isWin = process.platform === "win32";
+      const gradleCmd = isWin ? "gradlew.bat" : "./gradlew";
+
+      run(`cd src-capacitor/android && ${gradleCmd} bundleRelease`);
+
+      const aabPath = path.resolve(
+        "src-capacitor/android/app/build/outputs/bundle/release/app-release.aab",
+      );
+
+      if (!fs.existsSync(aabPath)) {
+        console.error(`❌ File AAB non trovato: ${aabPath}`);
+        process.exit(1);
+      }
+
       console.log("Firma AAB...");
       run(
-        `jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore keystore.jks dist/capacitor/android/apk/release/app-release-unsigned.aab alias_name`,
+        `jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ${keystorePath} -storepass ${keyPassword} -keypass ${keyPassword} ${aabPath} ${keyAlias}`,
       );
-      console.log("Build completata per Play Store.");
+
+      console.log(
+        `✅ Build e firma AAB completate. File pronto in:\n${aabPath}`,
+      );
       break;
+
     case "2":
       run("quasar dev -m spa");
       break;
@@ -142,10 +255,12 @@ async function main() {
     case "6":
       run("quasar clean");
       run("quasar build -m capacitor -T android");
+      await buildAPKorAAB();
       break;
     case "7":
       run("npm version minor --no-git-tag-version");
       run("quasar build -m capacitor -T android");
+      await buildAPKorAAB();
       break;
     default:
       console.error("Scelta non valida.");

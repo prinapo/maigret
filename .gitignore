@@ -38,3 +38,6 @@ yarn-error.log*
 # Sentry Config File
 .sentryclirc
 simenon-db758-de779baaf4b3.json
+
+# abb signature fike
+maigret_collector.jks

@@ -35,6 +35,9 @@
               no-spinner
               no-transition
               loading="lazy"
+              @load="onImageLoaded(book.id)"
+              @error="onImageLoaded(book.id)"
+              @before-show="onImageBeforeShow(book.id)"
             >
               <template v-slot:loading>
                 <div
@@ -125,6 +128,13 @@ const backHandler = ref(null);
 
 const $q = useQuasar();
 
+// For timing debug
+const pageMountTime = Date.now();
+function logWithTime(msg) {
+  const now = Date.now();
+  console.log(`[${now - pageMountTime}ms] ${msg}`);
+}
+
 // Pagination constants
 const ITEMS_PER_PAGE = 50;
 const LOAD_MORE_THRESHOLD = 10;
@@ -136,6 +146,10 @@ const isInitialized = ref(false);
 const loadingStep = ref("Initializing...");
 const loadingProgress = ref(0);
 const currentPage = ref(1);
+// Track image loading state
+const imagesLoading = ref(new Set());
+const totalImagesToLoad = ref(0);
+const imagesLoadedCount = ref(0);
 const isLoadingMore = ref(false);
 const loadMoreTrigger = ref(null);
 const observer = ref(null);
@@ -394,21 +408,64 @@ const setupIntersectionObserver = () => {
 watch(
   () => bibliografia.value,
   async (newValue) => {
-    // [BibliografiaPage] bibliografia watcher triggered
-    // newValue, "isInitialized:", isInitialized.value
     if (Array.isArray(newValue) && !isInitialized.value) {
       isInitialized.value = true;
-      // [BibliografiaPage] isInitialized set to true
+      logWithTime('Database (bibliografia) loaded and ready');
       resetPagination();
-      await nextTick();
-      requestAnimationFrame(() => {
-        // [BibliografiaPage] $q.loading.hide called
-        $q.loading.hide();
-      });
     }
   },
   { immediate: true },
 );
+
+const isRenderingBooks = ref(false);
+const isLoaderActive = ref(true);
+// Watch paginatedBooks ids to update totalImagesToLoad and reset imagesLoadedCount only on real list change
+watch(
+  () => paginatedBooks.value.map(b => b.id).join(','),
+  (newIds, oldIds) => {
+    logWithTime(`[DEBUG] paginatedBooks watcher: ids=${JSON.stringify(paginatedBooks.value.map(b => b.id))}, len=${paginatedBooks.value.length}`);
+    imagesLoadedCount.value = 0;
+    totalImagesToLoad.value = paginatedBooks.value.length;
+    const ids = paginatedBooks.value.map(b => b.id);
+    logWithTime(`[LOADER] ids attesi: ${JSON.stringify(ids)}`);
+    isLoaderActive.value = true;
+    updateLoaderMessage();
+    isRenderingBooks.value = true;
+    nextTick(() => {
+      logWithTime('[DEBUG] nextTick after paginatedBooks watcher');
+      requestAnimationFrame(() => {
+        logWithTime('[DEBUG] requestAnimationFrame after paginatedBooks watcher');
+        if (isRenderingBooks.value && paginatedBooks.value.length > 0) {
+          // Attendi almeno 2 immagini caricate
+          const checkAndHideLoader = (startTs) => {
+            if (imagesLoadedCount.value >= 2) {
+              logWithTime('[LOADER] hide after render paginatedBooks (almeno 2 immagini caricate)');
+              $q.loading.hide();
+              isRenderingBooks.value = false;
+              isLoaderActive.value = false;
+            } else if (Date.now() - startTs < 5000) { // timeout di sicurezza 5s
+              setTimeout(() => checkAndHideLoader(startTs), 50);
+            } else {
+              logWithTime('[LOADER] hide after render paginatedBooks (timeout 5s)');
+              $q.loading.hide();
+              isRenderingBooks.value = false;
+              isLoaderActive.value = false;
+            }
+          };
+          checkAndHideLoader(Date.now());
+        } else {
+          logWithTime('[LOADER] skip hide after render paginatedBooks (list empty)');
+        }
+      });
+    });
+  },
+  { immediate: true }
+);
+
+// Set to track loaded/errored ids for debug
+const loadedImageIds = new Set();
+
+// (RIMOSSO watcher su paginatedBooks.value.length)
 
 // Unico watcher per tutti i filtri e orderBy
 watch(
@@ -435,23 +492,76 @@ watch(
   },
 );
 
+// Image loading tracking logic
+function onImageBeforeShow(bookId) {
+  if (!imagesLoading.value.has(bookId)) {
+    imagesLoading.value.add(bookId);
+  }
+  logWithTime(`Image before-show: ${bookId}`);
+}
+function onImageLoaded(bookId) {
+  loadedImageIds.add(bookId);
+  logWithTime(`[LOADER] id ricevuto: ${bookId}`);
+  imagesLoadedCount.value++;
+  updateLoaderMessage();
+  logWithTime(`Image loaded or errored: ${bookId}. Loaded: ${imagesLoadedCount.value}/${totalImagesToLoad.value}`);
+  // Try to log when image is painted on screen
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      logWithTime(`Image painted on screen: ${bookId}`);
+    });
+  });
+  // (NON nascondere più il loader qui)
+}
+
+function updateLoaderMessage() {
+  logWithTime('[DEBUG] updateLoaderMessage called');
+  if (!isLoaderActive.value) {
+    logWithTime('[DEBUG] updateLoaderMessage: loader not active, skip show');
+    return;
+  }
+  // Aggiorna solo la percentuale, non nascondere/riaprire il loader
+  $q.loading.hide(); // Force update
+  if (totalImagesToLoad.value > 0) {
+    const percent = Math.floor((imagesLoadedCount.value / totalImagesToLoad.value) * 100);
+    logWithTime(`[LOADER] percent: ${percent}% (${imagesLoadedCount.value}/${totalImagesToLoad.value})`);
+    $q.loading.show({
+      message: `Caricamento immagini... ${percent}%`,
+      spinnerColor: "primary",
+      messageColor: "dark",
+    });
+  } else {
+    logWithTime(`[LOADER] caricamento immagini... (no percent)`);
+    $q.loading.show({
+      message: "Caricamento immagini...",
+      spinnerColor: "primary",
+      messageColor: "dark",
+    });
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
+  logWithTime('Page mounted');
   setupIntersectionObserver();
   $q.loading.show({
-    message: "Loading...",
+    message: "Caricamento immagini... 0%",
     spinnerColor: "primary",
     messageColor: "dark",
   });
 
   // Salva il listener per poterlo rimuovere
   backHandler.value = await CapacitorApp.addListener("backButton", () => {
+    logWithTime('Android back button pressed');
     // Controlla prima il filtro, poi il dialogo
     if (props.showFilterDrawer) {
+      logWithTime('Closing filter drawer via back button');
       emit("update:showFilterDrawer", false);
     } else if (isDialogOpen.value) {
+      logWithTime('Closing dialog via back button');
       isDialogOpen.value = false;
     } else {
+      logWithTime('Exiting app via back button');
       CapacitorApp.exitApp();
     }
   });
