@@ -194,6 +194,14 @@ export function setupAuthListener() {
           console.error("Errore nella gestione del profilo utente:", error);
         }
 
+        // Applica il tema immediatamente dopo aver caricato i dati utente
+        try {
+          updateThemeFromSettings();
+        } catch (e) {
+          // non bloccare il boot in caso di errore tema
+          console.warn("Impossibile applicare il tema al boot:", e);
+        }
+
         // Listener realtime sul documento utente
         startUserDocListener(firebaseUser.uid);
       }

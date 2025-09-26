@@ -1,10 +1,10 @@
 <template>
   <q-layout view="hHh LpR fFf">
-    <q-header elevated style="padding-top: env(safe-area-inset-top)">
+    <q-header elevated :style="'padding-top: var(--ion-safe-area-top, 24px)'">
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <span class="text-caption">{{ version }}</span>
-        <q-toolbar-title>Maigret Collectors</q-toolbar-title>
+        <q-toolbar-title> Maigret Collectors </q-toolbar-title>
         <q-btn
           v-if="route.name === 'bibliografia'"
           icon="filter_list"
@@ -27,7 +27,13 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" side="left" overlay bordered>
+    <q-drawer
+      v-model="leftDrawerOpen"
+      side="left"
+      :overlay="$q.screen.lt.md"
+      bordered
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
+    >
       <q-list>
         <q-item clickable to="/home">
           <q-item-section>
@@ -145,9 +151,19 @@
 
 <script setup>
 import { ref, provide } from "vue";
+import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "stores/authStore";
 import { useUserStore } from "stores/userStore";
+import { useLoaderStore } from "stores/loadersStore";
+import { watch } from "vue";
+import { useQuasar } from "quasar";
+import { computed } from "vue";
+
+const $q = useQuasar();
+
+const isLoading = computed(() => loaderStore.isLoading);
+const message = computed(() => loaderStore.message);
 
 const router = useRouter();
 const route = useRoute();
@@ -155,11 +171,15 @@ const authStore = useAuthStore();
 const userStore = useUserStore();
 const showFilterDrawer = ref(false);
 
+const loaderStore = useLoaderStore();
+
 const leftDrawerOpen = ref(false);
 const showAboutDialog = ref(false);
 const versionCode = ref(process.env.VERSION_CODE);
 const versionName = ref(process.env.VERSION_NAME);
 const version = process.env.APP_VERSION;
+const { percent } = storeToRefs(loaderStore);
+const loaderToken = ref(null);
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -170,4 +190,30 @@ const goToLogin = () => {
 };
 
 provide("showFilterDrawer", showFilterDrawer);
+
+watch(
+  [isLoading, message],
+  ([loading, msg]) => {
+    if (loading) {
+      if (loaderToken.value) {
+        // Aggiorna solo il messaggio
+        $q.loading.setDefaults({ message: msg || "Caricamento..." });
+      } else {
+        // Mostra un nuovo loader
+        loaderToken.value = $q.loading.show({
+          message: msg || "Caricamento...",
+          spinnerColor: "primary",
+        });
+      }
+    } else {
+      if (loaderToken.value) {
+        $q.loading.hide(loaderToken.value);
+        loaderToken.value = null;
+      }
+    }
+  },
+  { immediate: true },
+);
 </script>
+
+<style></style>

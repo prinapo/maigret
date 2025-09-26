@@ -16,7 +16,7 @@ export function setupAppWatcher() {
     },
     { deep: true }, // Removed immediate: true
   );
-  // Nuovo watcher per il tema
+  // Watcher per il tema (non immediato per evitare flicker al boot)
   watch(
     () => userStore.settings.darkMode,
     (newDarkMode) => {
@@ -24,7 +24,7 @@ export function setupAppWatcher() {
         updateThemeFromSettings();
       }
     },
-    { immediate: true },
+    { immediate: false },
   );
   function mergeBibliografiaConUtente() {
     // DEBUG: loggo i dati in ingresso

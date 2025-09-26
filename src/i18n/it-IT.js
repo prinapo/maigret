@@ -226,6 +226,51 @@ export default {
     updateLanguage: "Aggiorna Lingua",
     saveLanguages: "Salva Lingue",
     accessDenied: "Accesso Negato",
+    unsavedChanges:
+      "Hai modifiche non salvate. Ricorda di salvare prima di ricaricare la pagina.",
+    // Default values for new rows
+    defaultCoverTypeIt: "nuovo tipo",
+    defaultCoverTypeEn: "new type",
+    defaultPublisher: "insert editore",
+    defaultSeries: "insert collana",
+    defaultLanguage: "insert lingua",
+    // Validation messages
+    valueRequired: "Il valore non può essere vuoto",
+    publisherRequired: "Il nome dell'editore non può essere vuoto",
+    seriesRequired: "Il nome della collana non può essere vuoto",
+    languageRequired: "Il nome della lingua non può essere vuoto",
+    selectValidPublisher: "Seleziona un editore valido",
+    invalidRow: "Errore interno: riga non valida",
+    invalidPublisher: "Errore interno: editore non valido",
+    invalidSeries: "Errore interno: collana non valida",
+    invalidLanguage: "Errore interno: lingua non valida",
+    // Success messages
+    coversSaved: "Tipi di copertina salvati con successo",
+    publisherSaved: "Editore salvato con successo",
+    seriesSaved: "Collana salvata con successo",
+    languageSaved: "Lingua salvata con successo",
+    // Error messages
+    errorSavingCovers: "Errore salvataggio tipi di copertina",
+    errorSavingPublisher: "Errore salvataggio editore",
+    errorSavingSeries: "Errore salvataggio collana",
+    errorSavingLanguage: "Errore salvataggio lingua",
+    errorAddingCover: "Errore aggiunta tipo di copertina",
+    errorAddingPublisher: "Errore aggiunta editore",
+    errorAddingSeries: "Errore aggiunta collana",
+    errorAddingLanguage: "Errore aggiunta lingua",
+    // Delete confirmation
+    confirmDeleteTitle: "Conferma cancellazione",
+    confirmDeleteItem: "Sei sicuro di voler cancellare questo elemento?",
+    itemInUse: "Elemento in uso",
+    itemInUseMessage: "Questo elemento è utilizzato nei seguenti libri:",
+    itemNotUsed: "Elemento non utilizzato",
+    itemNotUsedMessage:
+      "Questo elemento non è utilizzato in nessun libro. Può essere cancellato.",
+    deleteItem: "Cancella elemento",
+    cancelDelete: "Annulla",
+    deleteSuccess: "Elemento cancellato con successo",
+    deleteError: "Errore durante la cancellazione",
+    viewBook: "Visualizza libro",
   },
   bookImages: {
     coverType: "Tipo Copertina",
@@ -247,6 +292,9 @@ export default {
     imageDeleted: "Immagine eliminata.",
     imageRestored: "Immagine ripristinata.",
     swipeHint: "Scorri per vedere altre immagini",
+    cameraPermissionDenied:
+      "Permesso camera negato. Controlla le impostazioni dell'app.",
+    cameraError: "Errore acquisizione foto",
   },
   analytics: {
     pageUnderConstruction: "Pagina in costruzione",

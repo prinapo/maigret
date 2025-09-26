@@ -1,6 +1,18 @@
 {
-    "appId": "com.prinapo.maigret",
-    "appName": "Maigret Collectors",
-    "webDir": "dist/spa",
-    "bundledWebRuntime": false
+  "appId": "com.prinapo.maigret",
+  "appName": "Maigret Collectors",
+  "webDir": "dist/spa",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "StatusBar": {
+      "style": "DEFAULT",
+      "overlaysWebView": true
+    },
+    "Camera": {
+      "permissions": [
+        "camera",
+        "photos"
+      ]
+    }
+  }
 }

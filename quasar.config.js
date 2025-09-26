@@ -46,6 +46,7 @@ export default configure((/* ctx */) => {
       "auth", // attiva il listener di autenticazione
       "init",
       "back-button-handler",
+      "capacitor-statusbar",
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build

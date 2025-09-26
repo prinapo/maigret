@@ -3,7 +3,7 @@
     <q-page>
       <Filter
         class="q-mb-md"
-        :show-drawer="props.showFilterDrawer"
+        :show-drawer="showFilterDrawer"
         @update:showDrawer="(val) => emit('update:showFilterDrawer', val)"
       />
       <div v-if="userStore.hasPermission('manage_books')" class="q-mb-md">
@@ -36,8 +36,7 @@
               no-transition
               loading="lazy"
               @load="onImageLoaded(book.id)"
-              @error="onImageLoaded(book.id)"
-              @before-show="onImageBeforeShow(book.id)"
+              @error="onImageError(book.id)"
             >
               <template v-slot:loading>
                 <div
@@ -115,46 +114,35 @@ import { useCollaneStore } from "stores/collaneStore";
 import { useLingueStore } from "stores/lingueStore";
 import { useUserStore } from "stores/userStore";
 import { useFiltersStore } from "stores/filtersStore";
+
 //components
 import BookDetailContent from "components/BookDetailContent.vue";
 import Filter from "components/Filter.vue";
 //utils
-import { updateThemeFromSettings } from "utils/theme";
-import { inject } from "vue";
 import { App as CapacitorApp } from "@capacitor/app";
 
-updateThemeFromSettings();
 const backHandler = ref(null);
 
 const $q = useQuasar();
 
-// For timing debug
-const pageMountTime = Date.now();
-function logWithTime(msg) {
-  const now = Date.now();
-  console.log(`[${now - pageMountTime}ms] ${msg}`);
-}
+// Debug timing removed
 
 // Pagination constants
 const ITEMS_PER_PAGE = 50;
-const LOAD_MORE_THRESHOLD = 10;
 
 // Reactive state
 const isDialogOpen = ref(false);
 const selectedBookId = ref(null);
 const isInitialized = ref(false);
-const loadingStep = ref("Initializing...");
-const loadingProgress = ref(0);
+const isLoaderActive = ref(false);
+
 const currentPage = ref(1);
-// Track image loading state
-const imagesLoading = ref(new Set());
 const totalImagesToLoad = ref(0);
 const imagesLoadedCount = ref(0);
 const isLoadingMore = ref(false);
 const loadMoreTrigger = ref(null);
 const observer = ref(null);
 const showDeleted = ref(false);
-const isMobile = computed(() => $q.screen.lt.md);
 const props = defineProps({
   showFilterDrawer: Boolean,
 });
@@ -172,7 +160,6 @@ const { collane } = storeToRefs(collaneStore);
 const lingueStore = useLingueStore();
 const { lingue } = storeToRefs(lingueStore);
 const userStore = useUserStore();
-const { settings } = storeToRefs(userStore);
 
 const { canCollectBooks } = storeToRefs(userStore);
 
@@ -201,55 +188,67 @@ const sortedBooks = computed(() => {
     return [...filteredBooks.value];
   }
 
-  return [...filteredBooks.value].sort((a, b) => {
-    if (orderByKey === "numeroCollana") {
-      const numA =
-        parseInt(String(a.numeroCollana).replace(/\D/g, ""), 10) || Infinity;
-      const numB =
-        parseInt(String(b.numeroCollana).replace(/\D/g, ""), 10) || Infinity;
-      return numA - numB;
-    }
+  // Create a copy to avoid mutating the original
+  const booksToSort = [...filteredBooks.value];
 
-    if (orderByKey === "editore") {
-      const editoreA =
-        editori.value.find((e) => e.value === a.editore)?.label ?? "";
-      const editoreB =
-        editori.value.find((e) => e.value === b.editore)?.label ?? "";
-      return editoreA.localeCompare(editoreB, undefined, {
-        numeric: true,
-        sensitivity: "base",
+  // Optimize sorting based on key type
+  switch (orderByKey) {
+    case "numeroCollana":
+      return booksToSort.sort((a, b) => {
+        const numA =
+          parseInt(String(a.numeroCollana).replace(/\D/g, ""), 10) || Infinity;
+        const numB =
+          parseInt(String(b.numeroCollana).replace(/\D/g, ""), 10) || Infinity;
+        return numA - numB;
+      });
+
+    case "editore": {
+      // Cache lookups for better performance
+      const editoriMap = new Map(editori.value.map((e) => [e.value, e.label]));
+      return booksToSort.sort((a, b) => {
+        const editoreA = editoriMap.get(a.editore) ?? "";
+        const editoreB = editoriMap.get(b.editore) ?? "";
+        return editoreA.localeCompare(editoreB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
       });
     }
 
-    if (orderByKey === "collana") {
-      const collanaA =
-        collane.value.find((c) => c.value === a.collana)?.label ?? "";
-      const collanaB =
-        collane.value.find((c) => c.value === b.collana)?.label ?? "";
-      return collanaA.localeCompare(collanaB, undefined, {
-        numeric: true,
-        sensitivity: "base",
+    case "collana": {
+      const collaneMap = new Map(collane.value.map((c) => [c.value, c.label]));
+      return booksToSort.sort((a, b) => {
+        const collanaA = collaneMap.get(a.collana) ?? "";
+        const collanaB = collaneMap.get(b.collana) ?? "";
+        return collanaA.localeCompare(collanaB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
       });
     }
 
-    if (orderByKey === "lingua") {
-      const linguaA =
-        lingue.value.find((l) => l.value === a.lingua)?.label ?? "";
-      const linguaB =
-        lingue.value.find((l) => l.value === b.lingua)?.label ?? "";
-      return linguaA.localeCompare(linguaB, undefined, {
-        numeric: true,
-        sensitivity: "base",
+    case "lingua": {
+      const lingueMap = new Map(lingue.value.map((l) => [l.value, l.label]));
+      return booksToSort.sort((a, b) => {
+        const linguaA = lingueMap.get(a.lingua) ?? "";
+        const linguaB = lingueMap.get(b.lingua) ?? "";
+        return linguaA.localeCompare(linguaB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
       });
     }
 
-    const valueA = (a[orderByKey] ?? "").toString().toLowerCase();
-    const valueB = (b[orderByKey] ?? "").toString().toLowerCase();
-    return valueA.localeCompare(valueB, undefined, {
-      numeric: true,
-      sensitivity: "base",
-    });
-  });
+    default:
+      return booksToSort.sort((a, b) => {
+        const valueA = (a[orderByKey] ?? "").toString().toLowerCase();
+        const valueB = (b[orderByKey] ?? "").toString().toLowerCase();
+        return valueA.localeCompare(valueB, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      });
+  }
 });
 
 // Gestione del pulsante "back" per chiudere il dialog
@@ -266,7 +265,21 @@ if (Platform.is.capacitor) {
 
 // Utility functions
 const openBookDetails = (bookId) => {
-  selectedBookId.value = String(bookId);
+  const idStr = String(bookId);
+
+  // GUARD: se stiamo già mostrando lo stesso libro e il dialog è aperto, non fare nulla
+  if (isDialogOpen.value && selectedBookId.value === idStr) {
+    return;
+  }
+
+  // Nascondi il loader se attivo
+  if (isLoaderActive.value) {
+    $q.loading.hide();
+    isLoaderActive.value = false;
+  }
+
+  // Set the selected book ID
+  selectedBookId.value = idStr;
   isDialogOpen.value = true;
 };
 
@@ -372,11 +385,6 @@ const resetPagination = () => {
   currentPage.value = 1;
 };
 
-// Main update function
-const updateBooksList = () => {
-  resetPagination();
-};
-
 // Setup intersection observer for infinite scroll
 const setupIntersectionObserver = () => {
   if (observer.value) {
@@ -408,64 +416,65 @@ const setupIntersectionObserver = () => {
 watch(
   () => bibliografia.value,
   async (newValue) => {
-    if (Array.isArray(newValue) && !isInitialized.value) {
-      isInitialized.value = true;
-      logWithTime('Database (bibliografia) loaded and ready');
-      resetPagination();
+    try {
+      if (Array.isArray(newValue) && !isInitialized.value) {
+        isInitialized.value = true;
+        resetPagination();
+      }
+    } catch (error) {
+      console.error("Error in bibliografia watcher:", error);
     }
   },
   { immediate: true },
 );
 
 const isRenderingBooks = ref(false);
-const isLoaderActive = ref(true);
-// Watch paginatedBooks ids to update totalImagesToLoad and reset imagesLoadedCount only on real list change
+// Watch paginatedBooks length to update totalImagesToLoad and reset imagesLoadedCount only on real list change
 watch(
-  () => paginatedBooks.value.map(b => b.id).join(','),
-  (newIds, oldIds) => {
-    logWithTime(`[DEBUG] paginatedBooks watcher: ids=${JSON.stringify(paginatedBooks.value.map(b => b.id))}, len=${paginatedBooks.value.length}`);
-    imagesLoadedCount.value = 0;
-    totalImagesToLoad.value = paginatedBooks.value.length;
-    const ids = paginatedBooks.value.map(b => b.id);
-    logWithTime(`[LOADER] ids attesi: ${JSON.stringify(ids)}`);
-    isLoaderActive.value = true;
-    updateLoaderMessage();
-    isRenderingBooks.value = true;
-    nextTick(() => {
-      logWithTime('[DEBUG] nextTick after paginatedBooks watcher');
-      requestAnimationFrame(() => {
-        logWithTime('[DEBUG] requestAnimationFrame after paginatedBooks watcher');
-        if (isRenderingBooks.value && paginatedBooks.value.length > 0) {
-          // Attendi almeno 2 immagini caricate
-          const checkAndHideLoader = (startTs) => {
-            if (imagesLoadedCount.value >= 2) {
-              logWithTime('[LOADER] hide after render paginatedBooks (almeno 2 immagini caricate)');
-              $q.loading.hide();
-              isRenderingBooks.value = false;
-              isLoaderActive.value = false;
-            } else if (Date.now() - startTs < 5000) { // timeout di sicurezza 5s
-              setTimeout(() => checkAndHideLoader(startTs), 50);
-            } else {
-              logWithTime('[LOADER] hide after render paginatedBooks (timeout 5s)');
-              $q.loading.hide();
-              isRenderingBooks.value = false;
-              isLoaderActive.value = false;
+  () => paginatedBooks.value.length,
+  (newLength, oldLength) => {
+    try {
+      // Only show loader for initial load or filter changes, not for infinite scroll
+      const isInfiniteScroll = oldLength && newLength > oldLength;
+
+      if (!isInfiniteScroll) {
+        // This is initial load or filter change - show loader
+        imagesLoadedCount.value = 0;
+        totalImagesToLoad.value = newLength;
+        isLoaderActive.value = true;
+        updateLoaderMessage();
+        isRenderingBooks.value = true;
+
+        nextTick(() => {
+          requestAnimationFrame(() => {
+            if (isRenderingBooks.value && paginatedBooks.value.length > 0) {
+              // Wait for at least 10 images to load or 3 seconds timeout
+              const checkAndHideLoader = (startTs) => {
+                if (
+                  imagesLoadedCount.value >= totalImagesToLoad.value ||
+                  Date.now() - startTs >= 3000
+                ) {
+                  $q.loading.hide();
+                  isRenderingBooks.value = false;
+                  isLoaderActive.value = false;
+                } else {
+                  setTimeout(() => checkAndHideLoader(startTs), 50);
+                }
+              };
+              checkAndHideLoader(Date.now());
             }
-          };
-          checkAndHideLoader(Date.now());
-        } else {
-          logWithTime('[LOADER] skip hide after render paginatedBooks (list empty)');
-        }
-      });
-    });
+          });
+        });
+      } else {
+        // This is infinite scroll - just update the total count without showing loader
+        totalImagesToLoad.value = newLength;
+      }
+    } catch (error) {
+      console.error("Error in paginatedBooks watcher:", error);
+    }
   },
-  { immediate: true }
+  { immediate: true },
 );
-
-// Set to track loaded/errored ids for debug
-const loadedImageIds = new Set();
-
-// (RIMOSSO watcher su paginatedBooks.value.length)
 
 // Unico watcher per tutti i filtri e orderBy
 watch(
@@ -492,76 +501,66 @@ watch(
   },
 );
 
-// Image loading tracking logic
-function onImageBeforeShow(bookId) {
-  if (!imagesLoading.value.has(bookId)) {
-    imagesLoading.value.add(bookId);
-  }
-  logWithTime(`Image before-show: ${bookId}`);
-}
-function onImageLoaded(bookId) {
-  loadedImageIds.add(bookId);
-  logWithTime(`[LOADER] id ricevuto: ${bookId}`);
-  imagesLoadedCount.value++;
-  updateLoaderMessage();
-  logWithTime(`Image loaded or errored: ${bookId}. Loaded: ${imagesLoadedCount.value}/${totalImagesToLoad.value}`);
-  // Try to log when image is painted on screen
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      logWithTime(`Image painted on screen: ${bookId}`);
-    });
-  });
-  // (NON nascondere più il loader qui)
-}
-
 function updateLoaderMessage() {
-  logWithTime('[DEBUG] updateLoaderMessage called');
   if (!isLoaderActive.value) {
-    logWithTime('[DEBUG] updateLoaderMessage: loader not active, skip show');
     return;
   }
-  // Aggiorna solo la percentuale, non nascondere/riaprire il loader
-  $q.loading.hide(); // Force update
+
+  // Update existing loader with new percentage
   if (totalImagesToLoad.value > 0) {
-    const percent = Math.floor((imagesLoadedCount.value / totalImagesToLoad.value) * 100);
-    logWithTime(`[LOADER] percent: ${percent}% (${imagesLoadedCount.value}/${totalImagesToLoad.value})`);
-    $q.loading.show({
-      message: `Caricamento immagini... ${percent}%`,
-      spinnerColor: "primary",
-      messageColor: "dark",
-    });
-  } else {
-    logWithTime(`[LOADER] caricamento immagini... (no percent)`);
+    const percent = Math.floor(
+      (imagesLoadedCount.value / totalImagesToLoad.value) * 100,
+    );
     $q.loading.show({
       message: "Caricamento immagini...",
-      spinnerColor: "primary",
-      messageColor: "dark",
+      percent: percent,
     });
   }
+}
+
+// Image loading tracking logic
+function handleImageComplete() {
+  imagesLoadedCount.value++;
+
+  if (isLoaderActive.value) {
+    updateLoaderMessage();
+
+    // Hide loader when all images are processed (loaded or failed)
+    if (imagesLoadedCount.value >= totalImagesToLoad.value) {
+      $q.loading.hide();
+      isLoaderActive.value = false;
+    }
+  }
+}
+
+function onImageLoaded(bookId) {
+  handleImageComplete();
+}
+
+function onImageError(bookId) {
+  handleImageComplete();
 }
 
 // Lifecycle
 onMounted(async () => {
-  logWithTime('Page mounted');
   setupIntersectionObserver();
-  $q.loading.show({
-    message: "Caricamento immagini... 0%",
-    spinnerColor: "primary",
-    messageColor: "dark",
-  });
+
+  // Initialize loader properly
+  if (!isLoaderActive.value) {
+    $q.loading.show({
+      message: "Caricamento immagini...",
+    });
+    isLoaderActive.value = true;
+  }
 
   // Salva il listener per poterlo rimuovere
   backHandler.value = await CapacitorApp.addListener("backButton", () => {
-    logWithTime('Android back button pressed');
     // Controlla prima il filtro, poi il dialogo
-    if (props.showFilterDrawer) {
-      logWithTime('Closing filter drawer via back button');
+    if (showFilterDrawer) {
       emit("update:showFilterDrawer", false);
     } else if (isDialogOpen.value) {
-      logWithTime('Closing dialog via back button');
       isDialogOpen.value = false;
     } else {
-      logWithTime('Exiting app via back button');
       CapacitorApp.exitApp();
     }
   });
