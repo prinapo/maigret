@@ -51,14 +51,21 @@
 import { ref, computed, onMounted } from "vue";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useRouter } from "vue-router";
-import { Notify } from "quasar";
-import shortUuidGenerator from "short-uuid";
+import { Notify, useQuasar } from "quasar";
+import short from "short-uuid";
 import { useUserStore } from "stores/userStore";
+import { checkBookExists, createBook } from "utils/firebaseDatabaseUtils";
+import placeholderImage from "assets/placeholder.jpg";
+import { convertAndUploadImage } from "utils/imageUtils";
+
+// UUID generator
+const shortUuidGenerator = short();
 
 // Store setup
 const userStore = useUserStore();
 const router = useRouter();
 const bibliografiaStore = useBibliografiaStore();
+const $q = useQuasar();
 
 // State
 const titolo = ref("");
@@ -91,11 +98,11 @@ const validateBook = async () => {
       throw new Error("Title must be at least 2 characters long");
     }
 
-    // Usare la funzione centralizzata
-    const exists = await checkBookExists(title);
-    if (exists) {
-      throw new Error("A book with this title already exists");
-    }
+    // Usare la funzione centralizzata - permesso creare libri con stesso titolo
+    // const exists = await checkBookExists(title);
+    // if (exists) {
+    //   throw new Error("A book with this title already exists");
+    // }
 
     return true;
   } catch (error) {
@@ -123,9 +130,29 @@ const saveBook = async () => {
       return;
     }
 
+    // Controlla se esiste già un libro con questo titolo e chiedi conferma
+    const exists = await checkBookExists(titolo.value.trim());
+    if (exists) {
+      const proceed = await new Promise((resolve) => {
+        $q.dialog({
+          title: "Libro esistente",
+          message:
+            "Un libro con questo titolo esiste già. Vuoi procedere con la creazione?",
+          cancel: true,
+          persistent: true,
+        })
+          .onOk(() => resolve(true))
+          .onCancel(() => resolve(false));
+      });
+      if (!proceed) {
+        return;
+      }
+    }
+
     // Create new book document
     const bookData = {
       titolo: titolo.value.trim(),
+      defaultImageName: null,
       edizioni: [
         {
           anno: new Date().getFullYear(),
@@ -144,6 +171,18 @@ const saveBook = async () => {
     // Usa la funzione centralizzata
     const docRef = await createBook(bookData);
 
+    // Upload placeholder image to Firebase using centralized function
+    try {
+      const response = await fetch(placeholderImage);
+      const blob = await response.blob();
+      const imageId = bookData.edizioni[0].images[0].id;
+      const file = new File([blob], `${imageId}.jpg`, { type: "image/jpeg" });
+      await convertAndUploadImage(file, docRef.id, 0);
+    } catch (uploadError) {
+      console.error("Error uploading placeholder image:", uploadError);
+      // Continue anyway
+    }
+
     // Update local storage
     try {
       const localData = JSON.parse(localStorage.getItem("bibliografia")) || [];
@@ -154,14 +193,13 @@ const saveBook = async () => {
       localData.push(newBook);
       localStorage.setItem("bibliografia", JSON.stringify(localData));
 
-      // Update Pinia store
-      bibliografiaStore.addBook(newBook);
+      // Nota: non aggiornare Pinia direttamente, i watcher si occupano di aggiornare da Firebase
 
       // Navigate to book detail page
-      router.push({ name: "DettaglioLibro", params: { id: docRef.id } });
+      router.push({ name: "bibliografia", query: { bookId: docRef.id } });
     } catch (storageError) {
       console.error("Error updating local storage:", storageError);
-      router.push({ name: "DettaglioLibro", params: { id: docRef.id } });
+      router.push({ name: "bibliografia", query: { bookId: docRef.id } });
     }
   } catch (error) {
     console.error("Error saving book:", error);

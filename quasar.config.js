@@ -121,6 +121,10 @@ export default configure((/* ctx */) => {
           // Quasar handles app exit on mobile phone back button.
           backButton: false,
         },
+        // Edge-to-edge support for Android API 30+
+        screen: {
+          bodyClasses: true,
+        },
       },
       cssAddon: true,
       // iconSet: 'material-icons',

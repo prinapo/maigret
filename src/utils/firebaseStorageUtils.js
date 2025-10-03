@@ -6,6 +6,7 @@ import {
   getStorage,
 } from "firebase/storage";
 import { fireStoreUrl } from "boot/firebase";
+import { Platform } from "quasar";
 
 export const moveStorageObject = async (fromPath, toPath) => {
   const storage = getStorage();
@@ -13,14 +14,35 @@ export const moveStorageObject = async (fromPath, toPath) => {
   const sourceRef = ref(storage, fromPath);
   const targetRef = ref(storage, toPath);
 
+  // Add timeout for mobile platforms to prevent hanging
+  const timeoutMs = Platform.is.mobile ? 15000 : 30000; // 15s on mobile, 30s on desktop
+
   try {
-    const blob = await getBlob(sourceRef);
-    await uploadBytes(targetRef, blob);
-    await deleteObject(sourceRef);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`Timeout moving ${fromPath} to ${toPath}`)),
+        timeoutMs,
+      );
+    });
+
+    const movePromise = async () => {
+      const blob = await getBlob(sourceRef);
+      await uploadBytes(targetRef, blob);
+      await deleteObject(sourceRef);
+    };
+
+    await Promise.race([movePromise(), timeoutPromise]);
   } catch (error) {
     if (error.code === "storage/object-not-found") {
       // Logga e continua, non è un errore bloccante
       console.warn(`File non trovato per spostamento: ${fromPath}`);
+      return;
+    }
+    // On mobile, log but don't throw timeout errors to prevent blocking deletion
+    if (Platform.is.mobile && error.message.includes("Timeout")) {
+      console.warn(
+        `Storage move timeout on mobile for ${fromPath}, continuing with deletion`,
+      );
       return;
     }
     console.error(`Failed to move ${fromPath} to ${toPath}`, error);

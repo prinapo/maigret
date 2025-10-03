@@ -13,7 +13,6 @@
     "build-android-minor": "node build-android.cjs --minor"
   },
   "dependencies": {
-    "@capacitor-community/safe-area": "^7.0.0-alpha.1",
     "@capacitor/android": "^7.0.0",
     "@capacitor/app": "^7.0.0",
     "@capacitor/camera": "^7.0.2",
@@ -23,7 +22,6 @@
     "@capacitor/status-bar": "^7.0.1",
     "@quasar/extras": "^1.17.0",
     "@sentry/cli": "^2.46.0",
-    "capacitor-plugin-safe-area": "^4.0.0",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
     "firebase": "11.10.0",
@@ -78,5 +76,5 @@
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
   },
-  "version": "4.24.3"
+  "version": "4.26.0"
 }

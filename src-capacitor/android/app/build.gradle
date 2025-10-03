@@ -9,8 +9,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         println "Using targetSdkVersion: ${rootProject.ext.targetSdkVersion}"
-        versionCode 42403
-        versionName "4.24.3"
+        versionCode 42600
+        versionName "4.26.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

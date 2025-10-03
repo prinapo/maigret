@@ -107,6 +107,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { useQuasar, Platform } from "quasar";
 import { useBackButton } from "src/composables/useBackButton";
+import { useRoute } from "vue-router";
 //stores
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import { useEditoriStore } from "stores/editoriStore";
@@ -124,6 +125,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 const backHandler = ref(null);
 
 const $q = useQuasar();
+const route = useRoute();
 
 // Debug timing removed
 
@@ -267,18 +269,15 @@ if (Platform.is.capacitor) {
 const openBookDetails = (bookId) => {
   const idStr = String(bookId);
 
-  // GUARD: se stiamo già mostrando lo stesso libro e il dialog è aperto, non fare nulla
   if (isDialogOpen.value && selectedBookId.value === idStr) {
     return;
   }
 
-  // Nascondi il loader se attivo
   if (isLoaderActive.value) {
     $q.loading.hide();
     isLoaderActive.value = false;
   }
 
-  // Set the selected book ID
   selectedBookId.value = idStr;
   isDialogOpen.value = true;
 };
@@ -497,6 +496,32 @@ watch(
   (newVal) => {
     if (newVal) {
       setupIntersectionObserver();
+    }
+  },
+);
+
+// Watch for bookId query param to open book details
+watch(
+  () => route.query.bookId,
+  (newBookId) => {
+    if (newBookId) {
+      nextTick(() => {
+        setTimeout(() => {
+          const bookExists = bibliografia.value.some((b) => b.id === newBookId);
+          if (bookExists) {
+            openBookDetails(newBookId);
+          } else {
+            setTimeout(() => {
+              const bookExistsRetry = bibliografia.value.some(
+                (b) => b.id === newBookId,
+              );
+              if (bookExistsRetry) {
+                openBookDetails(newBookId);
+              }
+            }, 1000);
+          }
+        }, 500);
+      });
     }
   },
 );

@@ -15,7 +15,7 @@ export const useCollaneStore = defineStore("collane", {
 
         // Ordina per nome durante il salvataggio
         this.collane = [...newCollane].sort((a, b) =>
-          (a.collana || "").localeCompare(b.collana || ""),
+          (a.label || "").localeCompare(b.label || ""),
         );
 
         this.lastError = null;

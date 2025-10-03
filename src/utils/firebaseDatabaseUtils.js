@@ -22,6 +22,7 @@ import { moveStorageObject } from "utils/firebaseStorageUtils";
 import { i18n } from "boot/i18n";
 import { saveAs } from "file-saver";
 import { onSnapshot } from "firebase/firestore";
+import { Platform } from "quasar";
 /**
  * Centralized utility for handling data synchronization between Firebase, IndexedDB, and Pinia
  * This utility ensures consistent data updates across all storage layers
@@ -272,12 +273,23 @@ export const moveImageToTrashAndLogUndo = async (
     const trashImagePath = `trash/${imageName}`;
     const trashThumbnailPath = `trash-thumbnails/${imageName}`;
 
-    // Sposta i file in parallelo
-    await Promise.all([
-      moveStorageObject(imagePath, trashImagePath),
-      moveStorageObject(thumbnailPath, trashThumbnailPath),
-    ]);
-  } else {
+    try {
+      // Sposta i file in parallelo con timeout ridotto su mobile
+      await Promise.all([
+        moveStorageObject(imagePath, trashImagePath),
+        moveStorageObject(thumbnailPath, trashThumbnailPath),
+      ]);
+    } catch (error) {
+      // Su mobile, se le operazioni di storage falliscono, logga ma continua
+      if (Platform.is.mobile) {
+        console.warn(
+          `Storage operations failed on mobile for ${imageName}, continuing with deletion:`,
+          error,
+        );
+      } else {
+        throw error;
+      }
+    }
   }
 
   // Aggiorna array immagini senza quella cancellata

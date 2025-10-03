@@ -1,4 +1,4 @@
-import { storage, fireStoreTrashTmblUrl } from "boot/firebase";
+import { storage } from "boot/firebase";
 import { ref as storageRef, uploadString } from "firebase/storage";
 import { useBibliografiaStore } from "stores/bibliografiaStore";
 import short from "short-uuid";
@@ -7,11 +7,6 @@ import {
   showNotifyNegative,
   showNotifyUndo,
 } from "utils/notify";
-import { useI18n } from "vue-i18n";
-import {
-  moveImageToTrashAndLogUndo,
-  deleteTrashEntry,
-} from "./firebaseDatabaseUtils";
 import {
   moveStorageObject,
   generateThumbnail,
@@ -19,15 +14,12 @@ import {
 import { useUndoStore } from "stores/undoStore";
 import { useCoversStore } from "stores/coversStore";
 import { updateDocInCollection } from "./firebaseDatabaseUtils";
-import { sanitizeBookForFirebase } from "./firebaseDatabaseUtils";
-
-const bookCoverTypeId = "qNvdwFMLNt2Uz7JjqTjacu";
+import {
+  sanitizeBookForFirebase,
+  moveImageToTrashAndLogUndo,
+} from "./firebaseDatabaseUtils";
 
 const shortUuidGenerator = short();
-
-const notifySuccess = (message) => {
-  showNotifyPositive(message);
-};
 
 const notifyError = (message) => {
   showNotifyNegative(message);
@@ -63,62 +55,6 @@ export const deleteImage = async (bookId, imageIndex, t) => {
     throw error;
   }
 };
-
-export const saveImageDetail = async (bookId, coverTypeId, index) => {
-  const bibliografiaStore = useBibliografiaStore();
-  const coversStore = useCoversStore();
-
-  if (!bookId || !coverTypeId || index === undefined) {
-    throw new Error("Missing required parameters");
-  }
-
-  try {
-    const coverExists = coversStore.covers.some(
-      (cover) => cover.value === coverTypeId,
-    );
-    if (!coverExists) {
-      throw new Error("Invalid cover type");
-    }
-
-    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
-
-    if (!book) {
-      throw new Error("Book not found");
-    }
-
-    const imagesArray = book.images || [];
-    if (index < 0 || index >= imagesArray.length) {
-      throw new Error("Invalid image index");
-    }
-
-    imagesArray[index].coverTypeId = coverTypeId;
-
-    const updatedBook = {
-      ...book,
-      images: imagesArray,
-    };
-
-    // ✅ Sincronizza il libro aggiornato
-    await updateDocInCollection(
-      "Bibliografia",
-      bookId,
-      sanitizeBookForFirebase(updatedBook),
-      { includeTimestamp: true },
-    );
-
-    notifySuccess("Cover type updated successfully");
-  } catch (error) {
-    console.error("Error updating cover type:", error);
-    notifyError(`Failed to update cover type: ${error.message}`);
-    throw error;
-  }
-};
-
-function getImageFileName(image) {
-  return !image?.id || image.id === "placeholder"
-    ? "placeholder.jpg"
-    : image.id + ".jpg";
-}
 
 export const addImage = async (bookId) => {
   const bibliografiaStore = useBibliografiaStore();
@@ -159,38 +95,6 @@ export const addImage = async (bookId) => {
   }
 };
 
-export const fetchImages = async (bookId) => {
-  const coversStore = useCoversStore();
-  const bibliografiaStore = useBibliografiaStore();
-
-  try {
-    // Usa lo store Pinia invece di accedere direttamente a Firestore
-    const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
-
-    if (!book) {
-      console.error("Book not found in store!");
-      return [];
-    }
-
-    const images = book.images || [];
-    const covers = coversStore.covers;
-
-    // Add coverType to each image based on the id
-    const imagesWithCoverType = images.map((image) => {
-      const cover = covers.find((cover) => cover.id === image.coverTypeId);
-      return {
-        ...image,
-        coverType: cover ? cover.label : "Unknown",
-      };
-    });
-
-    return imagesWithCoverType;
-  } catch (error) {
-    console.error("Error fetching images:", error);
-    throw error;
-  }
-};
-
 // Funzione per generare la thumbnail localmente da un oggetto Image
 const generateThumbnailLocal = (img, contentType = "image/jpeg") => {
   return new Promise((resolve) => {
@@ -212,7 +116,8 @@ export const convertAndUploadImage = async (file, bookId, innerIndex) => {
     const book = bibliografiaStore.bibliografia.find((b) => b.id === bookId);
     if (!book) throw new Error("Libro non trovato nello store");
 
-    const oldImage = book.images?.[innerIndex];
+    if (!book.images) book.images = [];
+    const oldImage = book.images[innerIndex];
     const reader = new FileReader();
 
     // Lettura file come dataURL

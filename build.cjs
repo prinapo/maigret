@@ -33,6 +33,41 @@ function prompt(question) {
   );
 }
 
+// Funzione per aggiornare versionCode e versionName in build.gradle
+function updateVersionInBuildGradle() {
+  const buildGradlePath = path.resolve(
+    "src-capacitor/android/app/build.gradle",
+  );
+
+  if (!fs.existsSync(buildGradlePath)) {
+    console.error("❌ build.gradle non trovato: " + buildGradlePath);
+    process.exit(1);
+  }
+
+  const version = JSON.parse(fs.readFileSync("package.json")).version;
+
+  // Esempio di conversione: 4.24.0 -> 42400
+  const parts = version.split(".").map((n) => parseInt(n, 10));
+  const versionCode = parts[0] * 10000 + parts[1] * 100 + (parts[2] || 0);
+
+  let buildGradleContent = fs.readFileSync(buildGradlePath, "utf8");
+
+  buildGradleContent = buildGradleContent.replace(
+    /versionCode\s+\d+/g,
+    `versionCode ${versionCode}`,
+  );
+  buildGradleContent = buildGradleContent.replace(
+    /versionName\s+"[^"]+"/g,
+    `versionName "${version}"`,
+  );
+
+  fs.writeFileSync(buildGradlePath, buildGradleContent, "utf8");
+
+  console.log(
+    `Aggiornato build.gradle: versionCode=${versionCode}, versionName=${version}`,
+  );
+}
+
 async function buildAPKorAAB() {
   const answer = (
     await prompt("Vuoi generare AAB o APK? (aab/apk): ")
@@ -90,39 +125,6 @@ async function main() {
 
       const version = JSON.parse(fs.readFileSync("package.json")).version;
       console.log(`Versione aggiornata: ${version}`);
-
-      // Funzione per aggiornare versionCode e versionName in build.gradle
-      function updateVersionInBuildGradle() {
-        const buildGradlePath = path.resolve(
-          "src-capacitor/android/app/build.gradle",
-        );
-
-        if (!fs.existsSync(buildGradlePath)) {
-          console.error("❌ build.gradle non trovato: " + buildGradlePath);
-          process.exit(1);
-        }
-
-        // Esempio di conversione: 4.24.0 -> 42400
-        const parts = version.split(".").map((n) => parseInt(n, 10));
-        const versionCode = parts[0] * 10000 + parts[1] * 100 + (parts[2] || 0);
-
-        let buildGradleContent = fs.readFileSync(buildGradlePath, "utf8");
-
-        buildGradleContent = buildGradleContent.replace(
-          /versionCode\s+\d+/g,
-          `versionCode ${versionCode}`,
-        );
-        buildGradleContent = buildGradleContent.replace(
-          /versionName\s+"[^"]+"/g,
-          `versionName "${version}"`,
-        );
-
-        fs.writeFileSync(buildGradlePath, buildGradleContent, "utf8");
-
-        console.log(
-          `Aggiornato build.gradle: versionCode=${versionCode}, versionName=${version}`,
-        );
-      }
 
       updateVersionInBuildGradle();
 
@@ -259,6 +261,12 @@ async function main() {
       break;
     case "7":
       run("npm version minor --no-git-tag-version");
+      const updatedVersion = JSON.parse(
+        fs.readFileSync("package.json"),
+      ).version;
+      console.log(`Versione aggiornata: ${updatedVersion}`);
+      updateVersionInBuildGradle();
+      run("quasar clean");
       run("quasar build -m capacitor -T android");
       await buildAPKorAAB();
       break;

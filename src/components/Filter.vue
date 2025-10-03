@@ -8,6 +8,8 @@
       overlay
       :width="drawerWidth"
       behavior="mobile"
+      :breakpoint="993"
+      elevated
     >
       <q-card flat>
         <q-card-section class="row items-center justify-between">

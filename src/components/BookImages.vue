@@ -3,93 +3,6 @@
     <div v-if="images.length === 0" class="placeholder">
       Nessuna immagine disponibile
     </div>
-    <!-- <q-virtual-scroll
-      v-else
-      :items="images"
-      virtual-scroll-horizontal
-      :virtual-scroll-item-size="itemSize"
-      :virtual-scroll-slice-size="sliceSize"
-      class="q-pa-md"
-      style="min-height: 250px"
-    >
-      <template v-slot="{ item: image, index: innerIndex }">
-        <div
-          :key="innerIndex"
-          class="column items-center q-mx-sm relative-position book-image"
-          style="width: 250px; height: 100%"
-        >
-          <div v-if="isFieldEditable" class="trash-overlay">
-            <q-icon
-              name="delete"
-              color="negative"
-              size="md"
-              @click="confirmDelete(innerIndex)"
-            />
-          </div>
-
-          <div
-            class="full-width flex flex-center"
-            style="height: 250px; position: relative"
-          >
-            <q-img
-              :key="image.id"
-              :src="getImageSource(image)"
-              @error="(event) => handleImageError(event, innerIndex)"
-              @load="onImageLoad(innerIndex)"
-              fit="contain"
-              no-spinner
-              class="full-width"
-              style="height: 100%; min-height: 250px"
-              @click="showImageFullscreen(innerIndex)"
-            >
-            </q-img>
-          </div>
-
-          <div
-            v-if="isFieldEditable"
-            class="full-width row justify-end q-gutter-xs q-mt-xs"
-          >
-            <q-btn
-              round
-              dense
-              size="sm"
-              icon="file_upload"
-              color="primary"
-              @click.stop="onReplaceImageFromFile(innerIndex)"
-            />
-            <q-btn
-              round
-              dense
-              size="sm"
-              icon="photo_camera"
-              color="secondary"
-              @click.stop="onReplaceImageFromCamera(innerIndex)"
-            />
-          </div>
-
-          <q-select
-            v-model="image.coverTypeId"
-            :options="coverOptionsLocalized"
-            :label="isFieldEditable ? $t('bookImages.coverType') : ''"
-            @focus="previousCoverTypeId = image.coverTypeId"
-            @update:model-value="
-              handleCoverChange($event, innerIndex, previousCoverTypeId)
-            "
-            dense
-            emit-value
-            map-options
-            fill-input
-            :disable="false"
-            :readonly="!isFieldEditable"
-            :borderless="!isFieldEditable"
-            :hide-dropdown-icon="!isFieldEditable"
-            option-label="label"
-            option-value="value"
-            style="padding: 1px 2px;"
-          />
-        </div>
-      </template>
-    </q-virtual-scroll> -->
     <div v-if="images.length > 0" class="q-mt-md" style="margin-top: 0">
       <q-carousel
         v-model="carouselSlide"
@@ -107,7 +20,9 @@
           v-for="(image, index) in images"
           :key="index"
           :name="index"
-          :img-src="getImageSource(image)"
+          :img-src="
+            fullscreen ? getFullScreenImageUrl(image) : getImageSource(image)
+          "
           :style="{ background: 'none' }"
         >
           <div
@@ -117,15 +32,36 @@
             <!-- IMAGE -->
             <div
               class="full-width flex flex-center"
-              :style="{ height: slideImageHeight, position: 'relative' }"
+              :style="{
+                height: slideImageHeight,
+                position: 'relative',
+                maxWidth: fullscreen ? '60vw' : 'none',
+              }"
             >
               <q-img
-                :src="getImageSource(image)"
+                :src="
+                  fullscreen
+                    ? getFullScreenImageUrl(image)
+                    : getImageSource(image)
+                "
                 fit="contain"
-                class="full-height"
+                :style="{ maxHeight: fullscreen ? '80vh' : '250px' }"
                 @error="(event) => handleImageError(event, index)"
                 @click="showImageFullscreen(index)"
               />
+
+              <!-- Image source info -->
+              <div
+                v-if="!fullscreen"
+                class="text-center text-caption q-mt-xs"
+                style="font-size: 10px; color: gray"
+              >
+                {{
+                  image.id === "placeholder" || !image.id
+                    ? "placeholder"
+                    : image.id + ".jpg"
+                }}
+              </div>
 
               <!-- ✅ OVERLAY CAPTION -->
               <div
@@ -209,12 +145,27 @@
         @click="undoLastDelete"
       />
 
-      <q-btn-dropdown icon="add" color="primary" label="Aggiungi immagine">
+      <q-btn-dropdown
+        icon="add"
+        color="primary"
+        label="Aggiungi immagine"
+        :disable="isUploading"
+      >
         <q-list>
-          <q-item clickable v-ripple @click="addImageWithSource('file')">
+          <q-item
+            clickable
+            v-ripple
+            @click="addImageWithSource('file')"
+            :disable="isUploading"
+          >
             <q-item-section>Da file</q-item-section>
           </q-item>
-          <q-item clickable v-ripple @click="addImageWithSource('camera')">
+          <q-item
+            clickable
+            v-ripple
+            @click="addImageWithSource('camera')"
+            :disable="isUploading"
+          >
             <q-item-section>Fotocamera</q-item-section>
           </q-item>
         </q-list>
@@ -239,8 +190,19 @@
           />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Annulla" @click="cancelCrop" />
-          <q-btn flat label="Salva" color="primary" @click="saveCroppedImage" />
+          <q-btn
+            flat
+            label="Annulla"
+            @click="cancelCrop"
+            :disable="isUploading"
+          />
+          <q-btn
+            flat
+            label="Salva"
+            color="primary"
+            @click="saveCroppedImage"
+            :disable="isUploading"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -310,13 +272,12 @@ const props = defineProps({
   bookId: { type: String, required: true },
 });
 const undoStore = useUndoStore();
-const itemSize = 250; // o la larghezza dei tuoi elementi
-const sliceSize = 5; // numero di elementi renderizzati per volta
 const fullscreen = ref(false);
 const confirmDialogVisible = ref(false);
 const tempImageIndex = ref(null);
 const carouselSlide = ref(0);
 let previousCoverTypeId = "";
+let preservedSlideIndex = -1;
 
 const userStore = useUserStore();
 const isFieldEditable = computed(() => userStore.hasPermission("manage_books"));
@@ -348,10 +309,7 @@ const getCoverTypeLabel = (id) => {
 const carouselHeight = computed(() =>
   fullscreen.value ? "100vh" : isFieldEditable.value ? "400px" : "350px",
 );
-const imageHeight = computed(() => "250px");
-const slideImageHeight = computed(() =>
-  fullscreen.value ? "95vh" : imageHeight.value,
-);
+const slideImageHeight = computed(() => (fullscreen.value ? "80vh" : "250px"));
 
 const loadedImages = ref(new Set());
 const allImagesLoaded = computed(() => {
@@ -364,9 +322,25 @@ const onImageLoad = async (index) => {
 
 watch(
   () => images.value,
-  () => {
+  (newImages, oldImages) => {
     loadedImages.value.clear();
-    carouselSlide.value = 0;
+
+    // If we have a preserved slide index, restore it
+    if (preservedSlideIndex >= 0 && preservedSlideIndex < newImages.length) {
+      carouselSlide.value = preservedSlideIndex;
+      preservedSlideIndex = -1;
+      return;
+    }
+
+    // Only reset to first slide if we're switching to a book with no images or different number of images
+    // Don't reset if just updating existing images (upload, cover type change, etc.)
+    if (
+      !oldImages ||
+      newImages.length === 0 ||
+      newImages.length !== oldImages?.length
+    ) {
+      carouselSlide.value = 0;
+    }
   },
   { deep: true },
 );
@@ -415,6 +389,10 @@ const showImageFullscreen = (imageIndex) => {
 
 const handleCoverChange = async (coverTypeId, imageIndex, lastCoverType) => {
   if (!coverTypeId || imageIndex === undefined) return;
+
+  // Preserve current slide position during cover type change
+  preservedSlideIndex = carouselSlide.value;
+
   const isCoverTypeUsed = images.value.some(
     (img, i) => img.coverTypeId === coverTypeId && i !== imageIndex,
   );
@@ -486,13 +464,41 @@ const deleteImageConfirmed = async () => {
 };
 
 async function addImageWithSource(source) {
+  if (isUploading.value) return;
+
+  const currentImageCount = images.value.length;
+
   try {
-    await addImage(props.bookId);
+    isUploading.value = true;
+    // Create empty image first
+    const updatedImages = await addImage(props.bookId);
+    // Wait for the store to update with the new image
+    await nextTick();
     const newIndex = images.value.length - 1;
-    if (source === "file") onReplaceImageFromFile(newIndex);
-    else if (source === "camera") onReplaceImageFromCamera(newIndex);
+    // Scroll to the newly added image
+    carouselSlide.value = newIndex;
+
+    if (source === "file") {
+      const success = await onReplaceImageFromFile(newIndex);
+      if (!success) {
+        // If file upload was cancelled or failed, remove the empty image
+        await removeEmptyImage(newIndex);
+      }
+    } else if (source === "camera") {
+      const success = await onReplaceImageFromCamera(newIndex);
+      if (!success) {
+        // If camera upload was cancelled or failed, remove the empty image
+        await removeEmptyImage(newIndex);
+      }
+    }
   } catch (e) {
     // console.error("Errore addImageWithSource:", e);
+    // If there was an error creating the image, try to clean up
+    if (images.value.length > currentImageCount) {
+      await removeEmptyImage(images.value.length - 1);
+    }
+  } finally {
+    isUploading.value = false;
   }
 }
 
@@ -520,9 +526,16 @@ const cropperImage = vueRef(null);
 const cropperResult = vueRef(null);
 const cropperRef = vueRef(null);
 const replaceTargetIndex = vueRef(null);
+const isUploading = ref(false);
 
 async function onReplaceImageFromCamera(index) {
+  if (isUploading.value) return false;
+
+  // Preserve current slide position during camera operation
+  preservedSlideIndex = carouselSlide.value;
+
   try {
+    isUploading.value = true;
     const image = await Camera.getPhoto({
       quality: 90,
       allowEditing: false,
@@ -532,45 +545,81 @@ async function onReplaceImageFromCamera(index) {
     replaceTargetIndex.value = index;
     cropperImage.value = image.dataUrl;
     showCropperDialog.value = true;
+
+    // Wait for the cropper dialog to be resolved
+    return new Promise((resolve) => {
+      const unwatch = watch(showCropperDialog, (newValue) => {
+        if (!newValue) {
+          // Dialog closed - check if we have a result (successful crop) or not
+          unwatch();
+          resolve(cropperResult.value !== null);
+        }
+      });
+    });
   } catch (e) {
     if (e.message && e.message.includes("permission")) {
       showNotifyNegative(t("bookImages.cameraPermissionDenied"));
     }
+    return false;
+  } finally {
+    isUploading.value = false;
   }
 }
 
-function onReplaceImageFromFile(index) {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+async function onReplaceImageFromFile(index) {
+  if (isUploading.value) return false;
 
-    try {
-      const newImageArray = await convertAndUploadImage(
-        file,
-        props.bookId,
-        index,
-      );
-      const bibliografia = unref(bibliografiaStore.bibliografia);
-      bibliografiaStore.$patch({
-        bibliografia: bibliografia.map((b) =>
-          b.id === props.bookId ? { ...b, images: newImageArray } : b,
-        ),
-      });
-      showNotifyPositive(t("bookImages.imageUploadedSuccessfully"));
-    } catch (error) {
-      // console.error("Error replacing image from file:", error);
-      showNotifyNegative(t("bookImages.uploadFailed") + ": " + error.message);
-    } finally {
-      input.value = "";
-    }
-  };
-  input.click();
+  // Preserve current slide position during upload
+  preservedSlideIndex = carouselSlide.value;
+
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        resolve(false);
+        return;
+      }
+
+      try {
+        isUploading.value = true;
+        const newImageArray = await convertAndUploadImage(
+          file,
+          props.bookId,
+          index,
+        );
+        const bibliografia = unref(bibliografiaStore.bibliografia);
+        bibliografiaStore.$patch({
+          bibliografia: bibliografia.map((b) =>
+            b.id === props.bookId ? { ...b, images: newImageArray } : b,
+          ),
+        });
+        showNotifyPositive(t("bookImages.imageUploadedSuccessfully"));
+        resolve(true);
+      } catch (error) {
+        // console.error("Error replacing image from file:", error);
+        showNotifyNegative(t("bookImages.uploadFailed") + ": " + error.message);
+        resolve(false);
+      } finally {
+        input.value = "";
+        isUploading.value = false;
+      }
+    };
+    input.click();
+  });
 }
 
-function cancelCrop() {
+async function cancelCrop() {
+  if (isUploading.value) return;
+
+  // If cancelling cropper, remove the empty image that was created
+  if (replaceTargetIndex.value !== null) {
+    await removeEmptyImage(replaceTargetIndex.value);
+    replaceTargetIndex.value = null;
+  }
+
   showCropperDialog.value = false;
   cropperImage.value = null;
   cropperResult.value = null;
@@ -579,10 +628,37 @@ function onCropChange({ canvas }) {
   cropperResult.value = canvas ? canvas.toDataURL("image/jpeg", 0.9) : null;
 }
 
+async function removeEmptyImage(index) {
+  try {
+    const updatedImages = images.value.filter((_, idx) => idx !== index);
+    const updatedBook = { ...book.value, images: updatedImages };
+    await updateDocInCollection("Bibliografia", props.bookId, updatedBook, {
+      includeTimestamp: true,
+    });
+    const bibliografia = unref(bibliografiaStore.bibliografia);
+    bibliografiaStore.$patch({
+      bibliografia: bibliografia.map((b) =>
+        b.id === props.bookId ? { ...b, images: updatedImages } : b,
+      ),
+    });
+  } catch (error) {
+    console.error("Error removing empty image:", error);
+  }
+}
+
 async function saveCroppedImage() {
-  if (!cropperResult.value || replaceTargetIndex.value === null) return;
+  if (
+    !cropperResult.value ||
+    replaceTargetIndex.value === null ||
+    isUploading.value
+  )
+    return;
+
+  // Preserve current slide position during cropped image save
+  preservedSlideIndex = carouselSlide.value;
 
   try {
+    isUploading.value = true;
     const res = await fetch(cropperResult.value);
     const blob = await res.blob();
     const newImageArray = await convertAndUploadImage(
@@ -601,10 +677,12 @@ async function saveCroppedImage() {
     // console.error("Error saving cropped image:", e);
     showNotifyNegative("Errore salvataggio immagine");
   } finally {
+    // Clear cropper state
+    cropperResult.value = null;
     showCropperDialog.value = false;
     replaceTargetIndex.value = null;
     cropperImage.value = null;
-    cropperResult.value = null;
+    isUploading.value = false;
   }
 }
 </script>
