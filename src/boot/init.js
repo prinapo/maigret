@@ -7,6 +7,10 @@ import { isFirebaseReady } from "boot/firebase";
 
 import { showNotifyNegative } from "src/utils/notify";
 
+// Import and setup glfx globally
+import fx from "glfx";
+window.fx = fx;
+
 export default boot((ctx = {}) => {
   const app = ctx.app;
   // Always define i18n from app global properties

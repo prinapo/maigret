@@ -295,6 +295,12 @@ export default {
     cameraPermissionDenied:
       "Permesso camera negato. Controlla le impostazioni dell'app.",
     cameraError: "Errore acquisizione foto",
+    webcamAccessDenied:
+      "Accesso alla webcam negato. Consenti l'accesso alla fotocamera nel browser e riprova.",
+    noWebcamFound:
+      "Nessuna webcam trovata. Usa 'Da file' per caricare immagini.",
+    webcamError: "Errore webcam: {error}",
+    userCancelledWebcam: "Foto annullata dall'utente",
   },
   analytics: {
     pageUnderConstruction: "Pagina in costruzione",

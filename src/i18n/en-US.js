@@ -277,6 +277,11 @@ export default {
     swipeHint: "Swipe to see more images",
     cameraPermissionDenied: "Camera permission denied. Check app settings.",
     cameraError: "Camera error",
+    webcamAccessDenied:
+      "Webcam access denied. Allow camera access in browser and try again.",
+    noWebcamFound: "No webcam found. Use 'From file' to upload images.",
+    webcamError: "Webcam error: {error}",
+    userCancelledWebcam: "Photo cancelled by user",
   },
   analytics: {
     pageUnderConstruction: "Page under construction",

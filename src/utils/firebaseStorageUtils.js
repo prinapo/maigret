@@ -2,6 +2,7 @@ import { ref } from "firebase/storage";
 import {
   getBlob,
   uploadBytes,
+  uploadString,
   deleteObject,
   getStorage,
 } from "firebase/storage";
@@ -49,59 +50,7 @@ export const moveStorageObject = async (fromPath, toPath) => {
     throw error;
   }
 };
-export const generateThumbnail = async (imageName) => {
-  if (imageName === "placeholder.jpg") return null;
 
-  try {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    const imageUrl = `${fireStoreUrl}${encodeURIComponent(imageName)}?alt=media`;
-
-    const blob = await new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error("Image load timeout"));
-      }, 30000);
-
-      img.onload = () => {
-        clearTimeout(timeoutId);
-
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        const width = 300;
-        const height = (width / img.width) * img.height;
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Failed to create blob from canvas"));
-            }
-          },
-          "image/jpeg",
-          0.8,
-        );
-      };
-
-      img.onerror = () => {
-        clearTimeout(timeoutId);
-        reject(new Error(`Failed to load image: ${imageName}`));
-      };
-
-      img.src = imageUrl;
-    });
-
-    return blob;
-  } catch (error) {
-    console.warn(`Thumbnail generation failed for ${imageName}:`, error);
-    return null;
-  }
-};
 export const deleteTrashStorageImage = async (fileName) => {
   if (!fileName) throw new Error("File name is required");
 
@@ -167,4 +116,34 @@ export const restoreTrashStorageImage = async (fileName) => {
     console.error(`Errore nel ripristinare i file ${fileName} da trash`, error);
     throw error;
   }
+};
+
+/**
+ * Upload image blob to Firebase Storage using base64 encoding
+ * @param {Blob} blob - The image blob to upload
+ * @param {string} path - The storage path
+ * @param {string} contentType - The content type (e.g., "image/jpeg")
+ * @returns {Promise<void>}
+ */
+export const uploadImageToStorage = async (blob, path, contentType) => {
+  const storage = getStorage();
+  const storageReference = ref(storage, path);
+  const base64data = await blobToBase64(blob);
+  await uploadString(storageReference, base64data, "base64", {
+    contentType: contentType,
+  });
+};
+
+/**
+ * Convert blob to base64 string
+ * @param {Blob} blob - The blob to convert
+ * @returns {Promise<string>} Base64 string without data URL prefix
+ */
+export const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 };
